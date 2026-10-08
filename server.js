@@ -52,7 +52,9 @@ try { accounts = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) {}
 let dirty = false;
 // ไอคอนของไอเทมที่เคยเห็นจากทุกไอดี (ชื่อ -> ลิงก์รูป) ไอดีที่ไม่มีรูปจะได้ใช้รูปจากไอดีอื่น
 const ICONS_FILE = path.join(DATA_DIR, 'icons.json');
-let icons = {}; try { icons = JSON.parse(fs.readFileSync(ICONS_FILE, 'utf8')); } catch (e) {}
+let icons = {};
+try { icons = JSON.parse(fs.readFileSync(path.join(__dirname, 'icons-seed.json'), 'utf8')); } catch (e) {} // ไอคอนตั้งต้นที่มากับโปรแกรม
+try { Object.assign(icons, JSON.parse(fs.readFileSync(ICONS_FILE, 'utf8'))); } catch (e) {}
 let iconsDirty = false;
 const ICON_RE = /^https:\/\/[a-z0-9.-]*rbxcdn\.com\/[^\s"'<>]{1,400}$/i;
 
