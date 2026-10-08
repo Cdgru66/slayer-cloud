@@ -89,13 +89,13 @@ function lvSeal(s){const L=s.level;return h('div',{class:'lv'+(L>=225?' max':'')
 // เลเวล Mastery: ใช้เลขจากจอเกม (lv) ถ้ามี ไม่งั้นคำนวณจาก Goal = 30 × เลเวล แล้วบวกเศษจาก EXP ให้ขยับทีละนิด
 const mLv=m=>m?(Number.isFinite(m.lv)?m.lv:Math.round((Number(m.goal)||0)/30)):0;
 const mPrec=m=>{if(!m)return 0;const lv=mLv(m);return Math.min(400,lv+(lv>=400||!(m.goal>0)?0:Math.min(1,Math.max(0,m.current/m.goal))))};
-const curOf=(it,s)=>it.k==='mastery'?mPrec((s.mastery||{})[it.key]):it.k==='level'?Number(s.level)||0:it.done?1:0;
+const curOf=(it,s)=>it.k==='mastery'?(it.key==='Fist'&&/gauntlet/i.test(it.label||'')?0:mPrec((s.mastery||{})[it.key])):it.k==='level'?Number(s.level)||0:it.done?1:0;
 const fracOf=(it,v)=>it.k==='manual'?(v?1:0):Math.max(0,Math.min(1,v/(it.target||(it.k==='mastery'?400:1))));
 const pctOfVals=(items,vals)=>items.length?items.reduce((t,it,i)=>t+fracOf(it,vals[i]),0)/items.length*100:0;
 const r1=x=>Math.floor(x*10)/10;
 function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;const s=a.s,st=goalStats(a);
  return g.items.map((it,i)=>{const cur=curOf(it,s);if(it.k==='manual')return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true};
-  if(it.k==='mastery'&&!(a.s.mastery||{})[it.key])return{label:it.label||('Mastery '+it.key),cur:0,t:it.target||400,f:0,txt:'ยังไม่มี',missing:true};
+  if(it.k==='mastery'&&(!(a.s.mastery||{})[it.key]||(it.key==='Fist'&&/gauntlet/i.test(it.label||''))))return{label:it.label||('Mastery '+it.key),cur:0,t:it.target||400,f:0,txt:'ยังไม่มี',missing:true};
   const t=it.target||(it.k==='mastery'?400:1),x=st&&st.items[i];
   const active=it.k==='mastery'&&(a.s.activeMastery||[]).includes(it.key);
   return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),active,idle:it.k==='mastery'&&!active&&(a.s.activeMastery||[]).length>0,cur,t,f:fracOf(it,cur),txt:it.k==='mastery'?'Lv '+Math.floor(Math.min(cur,t))+' / '+t:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta,mexp:it.k==='mastery'?(a.s.mastery||{})[it.key]:null}})}
