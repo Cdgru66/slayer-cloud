@@ -228,7 +228,7 @@ function applyPack(pk) {
   for (const [k, v] of Object.entries(pk.set)) { if (k === 'kind') continue; const el = $('#' + k); if (el) el.value = v; }
   if (varEl()) { varEl().value = pk.set['w-var'] || ''; }
   $('#same').checked = true; $('#row-bot').hidden = true; $('#lbl-top').textContent = 'เสื้อ + กางเกง';
-  redrawAll(); drawPacks(); drawChips(); update();
+  redrawAll(); drawPacks(); drawChips(); if (typeof autoPair === 'function') autoPair('pack'); update();
   if (pk.id === 'custom') $('#brief').focus({ preventScroll: true });
   $('#custom-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
   toast(pk.id === 'custom' ? 'เลือกเองหรือเขียนบรีฟด้านล่างได้เลย' : 'เติมฟอร์มให้แล้ว ปรับแต่งต่อด้านล่างได้');
@@ -334,3 +334,15 @@ function autoPair(src) {
   }
   redrawAll(); showCompat(); update();
 }
+
+// มือถือ: แถบล่างลอย "ส่งออเดอร์" (ใบสั่งทำอยู่ล่างสุดของหน้า)
+(function mobileBar() {
+  const bar = document.createElement('div'); bar.className = 'mbar';
+  const t = document.createElement('span'); t.className = 'mbar-t';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn primary'; b.textContent = 'ดูใบสั่งทำ · ส่งออเดอร์';
+  b.onclick = () => $('#ticket').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  bar.append(t, b); document.body.append(bar);
+  const sync = () => { const n = $('#sum').textContent.split('\n').filter((x) => x && x !== 'ยังไม่ได้เลือกอะไร').length; t.textContent = n ? 'เลือกแล้ว ' + n + ' รายการ' : 'ยังไม่ได้เลือก'; };
+  new MutationObserver(sync).observe($('#sum'), { childList: true, characterData: true, subtree: true }); sync();
+  if ('IntersectionObserver' in window) new IntersectionObserver((es) => { bar.classList.toggle('away', es[0].isIntersecting); }).observe($('#ticket'));
+})();
