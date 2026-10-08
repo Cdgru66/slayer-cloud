@@ -368,6 +368,25 @@ local function masteryLvFromUI(name)
     return ok and lv or nil
 end
 
+-- ตอนนี้ถืออะไรอยู่ + แถบ Mastery ที่กำลังขึ้นบนจอ (บอกว่ากำลังฟาร์ม Mastery ไหนจริง ๆ)
+local function nowUsing()
+    local holding, active = nil, {}
+    pcall(function()
+        local ch = player.Character
+        local tool = ch and ch:FindFirstChildOfClass("Tool")
+        if tool then holding = tool.Name end
+    end)
+    pcall(function()
+        local pg = player:FindFirstChild("PlayerGui")
+        local mh = pg and pg:FindFirstChild("MasteryHolder", true)
+        local act = mh and mh:FindFirstChild("Actual")
+        for _, c in ipairs(act and act:GetChildren() or {}) do
+            if c:IsA("GuiObject") and c.Visible then table.insert(active, c.Name) end
+        end
+    end)
+    return holding, active
+end
+
 -- ===== รวบรวมข้อมูลทั้งหมดเป็น snapshot (ใช้ได้ทั้ง Discord และเว็บ) =====
 local prevItems = {}
 local itemCat = nil
@@ -426,6 +445,7 @@ local function collect()
 
     local okB, boss = pcall(nearestBoss)
     if okB and boss then s.boss = boss end
+    s.holding, s.activeMastery = nowUsing()
 
     s.mastery = {}
     local mlist = slot:FindFirstChild("MasteryProgressionList")
@@ -940,6 +960,7 @@ task.spawn(function()
                 ore = items["Ore"] or 0, refine = items["Refinement Ore"] or 0,
                 boss = (okB and boss) and { name = boss.name, hp = boss.hp } or nil,
             }
+            p.holding, p.activeMastery = nowUsing()
             local ml = slot:FindFirstChild("MasteryProgressionList")
             if ml then
                 p.mastery = {}

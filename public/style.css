@@ -645,3 +645,6 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .gspark{width:100%;height:64px;display:block}.gspark .sl{fill:none;stroke:#b8893a;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.gspark .sd{fill:var(--gold-hi);stroke:#1a1114;stroke-width:2}
 .using{font-size:13px;padding:8px 12px;border-radius:10px;background:rgba(241,233,221,.05)}.using b{color:var(--tx);font-weight:500}
 .goall li.miss .gn{color:var(--mu)}.goall li.miss .gv{color:var(--warn)}.goall .gr.miss{color:var(--warn)}
+.using{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.u-live{font-size:11px;font-weight:700;color:var(--ok);letter-spacing:.03em}
+.goall .tag{margin-left:8px;font-size:10.5px;padding:1px 7px;border-radius:999px;color:var(--mu);background:rgba(241,233,221,.07);white-space:nowrap}
+.goall .tag.on{color:var(--ok);background:rgba(95,208,160,.12)}

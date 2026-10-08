@@ -268,6 +268,8 @@ module.exports = function createOrders(ctx) {
   const GOALS_FILE = path.join(ctx.DATA_DIR, 'goals.json');
   let goals = Object.create(null); try { Object.assign(goals, JSON.parse(fs.readFileSync(GOALS_FILE, 'utf8'))); } catch (e) {}
   let goalsDirty = false; setInterval(() => { if (goalsDirty) { goalsDirty = false; try { saveGoals(); } catch (e) {} } }, 60000).unref();
+  // แก้เป้าหมายเก่าที่เคยจับ Gauntlet ไปคู่กับ Fist (หมัดเปล่า) ผิด
+  for (const g of Object.values(goals)) for (const it of (g && g.items) || []) if (it.k === 'mastery' && it.key === 'Fist' && /gauntlet/i.test(it.label || '')) { it.key = 'Gauntlet'; g.hist = []; goalsDirty = true; }
   const saveGoals = () => { const t = GOALS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(goals, null, 1)); fs.renameSync(t, GOALS_FILE); };
   const gkey = (n) => String(n || '').toLowerCase();
   function cleanGoal(j) {
@@ -281,7 +283,7 @@ module.exports = function createOrders(ctx) {
   function goalFromOrder(o, masteryKeys) {
     const find = (...names) => { for (const n of names) { if (!n) continue; const k = masteryKeys.find((m) => m.toLowerCase() === n.toLowerCase()) || masteryKeys.find((m) => m.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(m.toLowerCase())); if (k) return k; } return names.find(Boolean) || ''; };
     const items = [];
-    if (o.weapon && o.weapon.type) items.push({ k: 'mastery', label: 'Mastery ' + o.weapon.type, key: find(o.weapon.type, o.weapon.type === 'Katana' ? 'Sword' : '', o.weapon.type === 'Gauntlet' ? 'Fist' : ''), target: 400 });
+    if (o.weapon && o.weapon.type) items.push({ k: 'mastery', label: 'Mastery ' + o.weapon.type, key: find(o.weapon.type, o.weapon.type === 'Katana' ? 'Sword' : ''), target: 400 });
     if (o.power && o.power.name) items.push({ k: 'mastery', label: 'Mastery ' + o.power.name, key: find(o.power.name), target: 400 });
     const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus != null ? '+' + x.plus : ''}` : '');
     if (o.weapon && o.weapon.type) items.push({ k: 'manual', label: `ได้อาวุธ ${o.weapon.variant ? o.weapon.variant + ' ' : ''}${o.weapon.type} ${g(o.weapon)}`.trim() });

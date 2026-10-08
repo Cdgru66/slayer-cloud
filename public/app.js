@@ -97,7 +97,8 @@ function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return nul
  return g.items.map((it,i)=>{const cur=curOf(it,s);if(it.k==='manual')return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true};
   if(it.k==='mastery'&&!(a.s.mastery||{})[it.key])return{label:it.label||('Mastery '+it.key),cur:0,t:it.target||400,f:0,txt:'ยังไม่มี',missing:true};
   const t=it.target||(it.k==='mastery'?400:1),x=st&&st.items[i];
-  return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),cur,t,f:fracOf(it,cur),txt:it.k==='mastery'?'Lv '+Math.floor(Math.min(cur,t))+' / '+t:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta,mexp:it.k==='mastery'?(a.s.mastery||{})[it.key]:null}})}
+  const active=it.k==='mastery'&&(a.s.activeMastery||[]).includes(it.key);
+  return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),active,idle:it.k==='mastery'&&!active&&(a.s.activeMastery||[]).length>0,cur,t,f:fracOf(it,cur),txt:it.k==='mastery'?'Lv '+Math.floor(Math.min(cur,t))+' / '+t:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta,mexp:it.k==='mastery'?(a.s.mastery||{})[it.key]:null}})}
 function goalPct(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;return r1(pctOfVals(g.items,g.items.map(it=>curOf(it,a.s))))}
 const dur=h=>{if(!(h>0))return'';if(h<1)return'~'+Math.max(1,Math.round(h*60))+' นาที';if(h<48){const H=Math.floor(h),M=Math.round((h-H)*60);return'~'+H+' ชม.'+(M?' '+M+' นาที':'')}const D=Math.floor(h/24),H=Math.round(h-D*24);return'~'+D+' วัน'+(H?' '+H+' ชม.':'')};
 const agoT=sec=>sec<60?'เมื่อสักครู่':sec<3600?Math.round(sec/60)+' นาทีที่แล้ว':sec<86400?Math.round(sec/3600)+' ชม.ที่แล้ว':Math.round(sec/86400)+' วันที่แล้ว';
@@ -120,7 +121,7 @@ function ring(pct,z,key){const NS='http://www.w3.org/2000/svg',r=(z-8)/2,c=2*Mat
  if(from==null||Math.abs(from-pct)<0.05||matchMedia('(prefers-reduced-motion: reduce)').matches)set(pct);
  else{set(from);const t0=performance.now();const step=n=>{const k=Math.min(1,(n-t0)/1200),e=1-Math.pow(1-k,3);set(from+(pct-from)*e);if(k<1)requestAnimationFrame(step);else svg.classList.add('bump')};requestAnimationFrame(step)}
  return svg}
-function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':x.missing?'miss':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),
+function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':x.missing?'miss':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label,x.active?h('span',{class:'tag on'},'● กำลังฟาร์ม'):x.idle&&x.f<1?h('span',{class:'tag'},'ยังไม่ได้ใช้ตอนนี้'):null),h('span',{class:'gv'},x.txt),
   x.manual?null:h('span',{class:'gb'},h('i',{style:`width:${(x.f*100).toFixed(1)}%`})),
   x.missing?h('span',{class:'gr miss'},'ยังไม่ได้อาวุธ/พลังนี้ · จะเริ่มนับเมื่อได้แล้ว'):!x.manual&&x.f<1?h('span',{class:'gr'},x.rate>0?[(x.mexp&&x.mexp.goal?'EXP '+cm(x.mexp.current)+' / '+cm(x.mexp.goal)+' · ':'')+'+'+(x.rate>=10?Math.round(x.rate):x.rate.toFixed(x.mexp?2:1))+(x.mexp?' เลเวล':'')+' / ชม.',x.eta?' · อีก '+dur(x.eta):'']:(x.mexp&&x.mexp.goal?'EXP '+cm(x.mexp.current)+' / '+cm(x.mexp.goal)+' · ':'')+'รอข้อมูลความเร็ว…'):null)))}
 function goalMeta(a){const st=goalStats(a),pct=goalPct(a);if(!st)return null;const out=[];
@@ -136,9 +137,12 @@ function spark(a,w,hh){const st=goalStats(a);if(!st||st.series.length<3)return n
  const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x(S[S.length-1][0]));c.setAttribute('cy',y(S[S.length-1][1]));c.setAttribute('r',4);c.setAttribute('class','sd');svg.append(c);return svg}
 // ตอนนี้กำลังใช้อะไรฟาร์มอยู่ (อาวุธที่ถืออยู่ + ปราณ/มนต์อสูร)
 const WEAPON_RE=/katana|gauntlet|sickle|scythe|spear|war fans|wagasa|axe|mace|cutlass|tanto|shotgun|sword|blade/i;
-function usingNow(s){const w=(s.items||[]).filter(i=>i.equipped&&(WEAPON_RE.test(i.name)||/weapon/i.test(i.cat||''))).map(i=>i.name);
- const parts=[];if(w.length)parts.push(w.slice(0,2).join(', '));if(s.demonArt)parts.push('มนต์อสูร '+s.demonArt);else if(s.breathing)parts.push('ปราณ '+s.breathing);
- return parts.length?h('div',{class:'using'},h('span',{class:'mu'},'กำลังใช้ฟาร์ม:'),' ',h('b',{},parts.join(' · '))):null}
+function usingNow(s){const parts=[];const act=(s.activeMastery||[]).filter(Boolean);
+ if(s.holding)parts.push(h('span',{class:'u-hold'},'🗡 ',h('b',{},s.holding)));
+ else{const w=(s.items||[]).filter(i=>i.equipped&&(WEAPON_RE.test(i.name)||/weapon/i.test(i.cat||''))).map(i=>i.name);if(w.length)parts.push(h('span',{},'🗡 ',h('b',{},w.slice(0,2).join(', '))))}
+ for(const k of act){const m=(s.mastery||{})[k];parts.push(h('span',{class:'u-m'},'กำลังฟาร์ม ',h('b',{},k+' Mastery'),m?' Lv '+mLv(m):''))}
+ if(s.demonArt)parts.push(h('span',{},'มนต์อสูร ',h('b',{},s.demonArt)));else if(s.breathing)parts.push(h('span',{},'ปราณ ',h('b',{},s.breathing)));
+ return parts.length?h('div',{class:'using'},h('span',{class:'u-live'},isLive(s)?'● ตอนนี้':'ล่าสุด'),parts):null}
 function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=>x.a.goal&&x.a.goal.items&&x.a.goal.items.length);box.hidden=!G.length;if(!G.length){box.replaceChildren();return}
  box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
   return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},

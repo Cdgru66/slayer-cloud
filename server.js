@@ -328,6 +328,8 @@ function liveUpdate(id, name, snap) {
   const b = okBoss(snap.boss); if (b) a.s.boss = b; else delete a.s.boss;
   if (isNum(snap.wen)) a.s.wen = snap.wen;
   if (isNum(snap.level)) a.s.level = snap.level;
+  a.s.holding = typeof snap.holding === 'string' ? snap.holding.slice(0, 60) : undefined; // ของที่ถืออยู่ตอนนี้
+  a.s.activeMastery = Array.isArray(snap.activeMastery) ? snap.activeMastery.filter((x) => typeof x === 'string').slice(0, 4).map((x) => x.slice(0, 40)) : [];
   for (const [k, n] of [['ore', 'Ore'], ['refine', 'Refinement Ore']]) {
     if (!isNum(snap[k])) continue;
     const it = (a.s.items || []).find((i) => i && i.name === n);
