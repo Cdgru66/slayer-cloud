@@ -43,7 +43,11 @@ function bossIcon(name,z){let k=0;for(const c of name)k=(k*33+c.charCodeAt(0))>>
  const ey=eye?{d:'M-21 -6 L-7 -2 L-21 2Z'}:{d:'M-22 -4 Q-14 -10 -6 -4 Q-14 0 -22 -4Z'};el('path',{...ey,fill:'#ffe08a'});el('path',{d:ey.d,fill:'#ffe08a',transform:'scale(-1 1)'});
  el('path',{d:'M-12 16 L-6 22 L0 16 L6 22 L12 16',fill:'none',stroke:'#f4ead0','stroke-width':2.5,'stroke-linejoin':'round'});return svg}
 function bossRate(a){const p=a.hist.filter(x=>x.t>=now()-3600&&x.b!=null);if(p.length<2)return null;return Math.max(0,p[p.length-1].b-p[0].b)}
-function power(s){if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},h('b',{},'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},h('b',{},'息'),s.breathing);return null}
+// ไอคอนพลังจากในเกม: มนต์อสูร = Orb ของสายนั้น, ปราณ = ดาบ/ชุดของสายนั้น (ไม่มีรูปค่อยใช้ตัวอักษร 鬼/息)
+const ORB_ALIAS={Pyrokinesis:'Pyrokenesis'},BREATH_ICON={Water:'Water Katana',Flame:'Flame Katana',Thunder:'Thunder Katana',Wind:'Wind Katana',Insect:'Insect Katana',Stone:'Stone Haori',Sound:'Sound Katanas',Mist:'Mist Kumo Sodenashi',Serpent:'Serpent Katana',Beast:'Beast Core',Moon:'Moonlit Kata-Aki'};
+function pwIcon(name,demon,glyph){const key=demon?(ORB_ALIAS[name]||name)+' Orb':BREATH_ICON[name]||name+' Katana',u=ICONS[key];
+ if(u){const im=new Image(18,18);im.src=u;im.alt='';im.className='pwi';im.onerror=()=>im.replaceWith(h('b',{},glyph));return im}return h('b',{},glyph)}
+function power(s){if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},pwIcon(s.demonArt,true,'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},pwIcon(s.breathing,false,'息'),s.breathing);return null}
 function fight(s,st,big){if(!s.boss||st==='off')return null;return h('span',{class:'fight'+(big?' big':''),title:'บอสที่อยู่ใกล้ตัวละครที่สุด'},bossPic(s.boss.name,big?30:18),isLive(s)?h('span',{class:'livetag'},'LIVE'):null,'กำลังสู้ ',h('b',{},bossName(s.boss.name)),s.boss.hp!=null?h('span',{class:'hp'},h('i',{style:`width:${Math.max(0,Math.min(100,s.boss.hp))}%`})):null)}
 function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.get(el.dataset.cd);if(!a)return;const st=stat(a);el.textContent=cdText(a,st);el.classList.toggle('late',st!=='off'&&nextIn(a)<=-30);el.classList.toggle('rj',st==='off'&&!!a.rejoin&&now()-a.rejoin.at<600)});
  const on=[...A.values()].filter(a=>stat(a)!=='off');const el=$('#t-next');if(!el)return;

@@ -450,3 +450,4 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 #t-wen.bump{text-shadow:0 0 22px rgba(226,182,92,.55)}
 @media (prefers-reduced-motion:reduce){.livetag{animation:none}}
 img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-shadow:0 0 0 1.5px rgba(216,67,44,.55)}
+.pw img.pwi{width:18px;height:18px;flex:none;object-fit:contain;margin:-2px 0 -2px -3px;filter:drop-shadow(0 0 3px rgba(0,0,0,.6))}
