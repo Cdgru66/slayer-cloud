@@ -648,3 +648,4 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .using{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}.u-live{font-size:11px;font-weight:700;color:var(--ok);letter-spacing:.03em}
 .goall .tag{margin-left:8px;font-size:10.5px;padding:1px 7px;border-radius:999px;color:var(--mu);background:rgba(241,233,221,.07);white-space:nowrap}
 .goall .tag.on{color:var(--ok);background:rgba(95,208,160,.12)}
+.goall li.missline{order:99}.goall li.missline .gn{color:var(--dim);font-size:12px;white-space:normal}.goall{display:flex;flex-direction:column}
