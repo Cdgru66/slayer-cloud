@@ -415,3 +415,11 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 .tabs a.tab-link:focus-visible{outline:2px solid var(--gold)}
 .tabs.anav{margin-bottom:18px}
 .ordbar .btn{white-space:nowrap}
+/* เปลี่ยนหน้าแบบนุ่ม: สลับหน้าในเว็บเดียวกันแบบเฟด แถบเมนูอยู่นิ่ง (Chrome/Edge/Safari ใหม่) */
+@view-transition{navigation:auto}
+.tabs{view-transition-name:sf-nav}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.22s}
+.tabp:not([hidden]){animation:sf-in .22s ease-out}
+.card.cc.open>.sec{animation:sf-in .18s ease-out}
+@keyframes sf-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}.tabp:not([hidden]),.card.cc.open>.sec{animation:none}}
