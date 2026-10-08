@@ -90,37 +90,85 @@ const ICON_OF = {
 const LINE_ICON = { w: { Nightfall: 'Nightfall Katana', Firstlight: 'Firstlight Forged Ingot' }, a: { Nightfall: "Nightfall Weaver's Cloth", Firstlight: "Firstlight Weaver's Silk" } };
 let ICONS = {};
 const pickers = [];
-function tile(label, icon, on, click) {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'pk'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(on));
-  const f = document.createElement('span'); f.className = 'pk-ic';
-  if (icon && ICONS[icon]) { const im = new Image(); im.src = ICONS[icon]; im.alt = ''; im.loading = 'lazy'; im.onerror = () => { im.remove(); f.textContent = label[0]; }; f.append(im); } else f.textContent = label === 'ไม่ระบุ' ? '–' : label[0];
-  const t = document.createElement('span'); t.className = 'pk-t'; t.textContent = label;
-  b.append(f, t); b.onclick = click; return b;
+// ตราประจำตระกูล (สร้างเองจากชื่อ ไม่ซ้ำกัน): วงแหวน + กลีบ + แกนกลาง
+const NS = 'http://www.w3.org/2000/svg';
+function crest(name) {
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const petals = 3 + (h % 6), shape = (h >> 3) % 3, inner = (h >> 5) % 3, hue = [38, 12, 350, 200, 160, 280][(h >> 7) % 6];
+  const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '-50 -50 100 100'); svg.setAttribute('aria-hidden', 'true'); svg.classList.add('crest');
+  const el = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  const gold = '#e2b65c', tint = `hsl(${hue} 55% 42%)`;
+  el('circle', { r: 47, fill: '#1c1315', stroke: gold, 'stroke-width': 4 });
+  el('circle', { r: 39, fill: 'none', stroke: tint, 'stroke-width': 1.5, opacity: .8 });
+  for (let k = 0; k < petals; k++) {
+    const g = el('g', { transform: `rotate(${(360 / petals) * k})` });
+    const e = document.createElementNS(NS, shape === 0 ? 'ellipse' : shape === 1 ? 'path' : 'rect');
+    if (shape === 0) { e.setAttribute('cx', 0); e.setAttribute('cy', -19); e.setAttribute('rx', 8); e.setAttribute('ry', 15); }
+    else if (shape === 1) e.setAttribute('d', 'M0 -36 C10 -26 10 -12 0 -6 C-10 -12 -10 -26 0 -36Z');
+    else { e.setAttribute('x', -6); e.setAttribute('y', -34); e.setAttribute('width', 12); e.setAttribute('height', 22); e.setAttribute('rx', 3); e.setAttribute('transform', 'rotate(45 0 -23)'); }
+    e.setAttribute('fill', gold); g.append(e);
+  }
+  if (inner === 0) el('circle', { r: 8, fill: tint, stroke: gold, 'stroke-width': 2.5 });
+  else if (inner === 1) el('rect', { x: -7, y: -7, width: 14, height: 14, transform: 'rotate(45)', fill: tint, stroke: gold, 'stroke-width': 2.5 });
+  else { el('circle', { r: 9, fill: 'none', stroke: gold, 'stroke-width': 3 }); el('circle', { r: 3.5, fill: gold }); }
+  return svg;
 }
-// el = select หรือ input ที่ฟอร์มใช้อยู่ (ยังเก็บค่าไว้ที่เดิม การ์ดแค่ช่วยเลือก)
-function picker(el, list, iconOf, title, where) {
-  const box = document.createElement('div'); box.className = 'pk-wrap';
-  const cap = document.createElement('p'); cap.className = 'pk-cap'; cap.textContent = title;
-  const grid = document.createElement('div'); grid.className = 'pk-grid'; grid.setAttribute('role', 'radiogroup'); grid.setAttribute('aria-label', title);
-  box.append(cap, grid);
+function icon(label, iconName, isClan) {
+  const f = document.createElement('span'); f.className = 'dd-ic';
+  if (isClan && label !== 'ไม่ระบุ') f.append(crest(label));
+  else if (iconName && ICONS[iconName]) { const im = new Image(); im.src = ICONS[iconName]; im.alt = ''; im.onerror = () => { im.remove(); f.textContent = label[0]; }; f.append(im); }
+  else f.textContent = label === 'ไม่ระบุ' ? '–' : label[0];
+  return f;
+}
+// ช่องเลือกแบบเลื่อน มีไอคอนเล็กหน้าชื่อ (ค่าจริงยังเก็บใน select/input เดิมของฟอร์ม)
+let openDD = null;
+function closeDD() { if (openDD) { openDD.list.hidden = true; openDD.btn.setAttribute('aria-expanded', 'false'); openDD = null; } }
+document.addEventListener('click', (e) => { if (openDD && !openDD.box.contains(e.target)) closeDD(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openDD) { const b = openDD.btn; closeDD(); b.focus(); } });
+function picker(el, list, iconOf, title, where, isClan) {
+  const box = document.createElement('div'); box.className = 'dd';
+  const lab = document.createElement('span'); lab.className = 'dd-cap'; lab.textContent = title;
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dd-btn f'; btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
+  const ul = document.createElement('div'); ul.className = 'dd-list'; ul.setAttribute('role', 'listbox'); ul.setAttribute('aria-label', title); ul.hidden = true;
+  box.append(lab, btn, ul);
+  const items = () => (typeof list === 'function' ? list() : list);
   const draw = () => {
-    const items = typeof list === 'function' ? list() : list, cur = el.value;
-    grid.replaceChildren(...items.map((v) => tile(v || 'ไม่ระบุ', iconOf(v), cur === v, () => { el.value = cur === v && el.tagName === 'INPUT' ? '' : v; el.dispatchEvent(new Event('change', { bubbles: true })); redrawAll(); })));
+    const cur = el.value, label = cur || (el.tagName === 'INPUT' ? 'เลือก หรือพิมพ์เองด้านล่าง' : 'ไม่ระบุ');
+    const t = document.createElement('span'); t.className = 'dd-t'; t.textContent = label;
+    const chev = document.createElement('span'); chev.className = 'dd-chev'; chev.textContent = '▾';
+    btn.replaceChildren(icon(cur || 'ไม่ระบุ', iconOf(cur), isClan), t, chev);
+    ul.replaceChildren(...items().map((v) => {
+      const o = document.createElement('button'); o.type = 'button'; o.className = 'dd-opt'; o.setAttribute('role', 'option'); o.setAttribute('aria-selected', String(v === cur));
+      const ot = document.createElement('span'); ot.textContent = v || 'ไม่ระบุ';
+      o.append(icon(v || 'ไม่ระบุ', iconOf(v), isClan), ot);
+      o.onclick = () => { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); closeDD(); redrawAll(); btn.focus(); };
+      return o;
+    }));
   };
+  btn.onclick = (e) => {
+    e.stopPropagation(); const was = openDD && openDD.box === box; closeDD(); if (was) return;
+    ul.hidden = false; btn.setAttribute('aria-expanded', 'true'); openDD = { box, btn, list: ul };
+    const sel = ul.querySelector('[aria-selected=true]') || ul.firstChild; if (sel) { sel.scrollIntoView({ block: 'nearest' }); sel.focus(); }
+  };
+  ul.addEventListener('keydown', (e) => {
+    const opts = [...ul.children], k = opts.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); (opts[k + 1] || opts[0]).focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); (opts[k - 1] || opts[opts.length - 1]).focus(); }
+  });
   where(box); pickers.push(draw); return draw;
 }
 function redrawAll() { for (const d of pickers) d(); }
 const hideLabel = (sel) => { const l = $(sel).closest('label'); if (l) l.hidden = true; };
 function buildPickers() {
   const before = (ref) => (box) => ref.parentNode.insertBefore(box, ref);
-  const wRow = $('#w-type').closest('.og-row');
-  picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภทอาวุธ', before(wRow));
-  picker($('#w-line'), ['', ...LINES], (v) => LINE_ICON.w[v], 'สายอาวุธ', before(wRow));
+  const at = (sel) => (box) => { const l = $(sel).closest('label'); l.parentNode.insertBefore(box, l); };
+  picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภท', at('#w-type'));
+  picker($('#w-line'), ['', ...LINES], (v) => LINE_ICON.w[v], 'สาย', at('#w-line'));
   hideLabel('#w-type'); hideLabel('#w-line');
-  picker($('#clan'), CLANS, () => null, 'เลือกตระกูล หรือพิมพ์เองด้านล่าง', before($('#clan')));
-  picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'เลือก หรือพิมพ์เองด้านล่าง', before($('#p-name')));
-  picker($('#t-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สายชุด', before($('#row-top')));
-  picker($('#b-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สายกางเกง', (box) => { box.classList.add('pk-bot'); $('#row-bot').prepend(box); });
+  picker($('#clan'), CLANS, () => null, 'ตระกูล', before($('#clan')), true);
+  picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'ชื่อ', before($('#p-name')));
+  picker($('#t-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#t-line'));
+  picker($('#b-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#b-line'));
   hideLabel('#t-line'); hideLabel('#b-line');
   $('#clan').addEventListener('input', redrawAll); $('#p-name').addEventListener('input', redrawAll);
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
