@@ -20,6 +20,7 @@ module.exports = function createOrders(ctx) {
     const gear = (g) => (g && typeof g === 'object' ? { line: str(g.line, 30), tier: int(g.tier, 0, 9), plus: int(g.plus, 0, 30) } : null);
     const o = {
       roblox: str(j.roblox, 20).replace(/[^A-Za-z0-9_]/g, ''),
+      pack: str(j.pack, 40),
       clan: str(j.clan, 40),
       weapon: j.weapon && typeof j.weapon === 'object' ? Object.assign(gear(j.weapon), { type: str(j.weapon.type, 40), mastery: int(j.weapon.mastery, 0, 9999) }) : null,
       power: j.power && typeof j.power === 'object' ? { kind: j.power.kind === 'demon' ? 'demon' : 'breath', name: str(j.power.name, 40), mastery: int(j.power.mastery, 0, 9999) } : null,
@@ -35,6 +36,7 @@ module.exports = function createOrders(ctx) {
   const summary = (o) => {
     const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus ? '+' + x.plus : ''}` : '');
     const L = [];
+    if (o.pack) L.push('แพ็กเกจ: ' + o.pack);
     if (o.clan) L.push('ตระกูล: ' + o.clan);
     if (o.weapon && o.weapon.type) L.push(`อาวุธ: ${o.weapon.type} ${g(o.weapon)}`.trim() + (o.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${o.weapon.mastery})` : ''));
     if (o.power && o.power.name) L.push(`${o.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${o.power.name}` + (o.power.mastery ? ` (ฟาร์มให้จน Mastery ${o.power.mastery})` : ''));

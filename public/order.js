@@ -33,12 +33,13 @@ function data() {
     power: { kind, name: $('#p-name').value.trim(), mastery: num('#p-mas') },
     top, bottom, title: $('#title').value.trim(), level: num('#level'),
     brief: $('#brief').value.trim(), roblox: $('#roblox').value.trim(),
-    contact: { via: $('#c-via').value, handle: $('#c-handle').value.trim() }, website: $('#hp').value,
+    contact: { via: $('#c-via').value, handle: $('#c-handle').value.trim() }, website: $('#hp').value, pack: packName(),
   };
 }
 const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus != null ? '+' + x.plus : ''}` : '');
 function text(d) {
   const L = [];
+  if (d.pack) L.push('แพ็กเกจ: ' + d.pack);
   if (d.clan) L.push('ตระกูล: ' + d.clan);
   if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.type} ${g(d.weapon)}`.trim() + (d.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${d.weapon.mastery})` : ''));
   if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + (d.power.mastery ? ` (ฟาร์มให้จน Mastery ${d.power.mastery})` : ''));
@@ -89,7 +90,7 @@ const ICON_OF = {
   'Blood Manipulation': 'Blood Manipulation Orb', Cryokinesis: 'Cryokinesis Orb', Pyrokinesis: 'Pyrokenesis Orb', Shockwave: 'Shockwave Orb', Reaper: 'Reaper Orb',
   Dream: 'Dream Orb', Tamari: 'Tamari Orb', 'Obi Manipulation': 'Obi Manipulation Orb',
 };
-const LINE_ICON = { w: { Nightfall: 'Nightfall Katana', Firstlight: 'Firstlight Forged Ingot' }, a: { Nightfall: "Nightfall Weaver's Cloth", Firstlight: "Firstlight Weaver's Silk" } };
+const LINE_ICON = { w: { Nightfall: 'Nightfall Katana', Firstlight: 'Firstlight Forged Ingot' }, a: { Nightfall: 'Nightfall Mask', Firstlight: 'Firstlight Mask' } };
 let ICONS = {};
 const pickers = [];
 // ตราประจำตระกูล (สร้างเองจากชื่อ ไม่ซ้ำกัน): วงแหวน + กลีบ + แกนกลาง
@@ -165,7 +166,10 @@ function buildPickers() {
   const before = (ref) => (box) => ref.parentNode.insertBefore(box, ref);
   const at = (sel) => (box) => { const l = $(sel).closest('label'); l.parentNode.insertBefore(box, l); };
   picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภท', at('#w-type'));
-  picker($('#w-line'), ['', ...LINES], (v) => LINE_ICON.w[v], 'สาย', at('#w-line'));
+  // ไอคอนสายอาวุธตามประเภทที่เลือก: ใช้ตัวอาวุธจริงก่อน ไม่มีค่อยใช้แบบพิมพ์เขียว ไม่ใช้รูปแร่
+  const wLineIcon = (v) => { if (!v) return null; const t = $('#w-type').value || 'Katana';
+    for (const k of [v + ' ' + t, v + ' ' + t + ' Schematic', v + ' Katana', v + ' Katana Schematic']) if (ICONS[k]) return k; return null; };
+  picker($('#w-line'), ['', ...LINES], wLineIcon, 'สาย', at('#w-line'));
   hideLabel('#w-type'); hideLabel('#w-line');
   picker($('#clan'), CLANS, () => null, 'ตระกูล', before($('#clan')), true);
   picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'ชื่อ', before($('#p-name')));
@@ -176,7 +180,7 @@ function buildPickers() {
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
   redrawAll();
 }
-fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); });
+fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildPacks(); });
 // ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
 $('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
 
@@ -191,4 +195,62 @@ function payBox(id) {
   const dl = el('a', 'btn', 'บันทึกรูป QR'); dl.href = '/pay-qr.jpg'; dl.download = 'qr-promptpay.jpg';
   box.append(ol, img, el('p', 'warn', 'กรุณาโอนหลังร้านยืนยันราคาแล้วเท่านั้น'), dl);
   return box;
+}
+
+// ===== แพ็กเกจสำเร็จรูป (แก้ชื่อ/รายละเอียด/ราคาได้ที่นี่) =====
+var PACKS = [
+  { id: 'slayer', name: 'สายดาบ End Game', icon: 'Nightfall Katana', price: 'เริ่มต้น 200 บาท',
+    lines: ['Katana Nightfall T3+10', 'ปราณ Mastery 400', 'ชุด Nightfall T3+10'],
+    set: { 'w-type': 'Katana', 'w-line': 'Nightfall', 'w-tier': '3', 'w-plus': '10', 'w-mas': '400', kind: 'breath', 'p-name': 'Water', 'p-mas': '400', 't-line': 'Nightfall', 't-tier': '3', 't-plus': '10' } },
+  { id: 'demon', name: 'สายอสูร End Game', icon: 'Blood Manipulation Orb', price: 'เริ่มต้น 200 บาท',
+    lines: ['Katana Nightfall T3+10', 'มนต์อสูร Mastery 400', 'ชุด Nightfall T3+10'],
+    set: { 'w-type': 'Katana', 'w-line': 'Nightfall', 'w-tier': '3', 'w-plus': '10', 'w-mas': '400', kind: 'demon', 'p-name': 'Blood Manipulation', 'p-mas': '400', 't-line': 'Nightfall', 't-tier': '3', 't-plus': '10' } },
+  { id: 'custom', name: 'ออกแบบเอง', icon: null, price: 'ราคาตามบรีฟ',
+    lines: ['เลือกทุกอย่างเอง', 'หรือเขียนบรีฟอย่างเดียว', 'ร้านประเมินราคาให้'],
+    set: { 'w-type': '', 'w-line': '', 'w-tier': '', 'w-plus': '', 'w-mas': '0', 'p-name': '', 'p-mas': '0', 't-line': '', 't-tier': '', 't-plus': '' } },
+];
+var packSel = null;
+function packName() { const p = (PACKS || []).find((x) => x.id === packSel); return p && p.id !== 'custom' ? p.name : ''; }
+function applyPack(pk) {
+  packSel = pk.id;
+  if (pk.set.kind) { kind = pk.set.kind; document.querySelectorAll('.seg.big button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.k === kind))); setPowerList(); }
+  for (const [k, v] of Object.entries(pk.set)) { if (k === 'kind') continue; const el = $('#' + k); if (el) el.value = v; }
+  $('#same').checked = true; $('#row-bot').hidden = true; $('#lbl-top').textContent = 'เสื้อ + กางเกง';
+  redrawAll(); drawPacks(); drawChips(); update();
+  if (pk.id === 'custom') $('#brief').focus({ preventScroll: true });
+  $('#custom-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast(pk.id === 'custom' ? 'เลือกเองหรือเขียนบรีฟด้านล่างได้เลย' : 'เติมฟอร์มให้แล้ว ปรับแต่งต่อด้านล่างได้');
+}
+let packBox;
+function drawPacks() {
+  packBox.replaceChildren(...PACKS.map((pk) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pack' + (pk.id === 'custom' ? ' custom' : ''); b.setAttribute('aria-pressed', String(packSel === pk.id));
+    const ic = document.createElement('span'); ic.className = 'pack-ic';
+    if (pk.icon && ICONS[pk.icon]) { const im = new Image(); im.src = ICONS[pk.icon]; im.alt = ''; ic.append(im); } else ic.textContent = '✎';
+    const nm = document.createElement('b'); nm.textContent = pk.name;
+    const ul = document.createElement('ul'); for (const l of pk.lines) { const li = document.createElement('li'); li.textContent = l; ul.append(li); }
+    const pr = document.createElement('span'); pr.className = 'pack-pr'; pr.textContent = pk.price;
+    b.append(ic, nm, ul, pr); b.onclick = () => applyPack(pk); return b;
+  }));
+}
+// ระดับ T1-T3 เป็นปุ่มกด (ค่าจริงยังอยู่ใน select เดิม)
+const chipDraws = [];
+function chips(sel) {
+  const el = $(sel), wrap = document.createElement('div'); wrap.className = 'chips'; wrap.setAttribute('role', 'radiogroup');
+  const draw = () => wrap.replaceChildren(...[['', '–'], ['1', 'T1'], ['2', 'T2'], ['3', 'T3']].map(([v, l]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(el.value === v));
+    b.onclick = () => { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); drawChips(); }; return b; }));
+  el.after(wrap); el.hidden = true; chipDraws.push(draw); draw();
+}
+function drawChips() { for (const d of chipDraws) d(); }
+function buildPacks() {
+  const sec = document.createElement('section'); sec.className = 'packs-sec';
+  const h = document.createElement('h2'); h.className = 'packs-h'; h.textContent = 'เลือกแพ็กเกจ';
+  const sub = document.createElement('p'); sub.className = 'packs-sub'; sub.textContent = 'กดแพ็กเกจเพื่อเติมฟอร์มให้อัตโนมัติ แล้วปรับแต่งต่อด้านล่างได้ทุกอย่าง';
+  packBox = document.createElement('div'); packBox.className = 'packs';
+  const ch = document.createElement('h2'); ch.className = 'packs-h'; ch.id = 'custom-head'; ch.textContent = 'ปรับแต่งเพิ่ม';
+  sec.append(h, sub, packBox);
+  const form = $('#of'); $('.ord-main').before(sec); form.prepend(ch);
+  for (const s of ['#w-tier', '#t-tier', '#b-tier']) chips(s);
+  drawPacks();
 }
