@@ -330,7 +330,7 @@ function autoPair(src) {
   const info = $('#w-varinfo');
   if (info) {
     info.hidden = !match; info.replaceChildren();
-    if (match) { const ic = elemIcon(match.v); if (ic) info.append(ic); const t2 = document.createElement('span'); t2.textContent = 'ร่างดาบ: ' + match.label + ' (คู่กับปราณ ' + b + ')' + (match.line ? ' · สาย ' + match.line.join('/') : ''); info.append(t2); }
+    if (match) { let ic; if (ICONS[match.label]) { ic = new Image(); ic.src = ICONS[match.label]; ic.alt = ''; ic.className = 'vimg'; } else ic = elemIcon(match.v); if (ic) info.append(ic); const t2 = document.createElement('span'); t2.textContent = 'ร่างดาบ: ' + match.label + ' (คู่กับปราณ ' + b + ')' + (match.line ? ' · สาย ' + match.line.join('/') : ''); info.append(t2); }
   }
   redrawAll(); showCompat(); update();
 }
