@@ -31,6 +31,9 @@ function tween(el,v){const from=el._v;el._v=v;el.title=full(v)+' Wen';if(from==n
 function oreRate(a){const p=a.hist.filter(x=>x.t>=now()-3600&&x.o!=null);if(p.length<2)return null;const d=p[p.length-1].t-p[0].t;if(d<120)return null;let g=0;for(let i=1;i<p.length;i++)g+=Math.max(0,p[i].o-p[i-1].o);return g/(d/3600)}
 const isLive=s=>s.liveAt!=null&&now()-s.liveAt<50;
 // ไอคอนบอส (หน้ากากอสูรสร้างจากชื่อ แต่ละตัวไม่ซ้ำ)
+function bossPic(name,z){const u=ICONS['boss:'+name];if(u){const im=new Image(z,z);im.src=u;im.alt='';im.className='bossic';return im}return bossIcon(name,z)}
+const BOSS_NAME={"TaiChiTrainee": "Tai Chi Trainee Suzume", "WindTrainee": "Wind Trainee", "MotherBear": "Mother Bear", "InsectTrainee": "Insect Trainee", "SoryuTrainee": "Soryu Trainee Goki", "SoundTrainee": "Sound Trainee", "FlameTrainee": "Flame Trainee", "StoneTrainee": "Stone Trainee", "SerpentTrainee": "Serpent Trainee", "ThunderTrainee": "Thunder Trainee", "ReaperTrainee": "Reaper Trainee Kuzan", "WaterTrainee": "Water Trainee Sabito"};
+const bossName=n=>BOSS_NAME[n]||n;
 function bossIcon(name,z){let k=0;for(const c of name)k=(k*33+c.charCodeAt(0))>>>0;const hue=[0,350,20,280,200,140][k%6],horn=k>>3&1,eye=k>>4&1,NS='http://www.w3.org/2000/svg';
  const svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','-50 -50 100 100');svg.setAttribute('width',z);svg.setAttribute('height',z);svg.setAttribute('aria-hidden','true');svg.classList.add('bossic');
  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const q in a)e.setAttribute(q,a[q]);svg.append(e);return e};
@@ -41,7 +44,7 @@ function bossIcon(name,z){let k=0;for(const c of name)k=(k*33+c.charCodeAt(0))>>
  el('path',{d:'M-12 16 L-6 22 L0 16 L6 22 L12 16',fill:'none',stroke:'#f4ead0','stroke-width':2.5,'stroke-linejoin':'round'});return svg}
 function bossRate(a){const p=a.hist.filter(x=>x.t>=now()-3600&&x.b!=null);if(p.length<2)return null;return Math.max(0,p[p.length-1].b-p[0].b)}
 function power(s){if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},h('b',{},'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},h('b',{},'息'),s.breathing);return null}
-function fight(s,st,big){if(!s.boss||st==='off')return null;return h('span',{class:'fight'+(big?' big':''),title:'บอสที่อยู่ใกล้ตัวละครที่สุด'},bossIcon(s.boss.name,big?26:16),isLive(s)?h('span',{class:'livetag'},'LIVE'):null,'กำลังสู้ ',h('b',{},s.boss.name),s.boss.hp!=null?h('span',{class:'hp'},h('i',{style:`width:${Math.max(0,Math.min(100,s.boss.hp))}%`})):null)}
+function fight(s,st,big){if(!s.boss||st==='off')return null;return h('span',{class:'fight'+(big?' big':''),title:'บอสที่อยู่ใกล้ตัวละครที่สุด'},bossPic(s.boss.name,big?30:18),isLive(s)?h('span',{class:'livetag'},'LIVE'):null,'กำลังสู้ ',h('b',{},bossName(s.boss.name)),s.boss.hp!=null?h('span',{class:'hp'},h('i',{style:`width:${Math.max(0,Math.min(100,s.boss.hp))}%`})):null)}
 function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.get(el.dataset.cd);if(!a)return;const st=stat(a);el.textContent=cdText(a,st);el.classList.toggle('late',st!=='off'&&nextIn(a)<=-30);el.classList.toggle('rj',st==='off'&&!!a.rejoin&&now()-a.rejoin.at<600)});
  const on=[...A.values()].filter(a=>stat(a)!=='off');const el=$('#t-next');if(!el)return;
  if(!on.length){el.textContent='';return}const iv=Math.min(...on.map(a=>a.s.interval||300)),l=Math.min(...on.map(nextIn));

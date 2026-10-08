@@ -83,7 +83,7 @@ $('#send').onclick = async () => {
 
 // ===== ตัวเลือกแบบการ์ดมีรูปไอเทมจากในเกม =====
 const ICON_OF = {
-  Katana: 'Nightfall Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
+  Katana: 'Nightfall Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', Tanto: 'Tanto', 'Bladed Wagasa': 'Bladed Wagasa', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
   Water: 'Water Katana', Flame: 'Flame Katana', Thunder: 'Thunder Katana', Wind: 'Wind Katana', Insect: 'Insect Katana', Stone: 'Stone Haori', Sound: 'Sound Katanas', Mist: 'Mist Kumo Sodenashi', Serpent: 'Serpent Katana', Beast: 'Beast Core',
   'Blood Manipulation': 'Blood Manipulation Orb', Cryokinesis: 'Cryokinesis Orb', Pyrokinesis: 'Pyrokenesis Orb', Shockwave: 'Shockwave Orb', Reaper: 'Reaper Orb',
   Dream: 'Dream Orb', Tamari: 'Tamari Orb', 'Obi Manipulation': 'Obi Manipulation Orb',
