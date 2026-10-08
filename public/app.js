@@ -190,6 +190,10 @@ setInterval(()=>{if(!demo)render()},10000);
 /* ---------- โหมดเซิร์ฟเวอร์ ---------- */
 const VIEW=location.pathname==='/v';let VTOKEN=null;
 let ADMINV=false;
+// โหมดแอดมิน: แถบเมนูเดียวกับหน้า /admin กดสลับในแท็บเดิม
+function adminNav(){if(document.querySelector('.tabs.anav'))return;const n=document.createElement('nav');n.className='tabs anav';n.setAttribute('aria-label','เมนูแอดมิน');
+ for(const[h,l]of[['','ภาพรวมฟาร์ม'],['cust','ลูกค้า'],['ord','ออเดอร์'],['acc','ไอดี'],['ops','แจ้งเตือน'],['bak','สำรองข้อมูล']]){const a=document.createElement('a');a.className='tab-link';a.textContent=l;if(h)a.href='/admin#'+h;else a.setAttribute('aria-current','page');n.append(a)}
+ const m=document.querySelector('main');m.insertBefore(n,m.firstChild)}
 if(VIEW){const hs=location.hash.slice(1);if(/^sfv_[0-9a-f]{48}$/.test(hs))VTOKEN=hs;
  if(hs==='admin'){try{const t=localStorage.getItem('sf_at');if(/^sfa_[0-9a-f]{64}$/.test(t||'')){VTOKEN=t;ADMINV=true}}catch(e){}if(!ADMINV)location.replace('/admin')}
  try{if(ADMINV){}else if(VTOKEN)localStorage.setItem('sf_vt',VTOKEN);else{const t=localStorage.getItem('sf_vt');if(/^sfv_[0-9a-f]{48}$/.test(t||''))VTOKEN=t}}catch(e){}
@@ -200,7 +204,7 @@ async function pull(){try{const r=await fetch(VIEW?'/api/v1/state':'/api/state',
  if(VIEW&&d.expires){const l=$('#lic');l.hidden=false;l.textContent='ใช้งานได้ถึง '+new Date(d.expires*1000).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}
  const off=d.serverTime-now();A.clear();for(const a of d.accounts){if(a&&a.s){a.s.time-=off;a.hist.forEach(x=>x.t-=off);if(a.rejoin)a.rejoin.at-=off;A.set(a.s.name,a)}}
  a_ok();render()}catch(e){$('#mode').textContent='ต่อเซิร์ฟเวอร์ไม่ได้ (ปิดอยู่หรือเปล่า)'}}
-function a_ok(){$('#mode').textContent=A.size?'ข้อมูลสดจากสคริปต์ · '+A.size+' ไอดี':(VIEW?'ยังไม่มีข้อมูลไอดีของคุณ (ผู้ดูแลยังไม่ได้เริ่มรัน หรือยังไม่ได้เพิ่มไอดีให้)':'รอข้อมูลจากสคริปต์... วางสคริปต์ใน executor แล้วรัน')}
+function a_ok(){$('#mode').textContent=A.size?'ข้อมูลสดจากสคริปต์ · '+A.size+' ไอดี':(ADMINV?'ยังไม่มีไอดีส่งข้อมูลเข้ามา รัน OWNER-LOADER ในเกม แล้วกด F9 ดูว่าส่งสำเร็จไหม':VIEW?'ยังไม่มีข้อมูลไอดีของคุณ (ผู้ดูแลยังไม่ได้เริ่มรัน หรือยังไม่ได้เพิ่มไอดีให้)':'รอข้อมูลจากสคริปต์... วางสคริปต์ใน executor แล้วรัน')}
 /* ---------- เข้าสู่ระบบ (หน้าลูกค้า) ---------- */
 function gate(msg){clearInterval(poll);VTOKEN=null;try{localStorage.removeItem('sf_vt')}catch(e){}$('#gate').hidden=false;$('#login-err').textContent=msg||'';setTimeout(()=>$('#login-user').focus(),50)}
 $('#login-form').onsubmit=async e=>{e.preventDefault();const b=$('#login-go');b.disabled=true;$('#login-err').textContent='';
@@ -209,7 +213,7 @@ $('#login-form').onsubmit=async e=>{e.preventDefault();const b=$('#login-go');b.
   VTOKEN=j.token;try{localStorage.setItem('sf_vt',VTOKEN)}catch(x){}$('#login-pass').value='';$('#gate').hidden=true;$('#lo').hidden=false;goLive()}
  catch(x){$('#login-err').textContent='ต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง'}finally{b.disabled=false}};
 $('#lo').onclick=()=>{A.clear();render();$('#lic').hidden=true;$('#lo').hidden=true;gate('')};
-async function goLive(){if(VIEW){if(!VTOKEN){demo=false;clearInterval(timer);A.clear();render();gate('');return true}$('#lo').hidden=ADMINV;if(ADMINV)$('h1').textContent='แดชบอร์ดรวม (แอดมิน)';live=true;demo=false;clearInterval(timer);A.clear();clearInterval(poll);await pull();poll=setInterval(pull,3000);return true}
+async function goLive(){if(VIEW){if(!VTOKEN){demo=false;clearInterval(timer);A.clear();render();gate('');return true}$('#lo').hidden=ADMINV;if(ADMINV){$('h1').textContent='ภาพรวมฟาร์ม';adminNav()}live=true;demo=false;clearInterval(timer);A.clear();clearInterval(poll);await pull();poll=setInterval(pull,3000);return true}
  try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)return false}catch(e){return false}
  live=true;demo=false;clearInterval(timer);A.clear();await pull();poll=setInterval(pull,3000);return true}
 $('#bc').onclick=async()=>{if(!live){alert('ปุ่มนี้ใช้ได้เมื่อเปิดแดชบอร์ดผ่านเซิร์ฟเวอร์ (node server.js) แล้วเข้า http://127.0.0.1:8787');return}

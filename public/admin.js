@@ -36,7 +36,18 @@ function logout(expired) {
   if (expired) $('#login-err').textContent = 'หมดเวลาเข้าสู่ระบบ กรุณาเข้าใหม่';
 }
 $('#logout').onclick = () => logout(false);
-document.querySelectorAll('.tabs button').forEach((b) => (b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', x === b)); document.querySelectorAll('.tabp').forEach((p) => (p.hidden = p.id !== 'tab-' + tab)); render(); }));
+// แท็บ: จำแท็บไว้ใน # ของลิงก์ (/admin#ord) กดย้อนกลับ/รีเฟรชแล้วอยู่แท็บเดิม
+const TABS = ['cust', 'ord', 'acc', 'ops', 'bak'];
+function showTab(t, push) {
+  tab = TABS.includes(t) ? t : 'cust';
+  document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x.dataset.tab === tab)));
+  document.querySelectorAll('.tabp').forEach((p) => (p.hidden = p.id !== 'tab-' + tab));
+  if (push && location.hash !== '#' + tab) history.pushState(null, '', '#' + tab);
+  if (D) render();
+}
+document.querySelectorAll('.tabs button').forEach((b) => (b.onclick = () => showTab(b.dataset.tab, true)));
+window.addEventListener('popstate', () => showTab(location.hash.slice(1)));
+showTab(location.hash.slice(1));
 
 async function load() { D = await api('overview'); render(); }
 function start() { $('#gate').hidden = true; $('#app').hidden = false; load().catch((e) => toast(e.message, true)); clearInterval(start.t); start.t = setInterval(() => { if (!document.hidden && !document.querySelector('.adm-main input:focus, .adm-main textarea:focus')) load().catch(() => {}); }, 15000); }
@@ -137,7 +148,7 @@ function renderOrd() {
         h('label', {}, 'สถานะ', st), h('label', {}, 'ราคา (บาท)', q), h('label', { class: 'wide' }, 'โน้ต', note), h('button', { class: 'btn primary', type: 'submit' }, 'บันทึก')),
       h('div', { class: 'sec danger' }, h('button', { class: 'btn bad', onclick: () => { if (confirm('ลบออเดอร์ ' + o.id + '?')) { open.delete(o.id); act(() => api('order/' + o.id, { method: 'DELETE' }), 'ลบแล้ว'); } } }, 'ลบออเดอร์')));
   });
-  p.replaceChildren(h('div', { class: 'ordbar' }, seg, h('button', { class: 'btn', onclick: () => copy(D.base + '/order', 'ลิงก์หน้าสั่งทำ') }, 'ก๊อปลิงก์หน้าสั่งทำ')),
+  p.replaceChildren(h('div', { class: 'ordbar' }, seg, h('div', { class: 'rowb' }, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), h('button', { class: 'btn', onclick: () => copy(D.base + '/order', 'ลิงก์หน้าสั่งทำ') }, 'ก๊อปลิงก์'))),
     cards.length ? h('div', { class: 'clist' }, cards) : h('p', { class: 'empty' }, all.length ? 'ไม่มีออเดอร์ในตัวกรองนี้' : 'ยังไม่มีออเดอร์ ส่งลิงก์หน้าสั่งทำให้ลูกค้าได้เลย'));
 }
 

@@ -321,7 +321,7 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 @media (max-width:700px){
   .grid3{grid-template-columns:1fr 1fr}.grid3 label:first-child{grid-column:1/-1}
   .arow{grid-template-columns:12px 1fr;row-gap:6px}.arow .al{grid-column:2}.arow select{grid-column:1/-1}
-  .adm-actions{margin-left:0;width:100%}.adm-actions .btn{flex:1}
+  .adm-actions{margin-left:auto}
   .inl{margin-left:0}
 }
 .adm main.adm-main{padding:0;max-width:none;overflow:visible}
@@ -410,3 +410,8 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 .gate-order{justify-self:center;font-size:13px;color:var(--gold);text-decoration:none}.gate-order:hover{text-decoration:underline}
 .ofrm{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 12px;align-items:start}
 .ofrm label{display:grid;gap:6px;font-size:13px;color:var(--mu)}.ofrm .wide{grid-column:1/-1}.ofrm .btn{justify-self:start}
+.tabs a.tab-link{padding:10px 14px;font-size:14px;color:var(--mu);border-bottom:2px solid transparent;white-space:nowrap;text-decoration:none}
+.tabs a.tab-link:hover{color:var(--tx)}.tabs a.tab-link[aria-current=page]{color:var(--tx);border-bottom-color:var(--gold)}
+.tabs a.tab-link:focus-visible{outline:2px solid var(--gold)}
+.tabs.anav{margin-bottom:18px}
+.ordbar .btn{white-space:nowrap}
