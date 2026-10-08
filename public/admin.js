@@ -37,7 +37,7 @@ function logout(expired) {
 }
 $('#logout').onclick = () => logout(false);
 // แท็บ: จำแท็บไว้ใน # ของลิงก์ (/admin#ord) กดย้อนกลับ/รีเฟรชแล้วอยู่แท็บเดิม
-const TABS = ['cust', 'ord', 'acc', 'ops', 'bak'];
+const TABS = ['cust', 'ord', 'sets', 'acc', 'ops', 'bak'];
 function showTab(t, push) {
   tab = TABS.includes(t) ? t : 'cust';
   document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x.dataset.tab === tab)));
@@ -61,7 +61,7 @@ function render() {
   $('#c-acc').textContent = D.seen.length + (un ? ' · ' + un + ' ว่าง' : '');
   const nw = (D.orders || []).filter((o) => o.status === 'ใหม่').length;
   $('#c-ord').textContent = nw ? nw + ' ใหม่' : (D.orders || []).length || '';
-  ({ cust: renderCust, ord: renderOrd, acc: renderAcc, ops: renderOps, bak: renderBak })[tab]();
+  ({ cust: renderCust, ord: renderOrd, sets: renderSets, acc: renderAcc, ops: renderOps, bak: renderBak })[tab]();
 }
 
 function statusOf(c) {
@@ -203,3 +203,44 @@ function renderBak() {
 }
 
 if (TOKEN) start();
+
+// ===== แท็บ เซท: ตั้งเซทสำเร็จรูปที่ลูกค้าเห็นในหน้าสั่งทำ =====
+const S_WEAPONS = ['Katana', 'Gauntlet', 'Sickles', 'Scythe', 'Spear', 'War Fans', 'Bladed Wagasa', 'Axe and Mace', 'Cutlass', 'Tanto'];
+const S_LINES = ['Nightfall', 'Firstlight'];
+const S_BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Mist', 'Serpent', 'Beast', 'Moon', 'Sun'];
+const S_DEMONS = ['Blood Manipulation', 'Cryokinesis', 'Pyrokinesis', 'Shockwave', 'Reaper', 'Dream', 'Tamari', 'Obi Manipulation'];
+let setsDraft = null, setsDirty = false, iconKeys = null;
+function renderSets() {
+  const p = $('#tab-sets');
+  if (!setsDraft || !setsDirty) setsDraft = JSON.parse(JSON.stringify(D.sets || []));
+  if (!iconKeys) { iconKeys = []; fetch('/api/v1/icons').then((r) => r.json()).then((m) => { iconKeys = Object.keys(m).sort(); if (tab === 'sets') renderSets(); }).catch(() => {}); }
+  const dirty = () => { setsDirty = true; const sb = $('#sets-save'); if (sb) sb.disabled = false; };
+  const sel = (list, val, on, first = '— ไม่ระบุ —') => h('select', { class: 'f', onchange: (e) => { on(e.target.value); dirty(); } }, h('option', { value: '' }, first), list.map((x) => h('option', { value: String(Array.isArray(x) ? x[0] : x), selected: String(Array.isArray(x) ? x[0] : x) === String(val ?? '') }, Array.isArray(x) ? x[1] : x)));
+  const tiers = [[1, 'T1'], [2, 'T2'], [3, 'T3']], pluses = Array.from({ length: 11 }, (_, i) => [i, '+' + i]);
+  const num = (v) => (v === '' ? null : Number(v));
+  const cards = setsDraft.map((st, i) => {
+    st.weapon = st.weapon || {}; st.power = st.power || { kind: 'breath' }; st.armor = st.armor || {};
+    const inp = (key, ph, max) => h('input', { class: 'f', value: st[key] || '', placeholder: ph, maxlength: String(max), oninput: (e) => { st[key] = e.target.value; dirty(); } });
+    const kindSel = sel([['breath', 'ปราณ'], ['demon', 'มนต์อสูร']], st.power.kind, (v) => { st.power.kind = v || 'breath'; st.power.name = ''; renderSets(); }, '— เลือก —');
+    const move = (d) => { const j = i + d; if (j < 0 || j >= setsDraft.length) return; [setsDraft[i], setsDraft[j]] = [setsDraft[j], setsDraft[i]]; dirty(); renderSets(); };
+    return h('div', { class: 'card setedit' + (st.hidden ? ' hid' : '') },
+      h('div', { class: 'sethead' }, h('b', {}, (i + 1) + '. ' + (st.name || 'เซทใหม่')),
+        h('div', { class: 'rowb' }, h('button', { class: 'btn', onclick: () => move(-1), 'aria-label': 'เลื่อนขึ้น' }, '↑'), h('button', { class: 'btn', onclick: () => move(1), 'aria-label': 'เลื่อนลง' }, '↓'),
+          h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !st.hidden, onchange: (e) => { st.hidden = !e.target.checked; dirty(); renderSets(); } }), h('span', { class: 'tgk' }), h('span', {}, 'แสดง')),
+          h('button', { class: 'btn bad', onclick: () => { if (confirm('ลบเซท ' + (st.name || '') + '?')) { setsDraft.splice(i, 1); dirty(); renderSets(); } } }, 'ลบ'))),
+      h('div', { class: 'grid3' },
+        h('label', {}, 'ชื่อเซท', inp('name', 'เช่น Akaza', 40)), h('label', {}, 'ราคา (ข้อความ)', inp('price', 'เช่น เริ่มต้น 200 บาท', 40)),
+        h('label', {}, 'รูปเซท', h('input', { class: 'f', value: st.icon || '', placeholder: 'เช่น boss:Akazo หรือ Shockwave Orb', list: 'icon-keys', oninput: (e) => { st.icon = e.target.value; dirty(); } }))),
+      h('label', { class: 'blk' }, 'คำอธิบายสั้น ๆ', inp('note', 'เช่น สายอสูรหมัดหนัก', 120)),
+      h('div', { class: 'setrow' }, h('span', { class: 'lab' }, 'อาวุธ'), sel(S_WEAPONS, st.weapon.type, (v) => (st.weapon.type = v)), sel(S_LINES, st.weapon.line, (v) => (st.weapon.line = v)), sel(tiers, st.weapon.tier, (v) => (st.weapon.tier = num(v))), sel(pluses, st.weapon.plus, (v) => (st.weapon.plus = num(v)))),
+      h('div', { class: 'setrow' }, h('span', { class: 'lab' }, 'พลัง'), kindSel, sel(st.power.kind === 'demon' ? S_DEMONS : S_BREATHS, st.power.name, (v) => (st.power.name = v))),
+      h('div', { class: 'setrow' }, h('span', { class: 'lab' }, 'ชุด'), sel(S_LINES, st.armor.line, (v) => (st.armor.line = v)), sel(tiers, st.armor.tier, (v) => (st.armor.tier = num(v))), sel(pluses, st.armor.plus, (v) => (st.armor.plus = num(v)), 'ตีบวกเสื้อ')));
+  });
+  const save = h('button', { class: 'btn primary', id: 'sets-save', disabled: !setsDirty, onclick: () => act(async () => { await api('sets', { method: 'POST', body: { sets: setsDraft } }); setsDirty = false; }, 'บันทึกเซทแล้ว ลูกค้าเห็นทันที') }, 'บันทึกทั้งหมด');
+  const add = h('button', { class: 'btn', onclick: () => { setsDraft.push({ name: '', price: 'เริ่มต้น 200 บาท', weapon: { line: 'Nightfall', tier: 3, plus: 10 }, power: { kind: 'breath' }, armor: { line: 'Nightfall', tier: 3, plus: 10 } }); dirty(); renderSets(); } }, '+ เพิ่มเซท');
+  p.replaceChildren(
+    h('p', { class: 'note' }, 'เซทที่ลูกค้าเห็นในหน้าสั่งทำ เรียงตามลำดับนี้ แก้แล้วกด "บันทึกทั้งหมด" · ชุด Nightfall หมวก/กางเกงจะถูกจำกัดที่ +3 ให้เอง'),
+    h('datalist', { id: 'icon-keys' }, (iconKeys || []).map((k) => h('option', { value: k }))),
+    h('div', { class: 'clist' }, cards.length ? cards : h('p', { class: 'empty' }, 'ยังไม่มีเซท กด "+ เพิ่มเซท"')),
+    h('div', { class: 'rowb setbar' }, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
+}

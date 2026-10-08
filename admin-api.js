@@ -102,7 +102,7 @@ module.exports = function createAdmin(ctx) {
         version: ctx.version, mode: st.mode === 'key' ? 'key' : 'owner', ownerScript: !!st.ownerHash, base: baseUrl(req),
         customers: Object.entries(all).map(([id, c]) => publicCustomer(id, c, req)).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
         seen, rejoin: ctx.rejoinPublic(), notify: ctx.notifyPublic(), backups: ctx.listBackups().slice(0, 15), serverTime: t,
-        orders: ctx.orders.list().map((o) => Object.assign({ summary: ctx.orders.summary(o) }, o)), orderStatuses: ctx.orders.STATUSES,
+        orders: ctx.orders.list().map((o) => Object.assign({ summary: ctx.orders.summary(o) }, o)), orderStatuses: ctx.orders.STATUSES, sets: ctx.orders.getSets(),
       });
       return true;
     }
@@ -172,6 +172,10 @@ module.exports = function createAdmin(ctx) {
 
     if (p === '/api/v1/admin/rejoin' && req.method === 'POST') {
       json(req, res, (j) => { ctx.setRejoin({ discord: String(j.discord || '') }); send(res, 200, ctx.rejoinPublic()); }); // รีจอยตั้งได้จาก admin.bat เท่านั้น เว็บแก้ได้แค่ Discord
+      return true;
+    }
+    if (p === '/api/v1/admin/sets' && req.method === 'POST') {
+      json(req, res, (j) => send(res, 200, { sets: ctx.orders.saveSets(j.sets) }));
       return true;
     }
     if (p === '/api/v1/admin/notify' && req.method === 'POST') {

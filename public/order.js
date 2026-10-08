@@ -66,7 +66,7 @@ function data() {
 const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus != null ? '+' + x.plus : ''}` : '');
 function text(d) {
   const L = [];
-  if (d.pack) L.push('แพ็กเกจ: ' + d.pack);
+  if (d.pack) L.push('เซท: ' + d.pack);
   if (d.clan) L.push('ตระกูล: ' + d.clan);
   if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.variant ? d.weapon.variant + ' ' + d.weapon.type + ' · ' : d.weapon.type + ' '}${g(d.weapon)}`.trim() + ' · Mastery ตัน');
   if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + ' · Mastery ตัน');
@@ -219,7 +219,7 @@ function buildPickers() {
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
   redrawAll();
 }
-fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildVariant(); buildSet(); });
+fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildVariant(); buildSets(); });
 // ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
 $('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
 
@@ -237,6 +237,7 @@ function payBox(id) {
 }
 
 // ===== แพ็กเกจสำเร็จรูป (แก้ชื่อ/รายละเอียด/ราคาได้ที่นี่) =====
+var chosenSet = null;
 var PACKS = [
   { id: 'slayer', name: 'สายดาบ End Game', icon: 'Nightfall Katana', price: 'เริ่มต้น 200 บาท',
     lines: ['Katana Nightfall T3+10', 'ปราณ Mastery ตัน', 'ชุด Nightfall T3 (เสื้อ +10)'],
@@ -249,7 +250,7 @@ var PACKS = [
     set: { 'w-type': '', 'w-line': '', 'w-tier': '', 'w-plus': '', 'w-mas': '0', 'p-name': '', 'p-mas': '0', 't-line': '', 't-tier': '', 't-plus': '' } },
 ];
 var packSel = null;
-function packName() { const p = (PACKS || []).find((x) => x.id === packSel); return p && p.id !== 'custom' ? p.name : ''; }
+function packName() { if (chosenSet) return chosenSet.name; const p = (PACKS || []).find((x) => x.id === packSel); return p && p.id !== 'custom' ? p.name : ''; }
 function applyPack(pk) {
   packSel = pk.id;
   if (pk.set.kind) { kind = pk.set.kind; document.querySelectorAll('.seg.big button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.k === kind))); setPowerList(); }
@@ -441,4 +442,70 @@ function buildSet() {
   const first = document.querySelector('#of fieldset.og'); first.parentNode.insertBefore(fs, first);
   $('#p-name').value = ''; setDefaults(); autoPair('init');
   $('#of').addEventListener('change', () => drawSet()); drawSet();
+}
+
+// ===== เลือกเซทสำเร็จรูป (ร้านตั้งเซทเองในหน้าแอดมิน แท็บ เซท) =====
+let SETS = [];
+const gtxt = (w) => (w && w.line ? `${w.line}${w.tier ? ' T' + w.tier : ''}${w.plus != null ? '+' + w.plus : ''}` : '');
+function setIcon(st) {
+  const k = st.icon && ICONS[st.icon] ? st.icon : st.weapon && ICON_OF[st.weapon.type] && ICONS[ICON_OF[st.weapon.type]] ? ICON_OF[st.weapon.type] : st.power && ICON_OF[st.power.name] ? ICON_OF[st.power.name] : null;
+  const f = document.createElement('span'); f.className = 'set-ic';
+  if (k && ICONS[k]) { const im = new Image(); im.src = ICONS[k]; im.alt = ''; f.append(im); } else f.textContent = (st.name || '?')[0];
+  return f;
+}
+function miniIcon(name) { const f = document.createElement('span'); f.className = 'mi'; if (name && ICONS[name]) { const im = new Image(); im.src = ICONS[name]; im.alt = ''; f.append(im); } return f; }
+function applySet(st) {
+  chosenSet = st;
+  const w = st.weapon || {}, a = st.armor || {}, pw = st.power || {};
+  $('#w-type').value = w.type || ''; $('#w-line').value = w.line || ''; $('#w-tier').value = w.tier != null ? String(w.tier) : ''; $('#w-plus').value = w.plus != null ? String(w.plus) : '';
+  kind = pw.kind === 'demon' ? 'demon' : 'breath'; document.querySelectorAll('.seg.big button[data-k]').forEach((y) => y.setAttribute('aria-pressed', String(y.dataset.k === kind))); setPowerList();
+  $('#p-name').value = pw.name || '';
+  $('#same').checked = true; $('#t-line').value = a.line || w.line || ''; $('#t-tier').value = a.tier != null ? String(a.tier) : ''; $('#t-plus').value = a.plus != null ? String(a.plus) : '';
+  armorSync(); drawChips(); if (varEl()) { const list = VARIANTS[$('#w-type').value] || []; varEl().replaceChildren(...list.map((x) => new Option(x.label, x.v))); }
+  autoPair('set'); drawSets(); update();
+  toast('เลือกเซท ' + st.name + ' แล้ว');
+}
+function clearSet() {
+  chosenSet = null; for (const id of ['#w-type', '#w-line', '#w-tier', '#w-plus', '#p-name', '#t-line', '#t-tier', '#t-plus']) $(id).value = '';
+  armorSync(); drawChips(); autoPair('clear'); drawSets(); update();
+  document.body.classList.add('show-adv'); $('#brief').scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('เลือกเองด้านล่าง หรือเขียนบรีฟบอกร้านได้เลย');
+}
+let setsGrid;
+function drawSets() {
+  if (!setsGrid) return;
+  const cards = SETS.map((st) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'setc'; b.setAttribute('aria-pressed', String(chosenSet && chosenSet.id === st.id));
+    const top = document.createElement('div'); top.className = 'setc-top';
+    const nm = document.createElement('b'); nm.className = 'setc-n'; nm.textContent = st.name;
+    const note = document.createElement('small'); note.className = 'setc-note'; note.textContent = st.note || '';
+    const nt = document.createElement('div'); nt.append(nm, note); top.append(setIcon(st), nt);
+    const ul = document.createElement('ul'); ul.className = 'setc-l';
+    const li = (iconName, txt) => { const x = document.createElement('li'); x.append(miniIcon(iconName)); const t = document.createElement('span'); t.textContent = txt; x.append(t); ul.append(x); };
+    const w = st.weapon || {}, pw = st.power || {}, a = st.armor || {};
+    if (w.type) li(ICON_OF[w.type], `${w.type} ${gtxt(w)}`.trim());
+    if (pw.name) li(pw.kind === 'demon' ? ICON_OF[pw.name] : ICON_OF[pw.name], (pw.kind === 'demon' ? 'มนต์อสูร ' : 'ปราณ ') + pw.name);
+    if (a.line) li(a.line + ' Mask', 'ชุด ' + gtxt(a));
+    li(null, 'Mastery ตันทุกอย่าง');
+    const pr = document.createElement('span'); pr.className = 'setc-p'; pr.textContent = st.price || '';
+    const pick = document.createElement('span'); pick.className = 'setc-go'; pick.textContent = chosenSet && chosenSet.id === st.id ? '✓ เลือกแล้ว' : 'เลือกเซทนี้';
+    const foot = document.createElement('div'); foot.className = 'setc-f'; foot.append(pr, pick);
+    b.append(top, ul, foot); b.onclick = () => applySet(st); return b;
+  });
+  const own = document.createElement('button'); own.type = 'button'; own.className = 'setc own'; own.setAttribute('aria-pressed', String(!chosenSet && document.body.classList.contains('show-adv')));
+  own.innerHTML = '<span class="set-ic">✎</span><b class="setc-n">ไม่มีเซทที่ใช่?</b><small class="setc-note">เลือกเองหรือเขียนบรีฟ ร้านประเมินราคาให้</small><span class="setc-go">สั่งแบบอื่น</span>';
+  own.onclick = clearSet;
+  setsGrid.replaceChildren(...cards, own);
+}
+async function buildSets() {
+  try { const r = await fetch('/api/v1/sets'); SETS = r.ok ? await r.json() : []; } catch (e) { SETS = []; }
+  const fs = document.createElement('fieldset'); fs.className = 'og setsf';
+  const lg = document.createElement('legend'); lg.innerHTML = '<span class="on">1</span>เลือกเซท';
+  const sub = document.createElement('p'); sub.className = 'packs-sub'; sub.textContent = 'กดเซทเดียวจบ ร้านจัดให้ครบตามเซท อยากเพิ่มอะไรเขียนในบรีฟได้';
+  setsGrid = document.createElement('div'); setsGrid.className = 'sets';
+  fs.append(lg, sub, setsGrid);
+  const first = document.querySelector('#of fieldset.og'); first.parentNode.insertBefore(fs, first);
+  for (const id of ['#w-type', '#w-line', '#w-tier', '#w-plus', '#p-name', '#t-line', '#t-tier', '#t-plus']) $(id).value = '';
+  armorSync(); drawChips(); autoPair('init'); drawSets(); update();
+  // แก้ค่าเองในส่วนปรับละเอียด = ไม่ใช่เซทเดิมแล้ว
+  $('#of').addEventListener('change', (e) => { if (chosenSet && e.target && e.target.closest('.og.adv') && e.isTrusted) { chosenSet = Object.assign({}, chosenSet, { name: chosenSet.name + ' (ปรับเอง)' }); update(); } });
 }

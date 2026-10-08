@@ -50,7 +50,29 @@ module.exports = function createOrders(ctx) {
     return L.join('\n');
   };
 
+  // ===== เซทสำเร็จรูป (ร้านตั้งเองในหน้าแอดมิน แท็บ เซท) =====
+  const SETS_FILE = path.join(ctx.DATA_DIR, 'sets.json');
+  const DEFAULT_SETS = [
+    { id: 'akaza', name: 'Akaza', icon: 'boss:Akazo', price: 'เริ่มต้น 200 บาท', note: 'สายอสูรหมัดหนัก',
+      weapon: { type: 'Gauntlet', line: 'Nightfall', tier: 3, plus: 10 }, power: { kind: 'demon', name: 'Shockwave' },
+      armor: { line: 'Nightfall', tier: 3, plus: 10 } },
+  ];
+  let sets = DEFAULT_SETS; try { const x = JSON.parse(fs.readFileSync(SETS_FILE, 'utf8')); if (Array.isArray(x)) sets = x; } catch (e) {}
+  const gearS = (g) => (g && typeof g === 'object' ? { type: str(g.type, 40), line: str(g.line, 30), tier: int(g.tier, 0, 9), plus: int(g.plus, 0, 30) } : null);
+  function cleanSet(x, i) {
+    if (!x || typeof x !== 'object') throw new Error('ข้อมูลเซทไม่ถูกต้อง');
+    const name = str(x.name, 40); if (!name) throw new Error('เซทที่ ' + (i + 1) + ' ยังไม่มีชื่อ');
+    return { id: (str(x.id, 40).replace(/[^a-z0-9_-]/gi, '') || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30) || 'set' + i) + '',
+      name, icon: str(x.icon, 80), price: str(x.price, 40), note: str(x.note, 120), hidden: !!x.hidden,
+      weapon: gearS(x.weapon), power: x.power && typeof x.power === 'object' ? { kind: x.power.kind === 'demon' ? 'demon' : 'breath', name: str(x.power.name, 40) } : null,
+      armor: gearS(x.armor) };
+  }
+
   function handle(req, res, url, ip) {
+    if (url.pathname === '/api/v1/sets' && req.method === 'GET') {
+      if (!ctx.rate('sets:' + ip, 60)) { ctx.send(res, 429, { error: 'rate limited' }); return true; }
+      ctx.send(res, 200, sets.filter((x) => !x.hidden)); return true;
+    }
     if (url.pathname !== '/api/v1/order' || req.method !== 'POST') return false;
     if (!ctx.rate('order:' + ip, 3) || !ctx.rate('orders', 30)) {
       ctx.send(res, 429, { error: 'ส่งบ่อยเกินไป รอสักครู่แล้วลองใหม่' }); return true;
@@ -77,6 +99,8 @@ module.exports = function createOrders(ctx) {
 
   return {
     handle, summary, STATUSES,
+    getSets: () => sets,
+    saveSets: (arr) => { if (!Array.isArray(arr) || arr.length > 40) throw new Error('จำนวนเซทไม่ถูกต้อง (สูงสุด 40)'); const next = arr.map(cleanSet); const t = SETS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(next, null, 1)); fs.renameSync(t, SETS_FILE); sets = next; return sets; },
     list: () => orders.slice(0, 1000),
     update: (id, j) => {
       const o = orders.find((x) => x.id === id); if (!o) throw new Error('ไม่พบออเดอร์');
