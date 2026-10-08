@@ -248,7 +248,7 @@ const notify = require('./notify.js')({
   DATA_DIR, now, pool: () => accounts[OWNER] || {}, customers: () => { loadCustomers(); return cust.all; },
   ownerWebhook: () => rejoinCfg().discordWebhook, mode: () => settings.mode,
 });
-const withRejoin = (n, a) => { const r = rjState.get(n); return r && r.n ? Object.assign({}, a, { rejoin: { at: r.at, n: r.n } }) : a; };
+const withRejoin = (n, a) => { const r = rjState.get(n), g = orders && orders.goalOf(n); if (!(r && r.n) && !g) return a; const o = Object.assign({}, a); if (r && r.n) o.rejoin = { at: r.at, n: r.n }; if (g) o.goal = g; return o; };
 
 // ---------- ตอบกลับ ----------
 function send(res, code, body, type = 'application/json; charset=utf-8', extra = {}) {

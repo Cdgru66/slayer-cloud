@@ -598,3 +598,39 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .clan-tip{margin:0;font-size:13px;color:var(--gold-hi)}
 .clanjump{order:-1}
 @media (prefers-reduced-motion:reduce){.og.needs{animation:none}}
+/* เป้าหมาย (แอดมิน) */
+.gbar{height:8px;border-radius:6px;background:rgba(241,233,221,.08);overflow:hidden;margin:4px 0 10px}.gbar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .4s}
+.glist{display:grid;gap:8px;margin-bottom:10px}
+.gi{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.gi .gl{min-width:140px;font-size:13.5px}.gi .num{width:90px}.gi select{max-width:200px}
+/* ===== ความคืบหน้าออเดอร์ (ลูกค้า) ===== */
+.goals{margin-bottom:18px}
+.gh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}.gh h2{font:600 18px var(--serif);margin:0}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}.gcards:has(>.gcard:only-child){grid-template-columns:minmax(0,620px)}
+.gcard{cursor:pointer;display:grid;gap:12px;padding:16px;border-radius:16px;background:radial-gradient(120% 140% at 0 0,rgba(226,182,92,.12),transparent 55%),linear-gradient(180deg,var(--lac2),#170f11);box-shadow:inset 0 0 0 1px rgba(226,182,92,.35);transition:transform .15s,box-shadow .15s}
+.gcard:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px var(--gold),0 14px 30px -16px rgba(226,182,92,.6)}
+.gcard:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.gcard.fin{box-shadow:inset 0 0 0 1.5px var(--ok)}
+.gc-top{display:flex;align-items:center;gap:14px}.gc-t{display:grid;gap:3px;min-width:0}.gc-t>b{font:600 18px var(--serif)}
+.gc-st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mu)}
+.ring{flex:none}.ring .rb{fill:none;stroke:rgba(241,233,221,.08);stroke-width:7}
+.ring .rf{fill:none;stroke:var(--gold);stroke-width:7;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease}
+.gcard.fin .ring .rf{stroke:var(--ok)}
+.ring .rt{fill:var(--gold-hi);font:700 19px var(--serif);text-anchor:middle;dominant-baseline:central}
+.goall{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.goall li{display:grid;grid-template-columns:16px minmax(0,1fr) auto;column-gap:8px;row-gap:4px;align-items:center;font-size:13px}
+.goall .gk{color:var(--ok);font-size:12px}.goall li:not(.done) .gk{color:var(--dim)}
+.goall .gn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.goall .gv{color:var(--mu);font-variant-numeric:tabular-nums;font-size:12.5px}
+.goall li.done .gn{color:var(--mu)}
+.goall .gb{grid-column:2/-1;height:5px;border-radius:4px;background:rgba(241,233,221,.07);overflow:hidden}.goall .gb i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .6s}
+.goall li.done .gb i{background:var(--ok)}
+.gc-more{justify-self:end;font-size:12.5px;color:var(--gold-hi)}
+.gpill{font-size:11px;padding:1px 7px;border-radius:999px;color:var(--gold-hi);background:rgba(226,182,92,.12);box-shadow:inset 0 0 0 1px rgba(226,182,92,.35);white-space:nowrap}
+.dgoal{margin-top:14px;display:grid;gap:12px;padding:14px;border-radius:14px;background:rgba(226,182,92,.06);box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
+.dgoal b{font:600 16px var(--serif);display:block}
+/* แถวไอดีกดดูรายละเอียดได้ */
+.row{position:relative}.row::after{content:"ดูรายละเอียด ›";position:absolute;right:16px;bottom:6px;font-size:11px;color:var(--gold-hi);opacity:0;transition:opacity .15s}
+.row:hover::after,.row:focus-visible::after{opacity:.9}
+@media (hover:none){.row::after{content:"›";opacity:.6;bottom:auto;top:50%;transform:translateY(-50%);right:10px;font-size:18px}}
+@media (max-width:560px){.gcards{grid-template-columns:minmax(0,1fr)}}
+
+.goall{text-align:left}.goall li .gn{justify-self:start}

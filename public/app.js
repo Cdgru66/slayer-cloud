@@ -64,7 +64,8 @@ function bar(r){return h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Ma
 const NAMES=['Cullipoper22535','Mincepaetz7297','Blopcoco22','Bryanzen884','Covertail51','Cubmoon3320','Cuyrox191','Dashiel7788','Emberkit42','Frostgale906','Gyoreiii77','Hanabi2201','Inosukex14','Zenitsuv88'];
 function mk(i){const r=Math.random,n=x=>Math.round(r()*x),it=(a,b)=>({name:a,amount:b,delta:0});
 return{name:NAMES[i],display:NAMES[i].replace(/\d+$/,''),userId:1e9+i,time:now(),interval:120,boss:i%3?{name:['Akazo','Gyorei','Zuko','Enru','Rengu'][i%5],hp:20+n(80),dist:30}:undefined,level:[225,225,225,225,225,225,191,59,225,225,191,225,200,225][i],slayerRank:'Mizunoto',demonRank:'Thrall',clan:['Tomioka','Kamado','Agatsuma'][i%3],race:i%4===1?'Demon':'Human',breathing:i%4===1?undefined:['Water','Flame','Thunder'][i%3],demonArt:i%4===1?['Blood Whip','Frost Lotus','Thread Weaver'][i%3]:undefined,fightingStyle:i%2?'Gauntlet':undefined,wen:200000+n(600000),expCurrent:n(13500),expGoal:13500,skillPoints:n(30),reputation:-n(9000),stamina:700,hp:1801,maxHp:1801,progress:{kills:n(4000),boss_kills:n(1200),deaths:n(900),chests:n(800),quests:n(460),tower_floor:n(60)},mastery:{Water:{current:3940,goal:5220},Sword:{current:1931,goal:6990},Fist:{current:90,goal:270},Spear:{current:1033,goal:1980}},items:[it('Ore',n(30)),it('Refinement Ore',n(8000)),it('Coin',n(40)),it('Coin Stack',n(8)),it('Coin Pile',n(6)),it('Coin Pouch',n(4)),it('Metal Scraps',n(5000)),it('Silk Thread',n(5000)),it('Beast Core',n(60)),it('Demon Horns',n(50)),it('Health Potion',n(250)),{...it('Water Katana',1),equipped:i%2===0},it('Cutlass',1),{...it('Masquerade Mask',1),equipped:true},it('Kasumi Yukata',2),{...it('Prayer of wind Necklace',1),equipped:true},it('Nightfall Scythe Schematic',1),it('Demonic Lantern',n(3))]}}
-function seed(){A.clear();DS=NAMES.map((_,i)=>mk(i));DS.forEach((s,i)=>{s.days={};for(let k=13;k>=0;k--){const g=40000+Math.random()*90000*(i%3+1)|0;s.days[dkey(now()-k*86400)]={w0:0,w1:k===0?g*.4|0:g,b0:0,b1:(Math.random()*60|0),k0:0,k1:(Math.random()*900|0),l0:0,l1:k%5===0?1:0}}});DS.forEach((s,i)=>{s._m=i<8?'on':i===10?'stuck':'off';const b=s.wen;const ph=Math.random()*110;for(let k=30;k>=0;k--)upsert({...s,days:s.days,time:now()-ph-k*120-(s._m==='off'?3600:0),wen:s._m==='on'?b-k*180:b,progress:{...s.progress,boss_kills:s.progress.boss_kills-(s._m==='on'?k:0)}});s.time=now()-ph})}
+function seed(){A.clear();DS=NAMES.map((_,i)=>mk(i));DS.forEach((s,i)=>{s.days={};for(let k=13;k>=0;k--){const g=40000+Math.random()*90000*(i%3+1)|0;s.days[dkey(now()-k*86400)]={w0:0,w1:k===0?g*.4|0:g,b0:0,b1:(Math.random()*60|0),k0:0,k1:(Math.random()*900|0),l0:0,l1:k%5===0?1:0}}});DS.forEach((s,i)=>{s._m=i<8?'on':i===10?'stuck':'off';const b=s.wen;const ph=Math.random()*110;for(let k=30;k>=0;k--)upsert({...s,days:s.days,time:now()-ph-k*120-(s._m==='off'?3600:0),wen:s._m==='on'?b-k*180:b,progress:{...s.progress,boss_kills:s.progress.boss_kills-(s._m==='on'?k:0)}});s.time=now()-ph});
+ {const g0=A.get(NAMES[0]),g1=A.get(NAMES[1]);if(g0)g0.goal={title:'เซท Giyu',items:[{k:'mastery',label:'Mastery Katana',key:'Sword',target:6990},{k:'mastery',label:'Mastery Water',key:'Water',target:5220},{k:'manual',label:'ได้อาวุธ Tidal Katana Nightfall T3+10',done:true},{k:'manual',label:'ได้ชุด Nightfall T3+10',done:false}]};if(g1)g1.goal={title:'เซท Akaza',items:[{k:'mastery',label:'Mastery Gauntlet',key:'Fist',target:270},{k:'level',label:'เลเวล',target:225},{k:'manual',label:'ตระกูล Kamado',done:true}]}}}
 function tick(){DS.forEach(s=>{if(s._m==='off'||now()-s.time<s.interval)return;s.progress.boss_kills++;if(s._m==='on'){s.liveAt=now();s.items[0].amount+=Math.random()*3|0;s.wen+=5+Math.random()*5|0;const d=Math.random()*30|0;s.items[1].amount+=d;s.items[1].delta=d}s.time=now();upsert({...s})});render()}
 function startDemo(){demo=true;clearInterval(poll);seed();clearInterval(timer);timer=setInterval(tick,5000);$('#mode').textContent='โหมดตัวอย่าง: ข้อมูลสุ่มเพื่อดูหน้าตา';render()}
 
@@ -84,9 +85,25 @@ $('#bd').onclick=startDemo;
 /* ---------- แสดงผล ---------- */
 function resRow(name,label,total,url,z,cls){return h('div',{class:'ri'+(cls?' '+cls:'')},ico(name,url,z),h('span',{class:'nm'},label),h('span',{class:'v',title:full(total)},cm(total)))}
 function lvSeal(s){const L=s.level;return h('div',{class:'lv'+(L>=225?' max':''),title:'เลเวล '+(L??'–')},h('small',{},'Lv'),h('b',{},L??'–'))}
+// ===== ความคืบหน้าตามเป้าหมายของออเดอร์ (คำนวณจากข้อมูลสดของไอดี) =====
+function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;const s=a.s,m=s.mastery||{};
+ return g.items.map(it=>{if(it.k==='mastery'){const cur=Number(m[it.key]&&m[it.key].current)||0,t=it.target||400;return{label:it.label||('Mastery '+it.key),cur,t,f:Math.min(1,cur/t),txt:cm(Math.min(cur,t))+' / '+cm(t)}}
+  if(it.k==='level'){const cur=Number(s.level)||0,t=it.target||1;return{label:it.label||'เลเวล',cur,t,f:Math.min(1,cur/t),txt:cur+' / '+t}}
+  return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true}})}
+function goalPct(a){const p=goalParts(a);return p?Math.round(p.reduce((t,x)=>t+x.f,0)/p.length*100):null}
+function ring(pct,z){const NS='http://www.w3.org/2000/svg',r=(z-8)/2,c=2*Math.PI*r,svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${z} ${z}`);svg.setAttribute('width',z);svg.setAttribute('height',z);svg.classList.add('ring');
+ const mk=(cls,dash)=>{const e=document.createElementNS(NS,'circle');e.setAttribute('cx',z/2);e.setAttribute('cy',z/2);e.setAttribute('r',r);e.setAttribute('class',cls);if(dash!=null){e.setAttribute('stroke-dasharray',c);e.setAttribute('stroke-dashoffset',c*(1-dash))}svg.append(e)};
+ mk('rb');mk('rf',pct/100);const t=document.createElementNS(NS,'text');t.setAttribute('x','50%');t.setAttribute('y','50%');t.setAttribute('class','rt');t.textContent=pct+'%';svg.append(t);return svg}
+function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),x.manual?null:h('span',{class:'gb'},h('i',{style:`width:${Math.round(x.f*100)}%`})))))}
+function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=>x.a.goal&&x.a.goal.items&&x.a.goal.items.length);box.hidden=!G.length;if(!G.length){box.replaceChildren();return}
+ box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
+  return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},
+   h('div',{class:'gc-top'},ring(pct,92),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
+   goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
 function render(){
  const L=[...A.values()].map(a=>({a,st:stat(a)})),c={all:L.length,on:0,stuck:0,off:0};L.forEach(x=>c[x.st]++);
  for(const k in c)$('#n-'+k).textContent=c[k];
+ renderGoals(L);
  const sum=f=>L.reduce((t,x)=>t+(f(x.a)||0),0),firstIcon=n=>{for(const x of L){const u=iconOf(itm(x.a,n));if(u)return u}return ICONS[n]};
  $('#t-on').textContent=(c.on+c.stuck)+' / '+c.all;
  const tw=sum(a=>a.s.wen);tween($('#t-wen'),tw);$('#t-wen').title=full(tw)+' Wen';
@@ -104,7 +121,7 @@ function render(){
   const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),coinT=COINS.reduce((t,n)=>t+amt(a,n),0);
   return h('div',{class:'row'+(st==='off'?' off':''),tabindex:'0',role:'button','aria-label':(s.display||s.name)+' เลเวล '+(s.level??'–'),onclick:()=>show(s.name),onkeydown:ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show(s.name)}}},
    lvSeal(s),
-   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st)),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
+   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
    h('div',{class:'c wen-c',title:full(s.wen)+' Wen'},cm(s.wen)),
    h('div',{class:'c ore-c',title:full(oreV)},cm(oreV),(()=>{const q=oreRate(a);return q>0?h('small',{class:'orr'},'+'+cm(q)+'/ชม.'):null})()),
    h('div',{class:'c ore-c ref-c',title:full(refV)},cm(refV)),
@@ -196,6 +213,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
  d.replaceChildren(h('button',{class:'btn x',onclick:hide,'aria-label':'ปิด'},'ปิด'),
   h('div',{class:'dh'},lvSeal(s),h('div',{},h('h2',{},s.display||s.name),h('p',{class:'us'},s.name+(s.userId?'  ·  ID '+s.userId:'')))),
   h('p',{style:'margin-top:14px'},h('span',{class:'pill',style:'--c:'+ST[st][1]},h('i',{class:'dot',style:'--c:'+ST[st][1]}),ST[st][0]+' · อัปเดตเมื่อ '+ago(now()-s.time)+'ที่แล้ว'),' ',h('span',{class:'pill cdp','data-cd':s.name,style:'--c:var(--mu)'},cdText(a,st))),
+  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),76),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a)+'%'))),goalList(a,false)):null,
   fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):null,
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),

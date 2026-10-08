@@ -264,6 +264,31 @@ module.exports = function createOrders(ctx) {
       armor: gearS(x.armor) };
   }
 
+  // ===== เป้าหมายของไอดี (ผูกกับออเดอร์) ใช้คำนวณ % ความคืบหน้าแบบเรียลไทม์ =====
+  const GOALS_FILE = path.join(ctx.DATA_DIR, 'goals.json');
+  let goals = Object.create(null); try { Object.assign(goals, JSON.parse(fs.readFileSync(GOALS_FILE, 'utf8'))); } catch (e) {}
+  const saveGoals = () => { const t = GOALS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(goals, null, 1)); fs.renameSync(t, GOALS_FILE); };
+  const gkey = (n) => String(n || '').toLowerCase();
+  function cleanGoal(j) {
+    const items = (Array.isArray(j.items) ? j.items : []).slice(0, 20).map((x) => {
+      const k = ['mastery', 'level', 'manual'].includes(x && x.k) ? x.k : 'manual';
+      return { k, label: str(x.label, 80), key: str(x.key, 40), target: k === 'manual' ? null : int(x.target, 1, 100000), done: !!x.done };
+    }).filter((x) => x.label || x.key);
+    return { title: str(j.title, 80), order: str(j.order, 20), items, created: Math.floor(ctx.now()) };
+  }
+  // สร้างเป้าหมายจากออเดอร์: Mastery ของอาวุธและพลัง (จับคู่กับชื่อใน Mastery ของไอดี) + รายการให้ติ๊กเอง
+  function goalFromOrder(o, masteryKeys) {
+    const find = (...names) => { for (const n of names) { if (!n) continue; const k = masteryKeys.find((m) => m.toLowerCase() === n.toLowerCase()) || masteryKeys.find((m) => m.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(m.toLowerCase())); if (k) return k; } return names.find(Boolean) || ''; };
+    const items = [];
+    if (o.weapon && o.weapon.type) items.push({ k: 'mastery', label: 'Mastery ' + o.weapon.type, key: find(o.weapon.type, o.weapon.type === 'Katana' ? 'Sword' : '', o.weapon.type === 'Gauntlet' ? 'Fist' : ''), target: 400 });
+    if (o.power && o.power.name) items.push({ k: 'mastery', label: 'Mastery ' + o.power.name, key: find(o.power.name), target: 400 });
+    const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus != null ? '+' + x.plus : ''}` : '');
+    if (o.weapon && o.weapon.type) items.push({ k: 'manual', label: `ได้อาวุธ ${o.weapon.variant ? o.weapon.variant + ' ' : ''}${o.weapon.type} ${g(o.weapon)}`.trim() });
+    if (o.top && o.top.line) items.push({ k: 'manual', label: 'ได้ชุด ' + g(o.top) + (o.bottom && o.bottom.plus != null && o.bottom.plus !== o.top.plus ? ' (หมวก/กางเกง +' + o.bottom.plus + ')' : '') });
+    if (o.clan) items.push({ k: 'manual', label: 'ตระกูล ' + o.clan });
+    return cleanGoal({ title: o.pack ? 'เซท ' + o.pack : 'ออเดอร์ ' + o.id, order: o.id, items });
+  }
+
   function handle(req, res, url, ip) {
     if (url.pathname === '/api/v1/sets' && req.method === 'GET') {
       if (!ctx.rate('sets:' + ip, 60)) { ctx.send(res, 429, { error: 'rate limited' }); return true; }
@@ -296,6 +321,11 @@ module.exports = function createOrders(ctx) {
 
   return {
     handle, summary, STATUSES,
+    goalOf: (name) => goals[gkey(name)] || null,
+    allGoals: () => goals,
+    setGoal: (name, j) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); goals[gkey(name)] = cleanGoal(j); saveGoals(); return goals[gkey(name)]; },
+    delGoal: (name) => { delete goals[gkey(name)]; saveGoals(); },
+    linkOrder: (id, name, masteryKeys) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); const o = orders.find((x) => x.id === id); if (!o) throw new Error('ไม่พบออเดอร์'); goals[gkey(name)] = goalFromOrder(o, masteryKeys || []); o.account = name; save(); saveGoals(); return goals[gkey(name)]; },
     getSets: () => sets, defaultSets: () => DEFAULT_SETS,
     saveSets: (arr) => { if (!Array.isArray(arr) || arr.length > 40) throw new Error('จำนวนเซทไม่ถูกต้อง (สูงสุด 40)'); const next = arr.map(cleanSet); const t = SETS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(next, null, 1)); fs.renameSync(t, SETS_FILE); sets = next; return sets; },
     list: () => orders.slice(0, 1000),

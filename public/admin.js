@@ -146,6 +146,7 @@ function renderOrd() {
       h('div', { class: 'sec' }, h('h4', {}, 'ติดต่อกลับ'), h('div', { class: 'rowb' }, h('span', { class: 'chip2 on' }, (VIA[o.contact.via] || '') + ': ' + o.contact.handle), h('button', { class: 'btn', onclick: () => copy(o.contact.handle, 'ช่องทางติดต่อ') }, 'ก๊อป'), h('button', { class: 'btn', onclick: () => copy(o.id + '\n' + (o.summary || ''), 'รายละเอียดออเดอร์') }, 'ก๊อปรายละเอียด'))),
       h('form', { class: 'sec ofrm', onsubmit: (e) => { e.preventDefault(); act(() => api('order/' + o.id, { method: 'POST', body: { status: st.value, quote: q.value, note: note.value } }), 'บันทึกออเดอร์แล้ว'); } },
         h('label', {}, 'สถานะ', st), h('label', {}, 'ราคา (บาท)', q), h('label', { class: 'wide' }, 'โน้ต', note), h('button', { class: 'btn primary', type: 'submit' }, 'บันทึก')),
+      goalSec(o),
       h('div', { class: 'sec danger' }, h('button', { class: 'btn bad', onclick: () => { if (confirm('ลบออเดอร์ ' + o.id + '?')) { open.delete(o.id); act(() => api('order/' + o.id, { method: 'DELETE' }), 'ลบแล้ว'); } } }, 'ลบออเดอร์')));
   });
   p.replaceChildren(h('div', { class: 'ordbar' }, seg, h('div', { class: 'rowb' }, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), h('button', { class: 'btn', onclick: () => copy(D.base + '/order', 'ลิงก์หน้าสั่งทำ') }, 'ก๊อปลิงก์'))),
@@ -246,4 +247,43 @@ function renderSets() {
     h('datalist', { id: 'icon-keys' }, (iconKeys || []).map((k) => h('option', { value: k }))),
     h('div', { class: 'clist' }, cards.length ? cards : h('p', { class: 'empty' }, 'ยังไม่มีเซท กด "+ เพิ่มเซท"')),
     h('div', { class: 'rowb setbar' }, reset, addDef, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
+}
+
+// ===== ติดตามความคืบหน้า: ผูกออเดอร์กับไอดี แล้วแก้เป้าหมายได้ =====
+function goalPct(goal, seenAcc) {
+  if (!goal || !goal.items || !goal.items.length) return null;
+  const m = (seenAcc && seenAcc.mastery) || {};
+  const parts = goal.items.map((it) => it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
+  return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length * 100);
+}
+const goalDraft = {};
+function goalSec(o) {
+  const acc = o.account && D.seen.find((x) => x.name.toLowerCase() === o.account.toLowerCase());
+  if (!o.account) {
+    const sel = h('select', { class: 'f' }, h('option', { value: '' }, '— เลือกไอดีที่ทำออเดอร์นี้ —'), D.seen.map((x) => h('option', { value: x.name, selected: o.roblox && x.name.toLowerCase() === o.roblox.toLowerCase() }, x.name + (x.goal ? ' (มีเป้าหมายอยู่แล้ว)' : ''))));
+    return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'ผูกออเดอร์กับไอดีที่กำลังทำ ระบบจะคำนวณ % ความคืบหน้าให้ลูกค้าเห็นแบบเรียลไทม์'),
+      h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
+  }
+  const g = goalDraft[o.id] || (goalDraft[o.id] = JSON.parse(JSON.stringify((acc && acc.goal) || { title: '', items: [] })));
+  const keys = Object.keys((acc && acc.mastery) || {});
+  const pct = goalPct(g, acc);
+  const rows = g.items.map((it, i) => {
+    const del = h('button', { class: 'btn', 'aria-label': 'ลบ', onclick: () => { g.items.splice(i, 1); render(); } }, '✕');
+    if (it.k === 'manual') return h('div', { class: 'gi' }, h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !!it.done, onchange: (e) => { it.done = e.target.checked; render(); } }), h('span', { class: 'tgk' }), h('span', {}, it.label)), del);
+    const cur = it.k === 'mastery' ? Number((acc && acc.mastery || {})[it.key]) || 0 : Number(acc && acc.level) || 0;
+    const ks = h('select', { class: 'f', onchange: (e) => { it.key = e.target.value; render(); } }, h('option', { value: it.key }, it.key || '— เลือก —'), keys.filter((k) => k !== it.key).map((k) => h('option', { value: k }, k)));
+    return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || (it.k === 'level' ? 'เลเวล' : 'Mastery')), it.k === 'mastery' ? ks : null,
+      h('input', { class: 'f num', type: 'number', value: it.target, oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
+      h('span', { class: 'mu' }, cur + ' / ' + it.target), del);
+  });
+  const addM = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'mastery', label: 'Mastery', key: keys[0] || '', target: 400 }); render(); } }, '+ Mastery');
+  const addL = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'level', label: 'เลเวล', target: 225 }); render(); } }, '+ เลเวล');
+  const addX = h('button', { class: 'btn', onclick: () => { const t = prompt('รายการที่ต้องทำ (ติ๊กเองเมื่อเสร็จ)'); if (t) { g.items.push({ k: 'manual', label: t.slice(0, 80) }); render(); } } }, '+ รายการติ๊กเอง');
+  const save = h('button', { class: 'btn primary', onclick: () => act(() => api('goal', { method: 'POST', body: { account: o.account, title: g.title, order: undefined, items: g.items } }), 'บันทึกเป้าหมายแล้ว ลูกค้าเห็นทันที').then(() => { delete goalDraft[o.id]; }) }, 'บันทึกเป้าหมาย');
+  const unlink = h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + o.account + '?')) act(() => api('goal', { method: 'POST', body: { account: o.account, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม');
+  return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + o.account + (pct != null ? ' · ' + pct + '%' : '')),
+    h('div', { class: 'gbar' }, h('i', { style: 'width:' + (pct || 0) + '%' })),
+    h('div', { class: 'glist' }, rows.length ? rows : h('p', { class: 'note' }, 'ยังไม่มีเป้าหมาย')),
+    h('div', { class: 'rowb' }, addM, addL, addX, save, unlink),
+    keys.length ? null : h('p', { class: 'note' }, 'ไอดีนี้ยังไม่ส่งข้อมูล Mastery เข้ามา ชื่อ Mastery จะเลือกได้เมื่อสคริปต์ส่งข้อมูลรอบถัดไป'));
 }

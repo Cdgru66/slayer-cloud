@@ -101,7 +101,7 @@ module.exports = function createAdmin(ctx) {
       const seen = Object.keys(pool).sort().map((n) => {
         const a = pool[n], o = owners.get(n.toLowerCase()), r = ctx.rejoinState(n);
         return { name: n, display: a.s && a.s.display, level: a.s && a.s.level, last: a.s ? Math.round(t - a.s.time) : null,
-          interval: a.s && a.s.interval, owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
+          interval: a.s && a.s.interval, mastery: a.s && a.s.mastery ? Object.fromEntries(Object.entries(a.s.mastery).slice(0, 40).map(([k, v]) => [k, v && v.current])) : {}, goal: ctx.orders.goalOf(n), owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
       });
       const st = readJson(SETTINGS_FILE, {});
       send(res, 200, {
@@ -178,6 +178,15 @@ module.exports = function createAdmin(ctx) {
 
     if (p === '/api/v1/admin/rejoin' && req.method === 'POST') {
       json(req, res, (j) => { ctx.setRejoin({ discord: String(j.discord || '') }); send(res, 200, ctx.rejoinPublic()); }); // รีจอยตั้งได้จาก admin.bat เท่านั้น เว็บแก้ได้แค่ Discord
+      return true;
+    }
+    if (p === '/api/v1/admin/goal' && req.method === 'POST') { // { account, items, title } หรือ { account, order } = สร้างจากออเดอร์
+      json(req, res, (j) => {
+        const name = String(j.account || ''), a = ctx.pool()[name];
+        const keys = a && a.s && a.s.mastery ? Object.keys(a.s.mastery) : [];
+        if (j.remove) { ctx.orders.delGoal(name); return send(res, 200, { ok: true }); }
+        send(res, 200, j.order ? ctx.orders.linkOrder(String(j.order), name, keys) : ctx.orders.setGoal(name, j));
+      });
       return true;
     }
     if (p === '/api/v1/admin/sets' && req.method === 'POST') {
