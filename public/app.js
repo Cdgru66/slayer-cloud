@@ -176,4 +176,7 @@ function hideCloud(){$('#cl').classList.remove('open');clearInterval(clTimer);if
 $('#scrim').onclick=()=>{hide();hideCloud()};
 $('#bm').onclick=showCloud;
 addEventListener('keydown',e=>{if(e.key==='Escape')hideCloud()});
+/* ไอคอนรวมจากทุกไอดี (เซิร์ฟเวอร์จำไว้) */
+async function loadIcons(){try{const r=await fetch('/api/v1/icons');if(!r.ok)return;const m=await r.json();for(const k in m)if(typeof m[k]==='string'&&/^https:/.test(m[k]))ICONS[k]=m[k];render()}catch(e){}}
+loadIcons();setInterval(loadIcons,300000);
 goLive().then(ok=>{if(!ok)startDemo()});

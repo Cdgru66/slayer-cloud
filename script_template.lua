@@ -262,6 +262,14 @@ local function getAvatar()
 end
 
 local function refreshIcons(names)
+    -- รวมไอคอนที่สคริปต์สแกนไอคอนเพิ่งบันทึกไว้ในไฟล์ (ไม่ต้องรีเกม)
+    if isfile and readfile and isfile(CACHE_FILE) then
+        local ok, d = pcall(function() return HttpService:JSONDecode(readfile(CACHE_FILE)) end)
+        if ok and type(d) == "table" then
+            for k, v in pairs(d.items or {}) do if not itemIconId[k] then itemIconId[k] = v end end
+            for k, v in pairs(d.urls or {}) do if not idUrl[k] then idUrl[k] = v end end
+        end
+    end
     -- 1) หา asset id ของไอคอนจากหน้า Inventory (ครั้งเดียวต่อชิ้น แล้วจำไว้)
     local holder = getHolder()
     if holder then

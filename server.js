@@ -50,6 +50,11 @@ let settings = { mode: 'owner', ownerHash: null, mtime: 0 };
 let accounts = {}; // customerId -> { accountName -> { s, hist } }
 try { accounts = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) {}
 let dirty = false;
+// ไอคอนของไอเทมที่เคยเห็นจากทุกไอดี (ชื่อ -> ลิงก์รูป) ไอดีที่ไม่มีรูปจะได้ใช้รูปจากไอดีอื่น
+const ICONS_FILE = path.join(DATA_DIR, 'icons.json');
+let icons = {}; try { icons = JSON.parse(fs.readFileSync(ICONS_FILE, 'utf8')); } catch (e) {}
+let iconsDirty = false;
+const ICON_RE = /^https:\/\/[a-z0-9.-]*rbxcdn\.com\/[^\s"'<>]{1,400}$/i;
 
 function loadCustomers(force) {
   const t = Date.now();
@@ -77,6 +82,7 @@ function loadCustomers(force) {
 }
 
 function flush() {
+  if (iconsDirty) { iconsDirty = false; try { fs.writeFileSync(ICONS_FILE, JSON.stringify(icons)); } catch (e) {} }
   if (!dirty) return;
   dirty = false;
   try {
@@ -229,7 +235,12 @@ function ingest(id, c, snap) {
   const mine = accounts[id] || (accounts[id] = {});
   if (!mine[name] && Object.keys(mine).length >= (c.maxAccounts || DEFAULT_MAX_ACCOUNTS)) return 'account limit';
   if (!Array.isArray(snap.items)) snap.items = [];
-  snap.items = snap.items.slice(0, 200).filter((i) => i && typeof i.name === 'string' && isNum(i.amount));
+  snap.items = snap.items.slice(0, 200).filter((i) => i && typeof i.name === 'string' && i.name.length <= 60 && isNum(i.amount));
+  for (const i of snap.items) {
+    if (typeof i.iconUrl === 'string' && ICON_RE.test(i.iconUrl)) {
+      if (icons[i.name] !== i.iconUrl && Object.keys(icons).length < 3000) { icons[i.name] = i.iconUrl; iconsDirty = true; }
+    } else delete i.iconUrl;
+  }
   if (!(isNum(snap.interval) && snap.interval >= 5 && snap.interval <= 3600)) delete snap.interval;
   if (snap.boss && !(typeof snap.boss.name === 'string' && snap.boss.name.length <= 40)) delete snap.boss;
   snap.time = now(); // ใช้เวลาของเซิร์ฟเวอร์เสมอ
@@ -287,6 +298,11 @@ const server = http.createServer((req, res) => {
         send(res, 200, { token: hit.view, name: hit.name });
       });
     });
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/v1/icons') { // ลิงก์รูปไอเทม (ไม่ใช่ข้อมูลส่วนตัว)
+    if (!rate('icons:' + ip, 30)) return send(res, 429, { error: 'rate limited' });
+    return send(res, 200, icons, 'application/json; charset=utf-8', { 'Cache-Control': 'public, max-age=300' });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/v1/state') {
