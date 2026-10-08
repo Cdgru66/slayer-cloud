@@ -1,0 +1,231 @@
+/* Slayer Fleet — lacquer & gold
+   สี: แล็กเกอร์ดำแดง / ทองคำเปลว (Wen, เหรียญ) / เหล็กกล้า (Ore) / ชาด (ตราเลเวล) */
+:root{
+  --lac:#140c0e;--lac2:#1c1215;--lac3:#251a1d;--edge:#3a2a2c;--hair:rgba(241,233,221,.07);
+  --tx:#f1e9dd;--mu:#9d9088;--dim:#6d625c;
+  --gold:#e2b65c;--gold-hi:#f6dd9c;--gold-lo:#8f6c2c;
+  --steel:#9db8c9;--steel-lo:#4f6575;
+  --seal:#d8432c;--seal-lo:#8e2416;
+  --ok:#5fd0a0;--warn:#e9a24a;--red:#e2574b;
+  --serif:'Noto Serif Thai','Noto Serif',Georgia,serif;
+  --sans:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,sans-serif;
+  --asanoha:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40.0' height='69.28' viewBox='0 0 40.0 69.28'><path d='M-80.0 0.0L-40.0 0.0 M80.0 138.56L120.0 138.56 M-40.0 69.28L-20.0 34.64 M140.0 -80.83L160.0 -69.28 M20.0 -34.64L60.0 -34.64 M-20.0 103.92L0.0 115.47 M80.0 46.19L100.0 34.64 M120.0 -23.09L140.0 -34.64 M-40.0 69.28L-20.0 80.83 M160.0 115.47L160.0 138.56 M80.0 115.47L100.0 103.92 M-60.0 127.02L-40.0 138.56 M0.0 69.28L40.0 69.28 M100.0 -103.92L100.0 -80.83 M-80.0 0.0L-60.0 -34.64 M-40.0 -69.28L-20.0 -34.64 M100.0 -34.64L120.0 -23.09 M40.0 69.28L60.0 80.83 M0.0 138.56L20.0 103.92 M160.0 138.56L180.0 103.92 M-20.0 34.64L0.0 46.19 M120.0 0.0L140.0 34.64 M120.0 92.38L140.0 103.92 M40.0 0.0L60.0 34.64 M-20.0 -11.55L0.0 0.0 M0.0 -69.28L40.0 -69.28 M140.0 34.64L160.0 23.09 M-40.0 -23.09L-20.0 -34.64 M120.0 138.56L140.0 103.92 M40.0 -69.28L60.0 -57.74 M-60.0 -57.74L-60.0 -34.64 M-40.0 138.56L-20.0 150.11 M40.0 -69.28L80.0 -69.28 M140.0 -34.64L140.0 -11.55 M60.0 -34.64L60.0 -11.55 M20.0 -11.55L40.0 0.0 M140.0 -34.64L160.0 -23.09 M60.0 -34.64L80.0 -23.09 M20.0 34.64L40.0 23.09 M-80.0 -69.28L-60.0 -80.83 M-40.0 0.0L-20.0 -11.55 M80.0 69.28L80.0 92.38 M60.0 -80.83L80.0 -69.28 M-20.0 -34.64L20.0 -34.64 M-60.0 150.11L-60.0 173.21 M20.0 57.74L40.0 69.28 M-20.0 57.74L0.0 69.28 M-60.0 -34.64L-40.0 -23.09 M60.0 34.64L80.0 23.09 M100.0 127.02L120.0 138.56 M-80.0 0.0L-60.0 -11.55 M-80.0 69.28L-40.0 69.28 M100.0 80.83L120.0 69.28 M-40.0 -69.28L-40.0 -46.19 M-80.0 -69.28L-40.0 -69.28 M0.0 -23.09L0.0 0.0 M-40.0 138.56L-20.0 127.02 M160.0 69.28L160.0 92.38 M80.0 -46.19L100.0 -34.64 M0.0 92.38L20.0 103.92 M140.0 103.92L160.0 138.56 M60.0 34.64L100.0 34.64 M-20.0 103.92L0.0 92.38 M60.0 -103.92L60.0 -80.83 M140.0 -34.64L180.0 -34.64 M0.0 138.56L20.0 150.11 M60.0 103.92L100.0 103.92 M20.0 103.92L40.0 92.38 M-40.0 -23.09L-40.0 0.0 M120.0 23.09L140.0 34.64 M80.0 0.0L100.0 11.55 M20.0 -57.74L40.0 -69.28 M-20.0 -57.74L-20.0 -34.64 M40.0 69.28L60.0 34.64 M0.0 -46.19L20.0 -34.64 M120.0 69.28L140.0 57.74 M140.0 103.92L140.0 127.02 M140.0 80.83L140.0 103.92 M-20.0 34.64L0.0 0.0 M-80.0 138.56L-60.0 127.02 M-20.0 80.83L0.0 69.28 M-20.0 -103.92L-20.0 -80.83 M140.0 -57.74L160.0 -69.28 M-40.0 69.28L0.0 69.28 M100.0 34.64L100.0 57.74 M-80.0 -69.28L-60.0 -34.64 M120.0 -69.28L140.0 -80.83 M-40.0 0.0L0.0 0.0 M-80.0 138.56L-60.0 173.21 M-40.0 115.47L-20.0 103.92 M-80.0 0.0L-60.0 11.55 M120.0 46.19L120.0 69.28 M160.0 69.28L180.0 103.92 M100.0 -80.83L120.0 -69.28 M120.0 -69.28L140.0 -34.64 M-60.0 -34.64L-20.0 -34.64 M120.0 69.28L120.0 92.38 M0.0 -23.09L20.0 -34.64 M120.0 0.0L120.0 23.09 M-60.0 34.64L-20.0 34.64 M-40.0 138.56L0.0 138.56 M60.0 -57.74L80.0 -69.28 M40.0 115.47L40.0 138.56 M100.0 103.92L100.0 127.02 M20.0 80.83L40.0 69.28 M-60.0 -57.74L-40.0 -69.28 M0.0 69.28L20.0 103.92 M40.0 138.56L60.0 150.11 M-60.0 11.55L-40.0 0.0 M100.0 -34.64L120.0 -46.19 M-60.0 103.92L-40.0 138.56 M0.0 0.0L0.0 23.09 M-80.0 69.28L-60.0 57.74 M-20.0 34.64L0.0 23.09 M120.0 115.47L120.0 138.56 M120.0 0.0L140.0 -34.64 M40.0 0.0L60.0 -34.64 M40.0 69.28L40.0 92.38 M60.0 80.83L80.0 69.28 M-40.0 46.19L-20.0 34.64 M-20.0 -80.83L0.0 -69.28 M160.0 92.38L180.0 103.92 M60.0 127.02L80.0 138.56 M60.0 34.64L60.0 57.74 M80.0 69.28L100.0 103.92 M120.0 138.56L140.0 150.11 M0.0 0.0L20.0 -34.64 M20.0 103.92L20.0 127.02 M140.0 -34.64L160.0 -46.19 M100.0 -34.64L100.0 -11.55 M60.0 -34.64L80.0 -46.19 M140.0 173.21L160.0 138.56 M80.0 0.0L120.0 0.0 M80.0 -69.28L100.0 -57.74 M0.0 -69.28L20.0 -57.74 M140.0 150.11L140.0 173.21 M160.0 -69.28L180.0 -34.64 M80.0 -69.28L120.0 -69.28 M-40.0 69.28L-20.0 57.74 M80.0 69.28L100.0 34.64 M-40.0 0.0L-20.0 11.55 M60.0 80.83L60.0 103.92 M40.0 46.19L40.0 69.28 M-40.0 -69.28L-20.0 -103.92 M-60.0 -34.64L-40.0 -46.19 M-20.0 -34.64L0.0 -23.09 M0.0 -69.28L0.0 -46.19 M100.0 34.64L120.0 69.28 M140.0 34.64L140.0 57.74 M80.0 138.56L100.0 103.92 M160.0 0.0L160.0 23.09 M100.0 34.64L140.0 34.64 M140.0 11.55L160.0 0.0 M120.0 115.47L140.0 103.92 M160.0 115.47L180.0 103.92 M-60.0 -34.64L-40.0 0.0 M-80.0 -69.28L-60.0 -103.92 M-40.0 138.56L-20.0 173.21 M-20.0 103.92L0.0 138.56 M80.0 92.38L100.0 103.92 M-20.0 80.83L-20.0 103.92 M-40.0 115.47L-40.0 138.56 M20.0 34.64L20.0 57.74 M40.0 0.0L40.0 23.09 M20.0 -80.83L40.0 -69.28 M-60.0 -103.92L-60.0 -80.83 M40.0 -69.28L60.0 -80.83 M160.0 69.28L180.0 34.64 M60.0 103.92L60.0 127.02 M160.0 -23.09L180.0 -34.64 M120.0 138.56L140.0 127.02 M100.0 -57.74L120.0 -69.28 M0.0 69.28L20.0 34.64 M140.0 103.92L160.0 69.28 M80.0 46.19L80.0 69.28 M20.0 103.92L40.0 138.56 M120.0 -69.28L140.0 -103.92 M-60.0 103.92L-60.0 127.02 M40.0 23.09L60.0 34.64 M40.0 -69.28L60.0 -34.64 M80.0 115.47L80.0 138.56 M80.0 0.0L80.0 23.09 M140.0 103.92L160.0 115.47 M100.0 -34.64L120.0 0.0 M-60.0 103.92L-40.0 69.28 M120.0 69.28L160.0 69.28 M140.0 127.02L160.0 138.56 M-60.0 -103.92L-40.0 -69.28 M-40.0 0.0L-40.0 23.09 M-20.0 127.02L0.0 138.56 M80.0 -23.09L100.0 -34.64 M-20.0 -57.74L0.0 -69.28 M160.0 46.19L160.0 69.28 M-60.0 103.92L-40.0 115.47 M100.0 103.92L120.0 138.56 M-80.0 138.56L-60.0 103.92 M80.0 0.0L100.0 34.64 M40.0 138.56L60.0 173.21 M80.0 -69.28L100.0 -80.83 M20.0 127.02L40.0 138.56 M-60.0 173.21L-40.0 138.56 M140.0 -34.64L160.0 0.0 M60.0 -34.64L80.0 0.0 M100.0 80.83L100.0 103.92 M-20.0 11.55L0.0 0.0 M140.0 150.11L160.0 138.56 M100.0 150.11L120.0 138.56 M80.0 -69.28L100.0 -34.64 M0.0 138.56L20.0 173.21 M80.0 69.28L100.0 80.83 M140.0 -34.64L160.0 -69.28 M20.0 11.55L40.0 0.0 M0.0 69.28L0.0 92.38 M0.0 -69.28L20.0 -34.64 M20.0 34.64L40.0 69.28 M60.0 173.21L80.0 138.56 M160.0 0.0L180.0 34.64 M120.0 138.56L140.0 173.21 M-60.0 -34.64L-60.0 -11.55 M20.0 80.83L20.0 103.92 M40.0 138.56L80.0 138.56 M100.0 103.92L140.0 103.92 M40.0 69.28L60.0 57.74 M100.0 -57.74L100.0 -34.64 M-40.0 0.0L-20.0 34.64 M0.0 115.47L0.0 138.56 M0.0 69.28L20.0 80.83 M100.0 11.55L120.0 0.0 M0.0 46.19L0.0 69.28 M0.0 138.56L20.0 127.02 M120.0 46.19L140.0 34.64 M60.0 34.64L80.0 69.28 M40.0 46.19L60.0 34.64 M20.0 -34.64L20.0 -11.55 M120.0 69.28L140.0 103.92 M20.0 -34.64L40.0 -23.09 M-20.0 103.92L-20.0 127.02 M100.0 -103.92L120.0 -69.28 M60.0 11.55L80.0 0.0 M60.0 103.92L80.0 138.56 M40.0 115.47L60.0 103.92 M-40.0 92.38L-20.0 103.92 M-20.0 103.92L20.0 103.92 M-60.0 150.11L-40.0 138.56 M-40.0 138.56L-20.0 103.92 M-40.0 -69.28L0.0 -69.28 M0.0 0.0L20.0 -11.55 M140.0 11.55L140.0 34.64 M60.0 -34.64L80.0 -69.28 M120.0 -46.19L140.0 -34.64 M140.0 34.64L160.0 69.28 M100.0 34.64L120.0 0.0 M-60.0 34.64L-40.0 69.28 M60.0 -57.74L60.0 -34.64 M-20.0 -34.64L0.0 -46.19 M40.0 -23.09L40.0 0.0 M80.0 23.09L100.0 34.64 M0.0 23.09L20.0 34.64 M-60.0 80.83L-60.0 103.92 M-20.0 -103.92L0.0 -69.28 M100.0 103.92L120.0 115.47 M0.0 138.56L40.0 138.56 M-60.0 -34.64L-40.0 -69.28 M-40.0 69.28L-40.0 92.38 M100.0 34.64L120.0 46.19 M100.0 173.21L120.0 138.56 M-60.0 34.64L-40.0 0.0 M-20.0 -34.64L0.0 0.0 M20.0 -103.92L40.0 -69.28 M20.0 -57.74L20.0 -34.64 M-40.0 -69.28L-20.0 -57.74 M-80.0 0.0L-60.0 34.64 M160.0 23.09L180.0 34.64 M100.0 150.11L100.0 173.21 M80.0 -23.09L80.0 0.0 M-40.0 46.19L-40.0 69.28 M40.0 138.56L60.0 127.02 M20.0 -34.64L40.0 0.0 M120.0 138.56L160.0 138.56 M20.0 34.64L40.0 0.0 M-40.0 -46.19L-20.0 -34.64 M-80.0 69.28L-60.0 103.92 M60.0 150.11L60.0 173.21 M40.0 -69.28L60.0 -103.92 M140.0 -57.74L140.0 -34.64 M140.0 -103.92L160.0 -69.28 M0.0 -69.28L20.0 -80.83 M120.0 -23.09L120.0 0.0 M100.0 11.55L100.0 34.64 M20.0 103.92L40.0 115.47 M20.0 34.64L40.0 46.19 M20.0 150.11L20.0 173.21 M0.0 0.0L40.0 0.0 M120.0 0.0L140.0 -11.55 M40.0 0.0L60.0 -11.55 M160.0 -23.09L160.0 0.0 M80.0 138.56L100.0 150.11 M60.0 34.64L80.0 0.0 M-40.0 69.28L-20.0 103.92 M160.0 46.19L180.0 34.64 M20.0 103.92L60.0 103.92 M140.0 103.92L160.0 92.38 M20.0 34.64L60.0 34.64 M-60.0 103.92L-40.0 92.38 M60.0 34.64L80.0 46.19 M20.0 11.55L20.0 34.64 M60.0 150.11L80.0 138.56 M100.0 -34.64L140.0 -34.64 M-80.0 138.56L-40.0 138.56 M0.0 46.19L20.0 34.64 M140.0 80.83L160.0 69.28 M100.0 57.74L120.0 69.28 M-20.0 34.64L0.0 69.28 M-60.0 -11.55L-40.0 0.0 M-60.0 80.83L-40.0 69.28 M60.0 103.92L80.0 115.47 M-80.0 -69.28L-60.0 -57.74 M40.0 0.0L60.0 11.55 M0.0 115.47L20.0 103.92 M140.0 34.64L160.0 0.0 M100.0 -34.64L120.0 -69.28 M160.0 0.0L180.0 -34.64 M60.0 -11.55L80.0 0.0 M120.0 -69.28L120.0 -46.19 M120.0 -69.28L160.0 -69.28 M140.0 34.64L160.0 46.19 M80.0 138.56L100.0 127.02 M100.0 103.92L120.0 69.28 M-60.0 34.64L-40.0 46.19 M-20.0 -34.64L0.0 -69.28 M40.0 69.28L80.0 69.28 M-20.0 11.55L-20.0 34.64 M-60.0 34.64L-60.0 57.74 M100.0 -11.55L120.0 0.0 M140.0 -103.92L140.0 -80.83 M-40.0 0.0L-20.0 -34.64 M120.0 0.0L160.0 0.0 M40.0 0.0L80.0 0.0 M60.0 11.55L60.0 34.64 M-20.0 -34.64L-20.0 -11.55 M80.0 69.28L100.0 57.74 M-60.0 103.92L-20.0 103.92 M20.0 -34.64L40.0 -69.28 M160.0 -69.28L160.0 -46.19 M-80.0 69.28L-60.0 34.64 M80.0 0.0L100.0 -34.64 M60.0 -103.92L80.0 -69.28 M120.0 69.28L140.0 34.64 M-20.0 150.11L0.0 138.56 M20.0 -34.64L40.0 -46.19 M80.0 138.56L100.0 173.21 M140.0 103.92L180.0 103.92 M140.0 -11.55L160.0 0.0 M120.0 0.0L140.0 11.55 M-80.0 69.28L-60.0 80.83 M40.0 69.28L60.0 103.92 M20.0 150.11L40.0 138.56 M-60.0 34.64L-40.0 23.09 M120.0 69.28L140.0 80.83 M20.0 103.92L40.0 69.28 M0.0 -69.28L20.0 -103.92 M-20.0 103.92L0.0 69.28 M80.0 -69.28L80.0 -46.19 M-40.0 -69.28L-20.0 -80.83 M0.0 0.0L20.0 11.55 M-20.0 34.64L-20.0 57.74 M40.0 -46.19L60.0 -34.64 M140.0 34.64L180.0 34.64 M120.0 -69.28L140.0 -57.74 M-20.0 173.21L0.0 138.56 M0.0 69.28L20.0 57.74 M100.0 34.64L120.0 23.09 M60.0 57.74L80.0 69.28 M40.0 92.38L60.0 103.92 M100.0 103.92L120.0 92.38 M20.0 173.21L40.0 138.56 M40.0 138.56L60.0 103.92 M80.0 0.0L100.0 -11.55 M60.0 103.92L80.0 69.28 M60.0 103.92L80.0 92.38 M-80.0 138.56L-60.0 150.11 M-60.0 57.74L-40.0 69.28 M0.0 0.0L20.0 34.64 M40.0 -23.09L60.0 -34.64 M-20.0 34.64L20.0 34.64 M-40.0 23.09L-20.0 34.64 M-20.0 150.11L-20.0 173.21 M160.0 -46.19L180.0 -34.64 M40.0 -69.28L40.0 -46.19 M-60.0 -80.83L-40.0 -69.28 M80.0 -69.28L100.0 -103.92 M60.0 -34.64L100.0 -34.64 M-60.0 11.55L-60.0 34.64 M80.0 69.28L120.0 69.28 M140.0 57.74L160.0 69.28 M20.0 -103.92L20.0 -80.83' fill='none' stroke='%23e2b65c' stroke-opacity='.5' stroke-width='.6'/></svg>");
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--lac);color:var(--tx);font:15px/1.55 var(--sans);min-height:100vh;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(70rem 32rem at 78% -14%,rgba(216,67,44,.13),transparent 60%),radial-gradient(40rem 30rem at -10% 110%,rgba(226,182,92,.06),transparent 60%);background-attachment:fixed}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.num{font-family:var(--serif);font-weight:600;letter-spacing:-.01em}
+
+/* ---------- โครง ---------- */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+aside.sb{position:sticky;top:0;height:100vh;padding:24px 16px 20px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--hair);background:linear-gradient(180deg,rgba(28,18,21,.8),rgba(20,12,14,.6))}
+.brand{display:flex;align-items:center;gap:11px;font:600 18px var(--serif);margin:0 6px 26px}
+.seal-mark{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;font-size:15px;color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(216,67,44,.35)}
+.filters{display:flex;flex-direction:column;gap:2px}
+.fl{all:unset;cursor:pointer;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--mu);font-size:14px}
+.fl:hover{color:var(--tx);background:rgba(241,233,221,.04)}
+.fl[aria-pressed=true]{color:var(--tx);background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge)}
+.fl:focus-visible{outline:2px solid var(--gold)}
+.fl .n{margin-left:auto;font-size:13px;color:var(--mu)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--c,var(--dim));flex:none}
+.sp{flex:1}
+.src{display:grid;gap:6px}
+.btn{all:unset;cursor:pointer;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;color:var(--tx);background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge)}
+.btn:hover{box-shadow:inset 0 0 0 1px var(--gold-lo)}
+.btn:focus-visible{outline:2px solid var(--gold)}
+.btn.primary{background:linear-gradient(180deg,#2a1d12,#1f150e);box-shadow:inset 0 0 0 1px var(--gold-lo);color:var(--gold-hi)}
+.hint{font-size:12px;color:var(--mu);margin:12px 6px 0;line-height:1.5}
+.lic{color:var(--gold);margin-top:6px}
+
+main{padding:30px 34px 48px;min-width:0;max-width:1320px;overflow-x:clip}
+.top{display:flex;align-items:flex-end;gap:16px;margin-bottom:22px}
+.top h1{font:600 28px/1.2 var(--serif)}
+.sub{color:var(--mu);font-size:14px;margin-top:2px}.sub b{color:var(--tx);font-weight:500}
+.top input{margin-left:auto;width:260px;background:var(--lac2);border:0;box-shadow:inset 0 0 0 1px var(--edge);border-radius:10px;padding:10px 14px}
+.top input::placeholder{color:var(--dim)}
+
+/* ---------- คลัง: Wen เป็นพระเอก Ore/ถุงเงินเป็นรอง ---------- */
+.vault{display:grid;grid-template-columns:1.55fr 1fr 1fr;gap:14px;margin-bottom:16px}
+.vault>div{border-radius:16px;padding:22px 24px;position:relative;overflow:hidden}
+.lbl{font-size:13px;color:var(--mu)}
+.wen{background:linear-gradient(160deg,#2a1c10 0%,#1d130c 55%,#160e0b 100%);box-shadow:inset 0 0 0 1px rgba(226,182,92,.28),0 20px 50px -20px rgba(0,0,0,.6)}
+.wen::before{content:"";position:absolute;inset:0;background:var(--asanoha);background-size:34px 58.9px;opacity:.14;-webkit-mask-image:linear-gradient(105deg,transparent 30%,#000 95%);mask-image:linear-gradient(105deg,transparent 30%,#000 95%);pointer-events:none}
+.wen .lbl{color:#c9a96b}
+.wen .big{font:700 clamp(44px,6.2vw,76px)/1.05 var(--serif);letter-spacing:-.02em;margin:10px 0 8px;background:linear-gradient(180deg,var(--gold-hi) 10%,var(--gold) 55%,#b8893a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;position:relative}
+.wen .rate{font-size:14px;color:#c9a96b;position:relative}.wen .rate span{color:var(--ok);font-weight:500}
+.res-card{background:linear-gradient(180deg,var(--lac2),#170f11);box-shadow:inset 0 0 0 1px var(--edge)}
+.res-card.ore{box-shadow:inset 0 0 0 1px rgba(157,184,201,.2)}
+.res-card.coins{box-shadow:inset 0 0 0 1px rgba(226,182,92,.18)}
+.res{display:grid;gap:12px;margin-top:14px}
+.ri{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:12px}
+.ri .nm{font-size:13px;color:var(--mu);line-height:1.3}
+.ri .v{font:600 24px/1 var(--serif)}
+.ore .ri .v{color:var(--steel)}.coins .ri .v{color:var(--gold)}
+.ri.sm{grid-template-columns:30px 1fr auto}.ri.sm .v{font-size:19px}
+
+.gl{background:none!important;box-shadow:none!important;padding:0}.gl svg{width:100%;height:100%;display:block}
+.ic{display:inline-grid;place-items:center;border-radius:9px;object-fit:contain;flex:none;font-weight:600;color:#fff3e6;background:rgba(241,233,221,.04)}
+img.ic{padding:3px;background:radial-gradient(circle at 50% 40%,rgba(241,233,221,.08),rgba(241,233,221,.02));box-shadow:inset 0 0 0 1px var(--hair)}
+
+/* ---------- แถบชีพจร ---------- */
+.pulse{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:0 2px 18px}
+.pulse>span{font-size:12px;color:var(--mu);margin-right:10px}
+.tk{width:8px;height:22px;border-radius:3px;background:var(--edge)}
+.tk.on{background:var(--ok);opacity:.85}.tk.stuck{background:var(--warn)}
+
+/* ---------- บัญชี (ledger) ---------- */
+.ledger{border-radius:16px;background:rgba(28,18,21,.55);box-shadow:inset 0 0 0 1px var(--hair);overflow:hidden}
+.lh,.row{display:grid;grid-template-columns:56px minmax(170px,1.6fr) 1.1fr .8fr .9fr 1.25fr .8fr .7fr;gap:14px;align-items:center;padding:0 20px}
+.lh{font-size:12px;color:var(--dim);padding-top:13px;padding-bottom:11px;border-bottom:1px solid var(--hair)}
+.lh span:nth-child(n+3){text-align:right}.lh span:first-child{text-align:center}
+.row{padding-top:13px;padding-bottom:13px;border-bottom:1px solid var(--hair);cursor:pointer;transition:background .15s}
+.row:last-child{border-bottom:0}
+.row:hover{background:rgba(226,182,92,.045)}
+.row:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.row.off{opacity:.55}
+
+/* ตราเลเวล (hanko) */
+.lv{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;justify-self:center;color:#fff3e6;font:700 16px/1 var(--serif);background:linear-gradient(150deg,var(--seal),var(--seal-lo));box-shadow:inset 0 0 0 1.5px rgba(255,235,220,.22),inset 0 -6px 12px rgba(0,0,0,.25),0 6px 16px -6px rgba(216,67,44,.55);position:relative}
+.lv small{position:absolute;top:4px;left:0;right:0;text-align:center;font:500 8px/1 var(--sans);opacity:.75}
+.lv b{margin-top:7px}
+.lv.max{background:linear-gradient(150deg,#e9c56f,#9a722e);color:#2a1a08;box-shadow:inset 0 0 0 1.5px rgba(255,248,225,.4),0 6px 16px -6px rgba(226,182,92,.6)}
+
+.who{min-width:0}
+.who .nm{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .us{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.exp{height:3px;border-radius:2px;background:rgba(241,233,221,.07);margin-top:7px;max-width:180px;overflow:hidden}
+.exp i{display:block;height:100%;background:linear-gradient(90deg,var(--seal),var(--gold))}
+.c{text-align:right;white-space:nowrap}
+.c.wen-c{font:600 18px var(--serif);color:var(--gold)}
+.c.ore-c{font:600 16px var(--serif);color:var(--steel)}
+.c .mu,.mu{color:var(--mu)}
+.c.cn{display:flex;justify-content:flex-end;gap:10px}
+.cn span{display:inline-flex;align-items:center;gap:5px;font:600 14px var(--serif);color:var(--gold)}
+.up{color:var(--ok)}.dn{color:var(--red)}
+.ago{font-size:13px;color:var(--mu)}
+.empty{padding:44px 20px;text-align:center;color:var(--mu)}
+
+.pill{display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border-radius:999px;font-size:12px;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 35%,transparent)}
+
+/* ---------- แผงรายละเอียด ---------- */
+.scrim{position:fixed;inset:0;background:rgba(8,4,5,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:4}
+.scrim.on{opacity:1;pointer-events:auto}
+.dr{position:fixed;top:0;right:0;height:100vh;height:100dvh;width:min(460px,100vw);background:linear-gradient(180deg,#1d1316,#150d10);border-left:1px solid var(--edge);padding:26px 24px 40px;overflow:auto;transform:translateX(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:5;box-shadow:-40px 0 80px rgba(0,0,0,.55)}
+.dr.open{transform:none}
+.dr h2{font:600 24px/1.25 var(--serif)}
+.dr h3{font-size:13px;color:var(--mu);font-weight:500;margin:24px 0 10px}
+.x{position:absolute;top:18px;right:18px;padding:7px 12px}
+.dh{display:flex;gap:14px;align-items:center;padding-right:64px}
+.dh .lv{width:56px;height:56px;font-size:20px;border-radius:12px}
+.dh .us{font-size:13px;color:var(--mu)}
+.dvault{display:grid;gap:10px;margin-top:20px}
+.dwen{border-radius:14px;padding:16px 18px;background:linear-gradient(160deg,#2a1c10,#1b120c);box-shadow:inset 0 0 0 1px rgba(226,182,92,.25)}
+.dwen .big{font:700 40px/1.1 var(--serif);color:var(--gold);margin-top:4px}
+.dpair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dpair>div{border-radius:14px;padding:14px 16px;background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge)}
+.dpair .res{margin-top:10px;gap:9px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border-radius:12px;overflow:hidden}
+.kv div{background:#1a1114;padding:10px 12px;font-size:12px;color:var(--mu)}
+.kv b{display:block;color:var(--tx);font:600 16px var(--serif);margin-top:1px}
+.ms{display:grid;grid-template-columns:76px 1fr 44px;gap:12px;align-items:center;font-size:13px;margin:8px 0}
+.bar{height:5px;background:rgba(241,233,221,.07);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--seal),var(--gold))}
+.ig{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.it{display:flex;align-items:center;gap:10px;background:var(--lac3);border-radius:10px;padding:7px 10px;font-size:13px;min-width:0}
+.it span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mu)}
+.it b{margin-left:auto;font:600 14px var(--serif)}
+
+.dr textarea,.dr input.f{width:100%;background:var(--lac3);border:0;box-shadow:inset 0 0 0 1px var(--edge);border-radius:10px;padding:10px 12px;font:13px/1.45 var(--sans);resize:vertical}
+.rowb{display:flex;gap:8px;margin-top:10px}.rowb .btn{flex:1}
+.note{font-size:13px;color:var(--mu);margin-top:12px;line-height:1.6}
+
+/* ---------- จอเล็ก / มือถือ ---------- */
+@media (max-width:1100px){
+  .vault{grid-template-columns:1fr 1fr}.wen{grid-column:1/-1}
+  .lh,.row{grid-template-columns:52px minmax(150px,1.5fr) 1fr .8fr .9fr 1.2fr .7fr}
+  .lh span:nth-child(8),.row>.ago{display:none}
+}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  aside.sb,main{min-width:0}
+  .filters{scrollbar-width:none}
+  aside.sb{position:sticky;z-index:3;height:auto;padding:12px 14px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;border-right:0;border-bottom:1px solid var(--hair);background:rgba(20,12,14,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+  .brand{margin:0 auto 0 0;font-size:16px}.seal-mark{width:26px;height:26px;font-size:13px}
+  .filters{flex-direction:row;order:3;width:100%;overflow-x:auto;gap:6px}
+  .fl{padding:6px 12px;font-size:13px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);border-radius:999px;white-space:nowrap}
+  .fl .n{margin-left:2px}
+  .sp{display:none}
+  .src{order:4;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));width:100%}
+  .hint{order:5;margin:0 4px;width:100%}
+  main{padding:18px 14px 40px}
+  .top{flex-wrap:wrap;align-items:center;margin-bottom:16px}.top h1{font-size:22px}
+  .top input{width:100%;margin-left:0}
+  .vault{grid-template-columns:1fr;gap:10px}
+  .vault>div{padding:18px}
+  .wen .big{font-size:52px}
+  .res{grid-template-columns:1fr 1fr}
+  .coins .res{grid-template-columns:1fr 1fr 1fr}
+  .vault .ri,.vault .ri.sm{grid-template-columns:1fr;gap:6px;min-width:0}.vault .ri .ic{width:34px!important;height:34px!important}.ri .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ri{min-width:0}
+  .vault .ri .v{font-size:22px}
+  .lh{display:none}
+  .row{grid-template-columns:48px 1fr auto;grid-template-areas:"lv who wen" "lv stats stats";row-gap:8px;column-gap:12px;padding:14px 14px}
+  .row>.lv{grid-area:lv;align-self:start;width:44px;height:44px}
+  .row>.who{grid-area:who}
+  .row>.wen-c{grid-area:wen;font-size:18px}
+  .row>.ore-c,.row>.ref-c,.row>.cn,.row>.rt,.row>.ago{display:none}
+  .row>.mstats{grid-area:stats;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+  .exp{max-width:none}
+}
+.row>.mstats{display:none}
+@media (max-width:820px){.row>.mstats{display:flex}}
+.mstats span{display:inline-flex;align-items:center;gap:5px;color:var(--mu)}
+.mstats b{font:600 14px var(--serif)}
+.mstats .o b{color:var(--steel)}.mstats .g b{color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.dr,.scrim,.row{transition:none}}
+
+/* ---------- หน้าเข้าสู่ระบบ ---------- */
+.gate{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:20px;background:radial-gradient(60rem 30rem at 50% -10%,rgba(216,67,44,.18),transparent 60%),var(--lac);overflow:auto}
+.gate[hidden]{display:none}
+.gate::before{content:"";position:absolute;inset:0;background:var(--asanoha);background-size:34px 58.9px;opacity:.06;-webkit-mask-image:radial-gradient(circle at 50% 40%,#000,transparent 70%);mask-image:radial-gradient(circle at 50% 40%,#000,transparent 70%);pointer-events:none}
+.gate-card{position:relative;width:min(380px,100%);padding:34px 28px 26px;border-radius:20px;background:linear-gradient(170deg,#24171a,#170e11);box-shadow:inset 0 0 0 1px rgba(226,182,92,.22),0 40px 90px -30px rgba(0,0,0,.8);display:grid;gap:14px}
+.seal-mark.big{width:52px;height:52px;font-size:24px;border-radius:12px;justify-self:center}
+.gate-card h1{font:700 26px/1.2 var(--serif);text-align:center;background:linear-gradient(180deg,var(--gold-hi),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.gate-sub{text-align:center;color:var(--mu);font-size:14px;margin:-8px 0 6px}
+.fld{display:grid;gap:6px;font-size:13px;color:var(--mu)}
+.fld input{background:var(--lac);border:0;box-shadow:inset 0 0 0 1px var(--edge);border-radius:11px;padding:12px 14px;font-size:16px;color:var(--tx)}
+.fld input:focus{outline:none;box-shadow:inset 0 0 0 1.5px var(--gold)}
+.gate-err{min-height:1.2em;color:var(--red);font-size:13px;margin:-4px 0 -6px}
+.gate-go{padding:13px;font-size:15px;font-weight:500}
+.gate-go[disabled]{opacity:.6;cursor:wait}
+.gate-note{font-size:12px;color:var(--dim);line-height:1.6;text-align:center}
+.btn.out{margin-top:10px}
+@media (max-width:820px){.btn.out{order:6;margin:0}}
+
+/* ---------- นับถอยหลัง + บอส ---------- */
+.next{display:inline-flex;align-items:center;gap:7px;margin-left:12px;color:var(--mu);font-size:13px}
+.next:empty{display:none}
+.live{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(95,208,160,.5);animation:ping 2s ease-out infinite}
+.live.busy{background:var(--gold);animation-duration:.9s}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(95,208,160,.45)}100%{box-shadow:0 0 0 8px rgba(95,208,160,0)}}
+.c.ago{font-variant-numeric:tabular-nums}
+.fight{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#f0a493;white-space:nowrap}
+.fight b{color:#ffcdbf;font-weight:500}
+.sw{width:12px;height:12px;flex:none;background:linear-gradient(-45deg,transparent 44%,#ff8a6e 46%,var(--seal) 54%,transparent 56%);filter:drop-shadow(0 0 3px rgba(216,67,44,.7))}
+.hp{width:34px;height:4px;border-radius:2px;background:rgba(241,233,221,.1);overflow:hidden;margin-left:3px}.hp i{display:block;height:100%;background:var(--seal)}
+.fight.big{font-size:14px}.fight.big .sw{width:14px;height:14px}.fight.big .hp{width:70px;height:5px}
+.dfight{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(216,67,44,.08);box-shadow:inset 0 0 0 1px rgba(216,67,44,.25);font-size:13px}
+.who .us{display:flex;align-items:center;gap:8px}
+@media (max-width:820px){.next{display:flex;margin:4px 0 0}.top .sub{display:block}}
+@media (prefers-reduced-motion:reduce){.live{animation:none}}
+
+.late{color:var(--warn)!important}
+.live.late{background:var(--warn);animation:none}
+
+.pw{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:1px 7px 1px 3px;border-radius:999px;color:#bcd3e0;background:rgba(157,184,201,.08);box-shadow:inset 0 0 0 1px rgba(157,184,201,.22);white-space:nowrap}
+.pw b{font:600 10px var(--serif);width:15px;height:15px;border-radius:50%;display:grid;place-items:center;background:rgba(157,184,201,.18);color:#e6f0f6}
+.pw.demon{color:#ffb4a6;background:rgba(216,67,44,.1);box-shadow:inset 0 0 0 1px rgba(216,67,44,.35)}
+.pw.demon b{background:var(--seal);color:#fff1ea}
+.who .us{flex-wrap:wrap;row-gap:3px}

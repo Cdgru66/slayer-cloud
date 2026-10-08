@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#140c0e">
+<title>Slayer Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<aside class="sb">
+  <div class="brand"><span class="seal-mark" aria-hidden="true">鬼</span><span>Slayer Fleet</span></div>
+  <nav class="filters" aria-label="กรองตามสถานะ">
+    <button class="fl" data-f="all" aria-pressed="true"><span class="dot"></span>ทั้งหมด<span class="n" id="n-all">0</span></button>
+    <button class="fl" data-f="on" aria-pressed="false" style="--c:var(--ok)"><span class="dot"></span>ออนไลน์<span class="n" id="n-on">0</span></button>
+    <button class="fl" data-f="stuck" aria-pressed="false" style="--c:var(--warn)"><span class="dot"></span>ค้าง<span class="n" id="n-stuck">0</span></button>
+    <button class="fl" data-f="off" aria-pressed="false"><span class="dot"></span>ออฟไลน์<span class="n" id="n-off">0</span></button>
+  </nav>
+  <div class="sp"></div>
+  <div class="src">
+    <button class="btn primary" id="bc">ก๊อปสคริปต์ใส่ executor</button>
+    <button class="btn" id="bm">ดูบนมือถือ</button>
+    <button class="btn" id="bw">เฝ้าโฟลเดอร์ workspace</button>
+    <label class="btn">โหลดไฟล์ JSON<input id="bf" type="file" accept=".json" multiple hidden></label>
+    <button class="btn" id="bd">ข้อมูลตัวอย่าง</button>
+  </div>
+  <p class="hint" id="mode">โหมดตัวอย่าง: ข้อมูลสุ่มเพื่อดูหน้าตา</p>
+  <p class="hint lic" id="lic" hidden></p>
+  <button class="btn out" id="lo" hidden>ออกจากระบบ</button>
+</aside>
+
+<main>
+  <header class="top">
+    <div>
+      <h1>คลังของทีม</h1>
+      <p class="sub">รันอยู่ <b id="t-on">0</b> ไอดี <span class="next" id="t-next" aria-live="off"></span></p>
+    </div>
+    <input id="q" type="search" placeholder="ค้นหาไอดี" aria-label="ค้นหาไอดี">
+  </header>
+
+  <section class="vault" aria-label="สรุปทรัพย์สินรวม">
+    <div class="wen">
+      <p class="lbl">Wen รวมทุกไอดี</p>
+      <p class="big" id="t-wen">0</p>
+      <p class="rate"><span id="t-rate">0</span> ต่อชั่วโมง</p>
+    </div>
+    <div class="res-card ore"><p class="lbl">แร่</p><div class="res" id="t-ore"></div></div>
+    <div class="res-card coins"><p class="lbl">ถุงเงิน</p><div class="res" id="t-coin"></div></div>
+  </section>
+
+  <div class="pulse" id="strip" aria-label="สถานะแต่ละไอดี"></div>
+
+  <section class="ledger" aria-label="รายชื่อไอดี">
+    <div class="lh" aria-hidden="true"><span>Lv</span><span>ไอดี</span><span>Wen</span><span>Ore</span><span>Refinement</span><span>ถุงเงิน</span><span>Wen/ชม.</span><span>อัปเดต</span></div>
+    <div id="tb"></div>
+  </section>
+</main>
+</div>
+<section class="gate" id="gate" hidden>
+  <form class="gate-card" id="login-form" autocomplete="on">
+    <span class="seal-mark big" aria-hidden="true">鬼</span>
+    <h1>Slayer Fleet</h1>
+    <p class="gate-sub">เข้าสู่ระบบเพื่อดูไอดีของคุณ</p>
+    <label class="fld"><span>ชื่อผู้ใช้ Roblox</span><input id="login-user" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required maxlength="20" placeholder="เช่น Blopcoco22"></label>
+    <label class="fld"><span>รหัสผ่านจากร้าน</span><input id="login-pass" name="password" type="password" autocomplete="current-password" required maxlength="100"></label>
+    <p class="gate-err" id="login-err" role="alert"></p>
+    <button class="btn primary gate-go" id="login-go" type="submit">เข้าสู่ระบบ</button>
+    <p class="gate-note">ใช้รหัสที่ร้านส่งให้เท่านั้น ห้ามใส่รหัสผ่าน Roblox ของคุณที่นี่ ร้านจะไม่ขอรหัส Roblox จากคุณ</p>
+  </form>
+</section>
+<div class="scrim" id="scrim"></div>
+<aside class="dr" id="dr" aria-label="รายละเอียดไอดี"></aside>
+<aside class="dr" id="cl" aria-label="ดูบนมือถือ"></aside>
+<script src="app.js"></script>
+</body>
+</html>
