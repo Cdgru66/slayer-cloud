@@ -161,8 +161,23 @@ for id, e in pairs(byId) do
     end
 end
 for _ in pairs(bosses) do nBoss = nBoss + 1 end
+-- สะสมผลจากรอบก่อน ๆ (รันหลายรอบ เปิดคนละหน้า ได้รวมกันในไฟล์เดียว)
+local prevN = 0
+if isfile and readfile and isfile("slayer_icon_deep.json") then
+    local ok, old = pcall(function() return HttpService:JSONDecode(readfile("slayer_icon_deep.json")) end)
+    if ok and type(old) == "table" and type(old.all) == "table" then
+        local have = {}
+        for _, e in ipairs(all) do have[e.id] = true end
+        for _, e in ipairs(old.all) do
+            if type(e) == "table" and e.id and not have[e.id] then table.insert(all, e); have[e.id] = true; prevN = prevN + 1 end
+        end
+        for name, list in pairs(type(old.bosses) == "table" and old.bosses or {}) do if not bosses[name] then bosses[name] = list end end
+    end
+end
 local json = HttpService:JSONEncode({ version = 2, place = game.PlaceId, bossNames = bossList, bosses = bosses, all = all })
 if writefile then pcall(writefile, "slayer_icon_deep.json", json) end
 print(("== เสร็จ: รูปไม่ซ้ำ %d รูป (ได้ลิงก์ %d) | จับคู่กับบอสได้ %d ตัว"):format(nIds, nUrl, nBoss))
 for name, list in pairs(bosses) do print("   บอส " .. name .. ": " .. #list .. " รูป") end
-print(">> บันทึกเป็น slayer_icon_deep.json แล้ว ส่งไฟล์นี้ให้ผู้ดูแลได้เลย")
+print((">> รวมกับรอบก่อน ๆ อีก %d รูป · ทั้งไฟล์ตอนนี้ %d รูป"):format(prevN, #all))
+print(">> บันทึกเป็น slayer_icon_deep.json แล้ว (สะสมทุกรอบ) เปิดหน้าอื่นแล้วรันต่อได้ ครบแล้วค่อยส่งไฟล์ให้ผู้ดูแล")
+print(">> อยากเริ่มนับใหม่: ลบไฟล์ slayer_icon_deep.json ในโฟลเดอร์ workspace ก่อน")
