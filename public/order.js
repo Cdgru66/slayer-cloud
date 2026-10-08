@@ -470,10 +470,11 @@ function clearSet() {
   armorSync(); drawChips(); autoPair('clear'); drawSets(); update();
   document.body.classList.add('show-adv'); $('#brief').scrollIntoView({ behavior: 'smooth', block: 'center' }); toast('เลือกเองด้านล่าง หรือเขียนบรีฟบอกร้านได้เลย');
 }
-let setsGrid;
+let setsGrid, setsFilter = 'all', setsSeg;
 function drawSets() {
   if (!setsGrid) return;
-  const cards = SETS.map((st) => {
+  if (setsSeg) setsSeg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.f === setsFilter)));
+  const cards = SETS.filter((st) => setsFilter === 'all' || (st.power && st.power.kind) === setsFilter || (chosenSet && chosenSet.id === st.id)).map((st) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'setc'; b.setAttribute('aria-pressed', String(chosenSet && chosenSet.id === st.id));
     const top = document.createElement('div'); top.className = 'setc-top';
     const nm = document.createElement('b'); nm.className = 'setc-n'; nm.textContent = st.name;
@@ -502,7 +503,9 @@ async function buildSets() {
   const lg = document.createElement('legend'); lg.innerHTML = '<span class="on">1</span>เลือกเซท';
   const sub = document.createElement('p'); sub.className = 'packs-sub'; sub.textContent = 'กดเซทเดียวจบ ร้านจัดให้ครบตามเซท อยากเพิ่มอะไรเขียนในบรีฟได้';
   setsGrid = document.createElement('div'); setsGrid.className = 'sets';
-  fs.append(lg, sub, setsGrid);
+  setsSeg = document.createElement('div'); setsSeg.className = 'seg big setsseg';
+  for (const [f, l] of [['all', 'ทั้งหมด'], ['breath', 'สายปราณ'], ['demon', 'สายอสูร']]) { const x = document.createElement('button'); x.type = 'button'; x.dataset.f = f; x.textContent = l; x.onclick = () => { setsFilter = f; drawSets(); }; setsSeg.append(x); }
+  fs.append(lg, sub, setsSeg, setsGrid);
   const first = document.querySelector('#of fieldset.og'); first.parentNode.insertBefore(fs, first);
   for (const id of ['#w-type', '#w-line', '#w-tier', '#w-plus', '#p-name', '#t-line', '#t-tier', '#t-plus']) $(id).value = '';
   armorSync(); drawChips(); autoPair('init'); drawSets(); update();

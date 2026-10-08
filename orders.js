@@ -53,9 +53,446 @@ module.exports = function createOrders(ctx) {
   // ===== เซทสำเร็จรูป (ร้านตั้งเองในหน้าแอดมิน แท็บ เซท) =====
   const SETS_FILE = path.join(ctx.DATA_DIR, 'sets.json');
   const DEFAULT_SETS = [
-    { id: 'akaza', name: 'Akaza', icon: 'boss:Akazo', price: 'เริ่มต้น 200 บาท', note: 'สายอสูรหมัดหนัก',
-      weapon: { type: 'Gauntlet', line: 'Nightfall', tier: 3, plus: 10 }, power: { kind: 'demon', name: 'Shockwave' },
-      armor: { line: 'Nightfall', tier: 3, plus: 10 } },
+   {
+    "id": "akaza",
+    "name": "Akaza",
+    "icon": "boss:Akazo",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างขึ้นที่ 3 · หมัดหนักแรงกระแทก",
+    "weapon": {
+     "type": "Gauntlet",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Shockwave"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "douma",
+    "name": "Douma",
+    "icon": "boss:Domae",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างขึ้นที่ 2 · พัดน้ำแข็ง",
+    "weapon": {
+     "type": "War Fans",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Cryokinesis"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "gyutaro",
+    "name": "Gyutaro",
+    "icon": "boss:Gyutai",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างขึ้นที่ 6 · เคียวโลหิต",
+    "weapon": {
+     "type": "Sickles",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Blood Manipulation"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "daki",
+    "name": "Daki",
+    "icon": "Obi Manipulation Orb",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างขึ้นที่ 6 · สายโอบิ",
+    "weapon": {
+     "type": "Bladed Wagasa",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Obi Manipulation"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "enmu",
+    "name": "Enmu",
+    "icon": "boss:Enru",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างแรมที่ 1 · มนต์ความฝัน",
+    "weapon": {
+     "type": "Tanto",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Dream"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "nezuko",
+    "name": "Nezuko",
+    "icon": "boss:Nezura",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรสายเพลิงโลหิต · เตะหมัดหนัก",
+    "weapon": {
+     "type": "Gauntlet",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Pyrokinesis"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "tamayo",
+    "name": "Tamayo",
+    "icon": "Tamari Orb",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรสายมนต์โลหิตสนับสนุน",
+    "weapon": {
+     "type": "Tanto",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "demon",
+     "name": "Tamari"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "tanjiro",
+    "name": "Tanjiro",
+    "icon": "Tidal Katana",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "ปราณวารี · Tidal Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Water"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "giyu",
+    "name": "Giyu",
+    "icon": "boss:Giyen",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักวารี · Tidal Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Water"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "rengoku",
+    "name": "Rengoku",
+    "icon": "boss:Rengu",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักเพลิง · Volcanic Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Flame"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "zenitsu",
+    "name": "Zenitsu",
+    "icon": "boss:Zentaro",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "ปราณอัสนี · Thundercloud Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Thunder"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "sanemi",
+    "name": "Sanemi",
+    "icon": "boss:Saneri",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักวายุ · Tornadic Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Wind"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "shinobu",
+    "name": "Shinobu",
+    "icon": "boss:Shinora",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักแมลง · Insect Katana",
+    "weapon": {
+     "type": "Katana",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Insect"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "tengen",
+    "name": "Tengen",
+    "icon": "boss:Tengai",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักเสียง",
+    "weapon": {
+     "type": "Katana",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Sound"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "gyomei",
+    "name": "Gyomei",
+    "icon": "boss:Gyorei",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักศิลา · ขวานกับลูกตุ้ม",
+    "weapon": {
+     "type": "Axe and Mace",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Stone"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "obanai",
+    "name": "Obanai",
+    "icon": "boss:Obari",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักอสรพิษ",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Serpent"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "muichiro",
+    "name": "Muichiro",
+    "icon": "Mist Kumo Sodenashi",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "เสาหลักหมอก",
+    "weapon": {
+     "type": "Katana",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Mist"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "inosuke",
+    "name": "Inosuke",
+    "icon": "Beast Core",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "ปราณสัตว์ร้าย",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Beast"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "kokushibo",
+    "name": "Kokushibo",
+    "icon": "Moonlit Kata-Aki",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "อสูรข้างขึ้นที่ 1 · ปราณจันทรา",
+    "weapon": {
+     "type": "Katana",
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Moon"
+    },
+    "armor": {
+     "line": "Nightfall",
+     "tier": 3,
+     "plus": 10
+    }
+   },
+   {
+    "id": "yoriichi",
+    "name": "Yoriichi",
+    "icon": "Firstlight Katana",
+    "price": "เริ่มต้น 200 บาท",
+    "note": "ปราณตะวัน · ต้นกำเนิดปราณ",
+    "weapon": {
+     "type": "Katana",
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    },
+    "power": {
+     "kind": "breath",
+     "name": "Sun"
+    },
+    "armor": {
+     "line": "Firstlight",
+     "tier": 3,
+     "plus": 10
+    }
+   }
   ];
   let sets = DEFAULT_SETS; try { const x = JSON.parse(fs.readFileSync(SETS_FILE, 'utf8')); if (Array.isArray(x)) sets = x; } catch (e) {}
   const gearS = (g) => (g && typeof g === 'object' ? { type: str(g.type, 40), line: str(g.line, 30), tier: int(g.tier, 0, 9), plus: int(g.plus, 0, 30) } : null);
@@ -99,7 +536,7 @@ module.exports = function createOrders(ctx) {
 
   return {
     handle, summary, STATUSES,
-    getSets: () => sets,
+    getSets: () => sets, defaultSets: () => DEFAULT_SETS,
     saveSets: (arr) => { if (!Array.isArray(arr) || arr.length > 40) throw new Error('จำนวนเซทไม่ถูกต้อง (สูงสุด 40)'); const next = arr.map(cleanSet); const t = SETS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(next, null, 1)); fs.renameSync(t, SETS_FILE); sets = next; return sets; },
     list: () => orders.slice(0, 1000),
     update: (id, j) => {

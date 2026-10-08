@@ -237,10 +237,12 @@ function renderSets() {
       h('div', { class: 'setrow' }, h('span', { class: 'lab' }, 'ชุด'), sel(S_LINES, st.armor.line, (v) => (st.armor.line = v)), sel(tiers, st.armor.tier, (v) => (st.armor.tier = num(v))), sel(pluses, st.armor.plus, (v) => (st.armor.plus = num(v)), 'ตีบวกเสื้อ')));
   });
   const save = h('button', { class: 'btn primary', id: 'sets-save', disabled: !setsDirty, onclick: () => act(async () => { await api('sets', { method: 'POST', body: { sets: setsDraft } }); setsDirty = false; }, 'บันทึกเซทแล้ว ลูกค้าเห็นทันที') }, 'บันทึกทั้งหมด');
+  const missing = (D.defaultSets || []).filter((d) => !setsDraft.some((x) => x.id === d.id || (x.name || '').toLowerCase() === d.name.toLowerCase()));
+  const addDef = missing.length ? h('button', { class: 'btn', onclick: () => { setsDraft.push(...JSON.parse(JSON.stringify(missing))); dirty(); renderSets(); toast('เพิ่มเซทตัวละคร ' + missing.length + ' เซทแล้ว กด "บันทึกทั้งหมด" เพื่อให้ลูกค้าเห็น'); } }, '+ เซทตัวละครเริ่มต้น (' + missing.length + ')') : null;
   const add = h('button', { class: 'btn', onclick: () => { setsDraft.push({ name: '', price: 'เริ่มต้น 200 บาท', weapon: { line: 'Nightfall', tier: 3, plus: 10 }, power: { kind: 'breath' }, armor: { line: 'Nightfall', tier: 3, plus: 10 } }); dirty(); renderSets(); } }, '+ เพิ่มเซท');
   p.replaceChildren(
     h('p', { class: 'note' }, 'เซทที่ลูกค้าเห็นในหน้าสั่งทำ เรียงตามลำดับนี้ แก้แล้วกด "บันทึกทั้งหมด" · ชุด Nightfall หมวก/กางเกงจะถูกจำกัดที่ +3 ให้เอง'),
     h('datalist', { id: 'icon-keys' }, (iconKeys || []).map((k) => h('option', { value: k }))),
     h('div', { class: 'clist' }, cards.length ? cards : h('p', { class: 'empty' }, 'ยังไม่มีเซท กด "+ เพิ่มเซท"')),
-    h('div', { class: 'rowb setbar' }, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
+    h('div', { class: 'rowb setbar' }, addDef, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
 }

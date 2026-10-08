@@ -102,7 +102,7 @@ module.exports = function createAdmin(ctx) {
         version: ctx.version, mode: st.mode === 'key' ? 'key' : 'owner', ownerScript: !!st.ownerHash, base: baseUrl(req),
         customers: Object.entries(all).map(([id, c]) => publicCustomer(id, c, req)).sort((a, b) => (a.name || '').localeCompare(b.name || '')),
         seen, rejoin: ctx.rejoinPublic(), notify: ctx.notifyPublic(), backups: ctx.listBackups().slice(0, 15), serverTime: t,
-        orders: ctx.orders.list().map((o) => Object.assign({ summary: ctx.orders.summary(o) }, o)), orderStatuses: ctx.orders.STATUSES, sets: ctx.orders.getSets(),
+        orders: ctx.orders.list().map((o) => Object.assign({ summary: ctx.orders.summary(o) }, o)), orderStatuses: ctx.orders.STATUSES, sets: ctx.orders.getSets(), defaultSets: ctx.orders.defaultSets(),
       });
       return true;
     }
