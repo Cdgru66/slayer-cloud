@@ -85,7 +85,9 @@ const askId = async () => {
   for (;;) {
     const st = readSettings();
     const owner = st.mode !== 'key';
-    console.log('\n===== Slayer Fleet Cloud: จัดการลูกค้า =====');
+    let ver = '?'; try { ver = fs.readFileSync(path.join(__dirname, 'version.txt'), 'utf8').trim(); } catch (e) {}
+    console.log('\n===== Slayer Fleet Cloud: จัดการลูกค้า (v' + ver + ') =====');
+    console.log('โฟลเดอร์: ' + __dirname);
     console.log('โหมด: ' + (owner ? 'เจ้าของรันเอง (คุณรันสคริปต์ ลูกค้าดูอย่างเดียว)' : 'คีย์ลูกค้า (ลูกค้ารันสคริปต์ของตัวเอง)'));
     if (owner && !st.ownerHash) console.log('>> ยังไม่มีสคริปต์ของคุณ เลือก 5 เพื่อสร้าง');
     console.log(' 1) เพิ่มลูกค้าใหม่');

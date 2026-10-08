@@ -10,6 +10,9 @@ Set-Location $App
 function Say($t, $c = 'Gray') { Write-Host $t -ForegroundColor $c }
 
 Say '===== Slayer Fleet Cloud: อัปเดต =====' 'Cyan'
+$verFile = Join-Path $App 'version.txt'
+$oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { '(ไม่ทราบ)' }
+Say "เวอร์ชันในเครื่องตอนนี้: $oldVer"
 $tmp = Join-Path $env:TEMP 'slayer-update'
 if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
@@ -38,7 +41,12 @@ try {
   if (-not $got) {
     $dl = Get-ChildItem (Join-Path $env:USERPROFILE 'Downloads') -Filter 'slayer-cloud*.zip' -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
     if (-not $dl) { throw 'ไม่มีไฟล์อัปเดต: ดึงจาก GitHub ไม่ได้ และไม่เจอ slayer-cloud*.zip ใน Downloads' }
-    Say ('ใช้ไฟล์ ' + $dl.FullName + ' แทน')
+    Say ''
+    Say '*** ดึงจาก GitHub ไม่ได้ ***' 'Red'
+    Say ('เจอไฟล์ ' + $dl.Name + ' ใน Downloads (บันทึกเมื่อ ' + $dl.LastWriteTime.ToString('d MMM yyyy HH:mm') + ')') 'Yellow'
+    Say 'ไฟล์นี้อาจเป็นเวอร์ชันเก่า ถ้าไม่แน่ใจให้กด n แล้วแก้ token ก่อน' 'Yellow'
+    $ans = Read-Host 'ใช้ไฟล์นี้อัปเดตแทน? (y/n)'
+    if ($ans -ne 'y') { throw 'ยกเลิก: แก้ token ใน data\github_token.txt แล้วลองใหม่' }
     Copy-Item $dl.FullName $zip
   }
 
@@ -60,7 +68,9 @@ try {
     Copy-Item $_.FullName $App -Recurse -Force
   }
   Remove-Item $tmp -Recurse -Force
-  Say 'อัปเดตไฟล์เรียบร้อย' 'Green'
+  $newVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { '(ไม่ทราบ)' }
+  if ($newVer -eq $oldVer) { Say "อัปเดตไฟล์เรียบร้อย (เวอร์ชัน $newVer เป็นตัวล่าสุดอยู่แล้ว)" 'Green' }
+  else { Say "อัปเดตเรียบร้อย: $oldVer -> $newVer" 'Green' }
 } catch {
   Say ''
   Say ('อัปเดตไม่สำเร็จ: ' + $_.Exception.Message) 'Red'

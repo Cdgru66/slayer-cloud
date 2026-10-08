@@ -11,6 +11,7 @@ const PORT = Number(process.env.PORT) || 8800;
 const HOST = process.env.HOST || '127.0.0.1';
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 const PUBLIC_DIR = path.join(__dirname, 'public');
+let VERSION = 'dev'; try { VERSION = fs.readFileSync(path.join(__dirname, 'version.txt'), 'utf8').trim(); } catch (e) {}
 const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json'); // แก้ผ่าน admin.js เท่านั้น
 const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');   // โหมด + แฮชคีย์ของเจ้าของ (แก้ผ่าน admin.js)
 const OWNER = '__owner__';      // ที่เก็บไอดีที่เจ้าของรันเอง (โหมด owner)
@@ -246,7 +247,7 @@ const server = http.createServer((req, res) => {
   const ip = clientIp(req);
   const hsts = TRUST_PROXY && req.headers['x-forwarded-proto'] === 'https' ? { 'Strict-Transport-Security': 'max-age=31536000' } : {};
 
-  if (req.method === 'GET' && url.pathname === '/healthz') return send(res, 200, { ok: true });
+  if (req.method === 'GET' && url.pathname === '/healthz') return send(res, 200, { ok: true, version: VERSION });
 
   if (req.method === 'POST' && url.pathname === '/api/v1/ingest') {
     const a = authenticate(req, 'sfd_');
@@ -330,6 +331,6 @@ const server = http.createServer((req, res) => {
   send(res, 404, { error: 'not found' });
 });
 
-server.listen(PORT, HOST, () => console.log(`Slayer Fleet Cloud ฟังที่ http://${HOST}:${PORT} (ข้อมูล: ${DATA_DIR})`));
+server.listen(PORT, HOST, () => console.log(`Slayer Fleet Cloud v${VERSION} ฟังที่ http://${HOST}:${PORT}\nโฟลเดอร์: ${__dirname}\nข้อมูล: ${DATA_DIR}`));
 server.on('error', (e) => { console.error(e.message); process.exit(1); });
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { flush(); process.exit(0); });
