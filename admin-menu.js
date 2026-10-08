@@ -76,6 +76,7 @@ const askId = async () => {
     console.log(' 9) ออกคีย์ใหม่ (ลิงก์หลุด ลิงก์เก่าจะใช้ไม่ได้)');
     console.log(' 10) ลบลูกค้า');
     console.log(' 11) ตั้งรหัสผ่านเข้าเว็บใหม่ (ลูกค้าลืมรหัส)');
+    console.log(' 12) รีจอยอัตโนมัติ / แจ้งเตือน Discord');
     console.log(' M) สลับโหมด');
     console.log(' 0) ออก');
     const c = await ask('เลือก: ');
@@ -120,6 +121,27 @@ const askId = async () => {
       const url = await getUrl(); if (!url) continue;
       run(['links'], url);
       if (owner) console.log('ถ้าที่อยู่เซิร์ฟเวอร์เปลี่ยน อย่าลืมเลือก 5 สร้างสคริปต์ของคุณใหม่ด้วย (สคริปต์เก่ายังส่งไปที่อยู่เดิม)');
+    } else if (k === '12') {
+      run(['rejoin', 'show']);
+      console.log('\n 1) ตั้งค่า   2) ทดสอบต่อ RAM   3) ดูประวัติรีจอยล่าสุด   0) กลับ');
+      const m = ((await ask('เลือก: ')) || '').trim();
+      if (m === '1') {
+        const args = ['rejoin', 'set'];
+        const en = ((await ask('เปิดรีจอยอัตโนมัติ? (y = เปิด / n = ปิด / Enter = ไม่เปลี่ยน): ')) || '').trim().toLowerCase();
+        if (en === 'y' || en === 'n') args.push('enabled=' + (en === 'y' ? 'on' : 'off'));
+        const port = ((await ask('พอร์ต Web Server ของ RAM (Enter = ไม่เปลี่ยน, ค่าเริ่มต้น 7963): ')) || '').trim();
+        if (port) args.push('port=' + port);
+        const pw = ((await ask('รหัส Web Server ของ RAM (Enter = ไม่เปลี่ยน, พิมพ์ - = ลบ): ')) || '').trim();
+        if (pw) args.push('password=' + (pw === '-' ? '' : pw));
+        const am = ((await ask('ถือว่าหลุดเมื่อไม่มีข้อมูลกี่นาที (Enter = ไม่เปลี่ยน, ค่าเริ่มต้น 5): ')) || '').trim();
+        if (am) args.push('afterMin=' + am);
+        const dc = ((await ask('ลิงก์ Discord webhook สำหรับแจ้งเตือน (Enter = ไม่เปลี่ยน, - = ลบ): ')) || '').trim();
+        if (dc) args.push('discord=' + (dc === '-' ? '' : dc));
+        const ex = ((await ask('ไอดีที่ไม่ต้องรีจอย คั่นด้วย , (Enter = ไม่เปลี่ยน, - = ล้าง): ')) || '').trim();
+        if (ex) args.push('exclude=' + (ex === '-' ? '' : ex));
+        run(args);
+      } else if (m === '2') run(['rejoin', 'test']);
+      else if (m === '3') run(['rejoin', 'log']);
     } else if (k === '11') {
       const id = await askId(); if (!id) continue;
       const pw = ((await ask('รหัสผ่านใหม่ (กด Enter = สุ่มให้): ')) || '').trim();

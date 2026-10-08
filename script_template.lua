@@ -6,6 +6,7 @@ local MAX_ITEMS = 18            -- จำกัดจำนวนของต่
 local ICON_STYLE = "author"     -- "author" = ไอคอนเล็กหน้าชื่อ, "thumbnail" = ไอคอนใหญ่ด้านขวา
 local LIVE_EDIT = true       -- true = แก้ข้อความเดิมในห้อง (ไม่ส่งใหม่ทุกรอบ ห้องไม่รก)
 local USE_ANSI = true        -- true = แถบสี/ตัวอักษรสีในกล่องโค้ด (ถ้าเห็นเป็นตัวอักษรแปลก ๆ ให้ปิด)
+local AUTO_REJOIN = true        -- true = หลุด/โดนเตะ (หน้าต่างเกมยังอยู่) แล้วพากลับเข้าเกมเอง
 local DEBUG_ICONS = false       -- true = พิมพ์รายการรูปที่เจอใน UI ลง console + คลิปบอร์ด (ไว้ส่งให้ผมแก้)
 
 -- สำหรับต่อกับเว็บของคุณ (ไม่บังคับ)
@@ -24,6 +25,11 @@ local WATCH_ITEMS = {
 
 -- ===== ส่วนหลัก =====
 if not game:IsLoaded() then game.Loaded:Wait() end
+-- กันรันซ้ำ (เช่น auto-execute กับ queue_on_teleport ทำงานพร้อมกัน)
+if getgenv then
+    if getgenv().SLAYER_FLEET_RUNNING then return end
+    getgenv().SLAYER_FLEET_RUNNING = true
+end
 
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
@@ -768,6 +774,68 @@ local function cycle()
     print(">> " .. (allOk and "ส่ง/อัปเดต webhook แล้ว" or "ส่ง webhook ไม่ครบ (จะลองใหม่รอบหน้า)")
         .. " (" .. #messages .. " ข้อความ) " .. os.date("%H:%M:%S"))
 end
+
+-- ===== รีจอยอัตโนมัติ (หลุดแต่หน้าต่างเกมยังเปิดอยู่) =====
+local function setupRejoin()
+    if not AUTO_REJOIN then return end
+    local TeleportService = game:GetService("TeleportService")
+    local GuiService = game:GetService("GuiService")
+    local busy = false
+    local placeId = game.PlaceId
+
+    -- ให้สคริปต์นี้รันต่อเองหลังเข้าเกมใหม่ (ถ้า executor รองรับ และใช้ผ่านตัวโหลด)
+    local queue = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
+    local function queueSelf()
+        if not queue or WEB_API_KEY == "" or WEB_API_URL == "" then return end
+        local base = WEB_API_URL:match("^(https?://[^/]+)")
+        if not base then return end
+        pcall(queue, 'getgenv().SLAYER_KEY = "' .. WEB_API_KEY .. '"\nloadstring(game:HttpGet("' .. base .. '/script.lua"))()')
+    end
+
+    local function rejoin(reason)
+        if busy then return end
+        local r = tostring(reason or ""):lower()
+        if r:find("ban", 1, true) or r:find("exploit", 1, true) or r:find("same account launched", 1, true) then
+            warn(">> ไม่รีจอย: " .. tostring(reason)) -- โดนแบน/จับได้ หรือมีคนล็อกอินไอดีนี้ที่อื่น
+            return
+        end
+        busy = true
+        print(">> หลุดจากเกม (" .. tostring(reason) .. ") กำลังเข้าเกมใหม่...")
+        queueSelf()
+        task.spawn(function()
+            local backoff = 10
+            while true do
+                pcall(function() TeleportService:Teleport(placeId, player) end)
+                task.wait(backoff)
+                backoff = math.min(backoff * 2, 300) -- 10 วิ, 20, 40 ... สูงสุด 5 นาที ไม่ยิงรัว
+            end
+        end)
+    end
+
+    pcall(function()
+        GuiService.ErrorMessageChanged:Connect(function(msg)
+            if msg and msg ~= "" then rejoin(msg) end
+        end)
+    end)
+    pcall(function()
+        local overlay = game:GetService("CoreGui"):WaitForChild("RobloxPromptGui", 10):WaitForChild("promptOverlay", 10)
+        overlay.ChildAdded:Connect(function(c)
+            if c.Name == "ErrorPrompt" then
+                task.wait(1)
+                local msg = ""
+                pcall(function() msg = GuiService:GetErrorMessage() end)
+                rejoin(msg ~= "" and msg or "ErrorPrompt")
+            end
+        end)
+    end)
+    -- teleport ล้มเหลว (เช่นเน็ตยังไม่กลับ) ให้ลองต่อ
+    pcall(function()
+        TeleportService.TeleportInitFailed:Connect(function(p, result, err)
+            if p == player then print(">> เข้าเกมใหม่ไม่สำเร็จ (" .. tostring(err) .. ") จะลองอีกครั้ง") end
+        end)
+    end)
+end
+pcall(setupRejoin)
 
 loadCache()
 loadIds()

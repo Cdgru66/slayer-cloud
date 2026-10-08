@@ -86,6 +86,73 @@ function flush() {
 }
 setInterval(flush, 30000).unref();
 
+// ---------- รีจอยอัตโนมัติผ่าน Roblox Account Manager (RAM) ----------
+// ตั้งค่าใน data/rejoin.json ผ่าน admin.bat เมนูรีจอย  ไม่มีการเก็บ cookie/รหัส Roblox ใด ๆ ที่นี่ ใช้ RAM เปิดไอดีให้
+const REJOIN_FILE = path.join(DATA_DIR, 'rejoin.json');
+const REJOIN_LOG = path.join(DATA_DIR, 'rejoin.log');
+const DEFAULT_PLACE = 136406881576517; // Slayer 2
+let rj = { cfg: {}, mtime: -1 };
+const rjState = new Map(); // ชื่อไอดี -> { n: ครั้งที่สั่งเปิด, at: เวลาสั่งล่าสุด, nextAt, alerted }
+function rejoinCfg() {
+  try {
+    const st = fs.statSync(REJOIN_FILE);
+    if (st.mtimeMs !== rj.mtime) rj = { cfg: JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')), mtime: st.mtimeMs };
+  } catch (e) { rj = { cfg: {}, mtime: -1 }; }
+  return rj.cfg;
+}
+function rjLog(line) {
+  console.log('[รีจอย] ' + line);
+  try { fs.appendFileSync(REJOIN_LOG, new Date().toLocaleString('th-TH') + '  ' + line + '\n'); } catch (e) {}
+}
+async function discord(cfg, text) {
+  if (!/^https:\/\/(discord\.com|discordapp\.com|ptb\.discord\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(cfg.discordWebhook || '')) return;
+  try {
+    await fetch(cfg.discordWebhook, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'Slayer Fleet', content: text }), signal: AbortSignal.timeout(8000) });
+  } catch (e) {}
+}
+async function rejoinTick() {
+  loadCustomers();
+  const cfg = rejoinCfg();
+  if (settings.mode !== 'owner' || (!cfg.enabled && !cfg.discordWebhook)) return;
+  const pool = accounts[OWNER] || {}, t = now();
+  const after = Math.max(2, Number(cfg.afterMin) || 5) * 60;
+  const giveUp = (Number(cfg.giveUpHours) || 12) * 3600;
+  const skip = new Set((cfg.exclude || []).map((x) => String(x).toLowerCase()));
+  for (const [name, a] of Object.entries(pool)) {
+    if (!a.s) continue;
+    const silent = t - a.s.time;
+    const st = rjState.get(name);
+    if (silent < after) { // ออนไลน์อยู่
+      if (st && (st.n || st.alerted)) { rjLog(`${name} กลับมาออนไลน์แล้ว`); discord(cfg, `✅ **${name}** กลับมาออนไลน์แล้ว`); }
+      rjState.delete(name);
+      continue;
+    }
+    if (silent > giveUp || skip.has(name.toLowerCase())) continue; // เลิกใช้ไอดีนี้แล้ว หรือถูกยกเว้น
+    const s2 = st || { n: 0, at: 0, nextAt: 0, alerted: false };
+    if (!cfg.enabled) { // โหมดแจ้งเตือนอย่างเดียว
+      if (!s2.alerted) { s2.alerted = true; rjState.set(name, s2); rjLog(`${name} ออฟไลน์ ${Math.round(silent / 60)} นาที`); discord(cfg, `⚠️ **${name}** ออฟไลน์ ${Math.round(silent / 60)} นาทีแล้ว`); }
+      continue;
+    }
+    if (t < s2.nextAt) continue;
+    s2.n++; s2.at = t; s2.alerted = true;
+    s2.nextAt = t + Math.min(60, (Number(cfg.cooldownMin) || 5) * Math.pow(2, s2.n - 1)) * 60; // 5, 10, 20, 40, 60 นาที
+    rjState.set(name, s2);
+    const port = Number(cfg.port) || 7963, place = Number(cfg.placeId) || DEFAULT_PLACE;
+    const u = `http://127.0.0.1:${port}/LaunchAccount?Account=${encodeURIComponent(name)}&PlaceId=${place}` + (cfg.password ? `&Password=${encodeURIComponent(cfg.password)}` : '');
+    let ok = false, msg = '';
+    try { const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); msg = (await r.text()).trim().slice(0, 120); ok = r.ok; }
+    catch (e) { msg = 'ต่อ Roblox Account Manager ไม่ได้ (เปิดโปรแกรมและ Web Server อยู่หรือเปล่า)'; }
+    rjLog(`${name} เงียบ ${Math.round(silent / 60)} นาที -> สั่ง RAM เปิดใหม่ (ครั้งที่ ${s2.n}): ${ok ? 'สำเร็จ' : 'ไม่สำเร็จ'} ${msg}`);
+    discord(cfg, ok ? `🔄 **${name}** หลุดไป ${Math.round(silent / 60)} นาที กำลังเข้าเกมใหม่ (ครั้งที่ ${s2.n})`
+                    : `❌ เปิด **${name}** ใหม่ไม่สำเร็จ: ${msg}`);
+    await new Promise((r) => setTimeout(r, Math.max(5, Number(cfg.gapSec) || 20) * 1000)); // เว้นระยะ ไม่เปิดหลายไอดีพร้อมกัน
+  }
+}
+let rjBusy = false;
+setInterval(() => { if (rjBusy) return; rjBusy = true; rejoinTick().catch((e) => console.error(e)).finally(() => { rjBusy = false; }); },
+  Number(process.env.REJOIN_TICK_MS) || 30000).unref();
+
 // ---------- จำกัดอัตรา ----------
 const buckets = new Map();
 function rate(key, limit) {
@@ -228,7 +295,10 @@ const server = http.createServer((req, res) => {
     let list;
     if (settings.mode === 'owner') { // เห็นเฉพาะไอดีที่เจ้าของกำหนดให้ลูกค้าคนนี้
       const pool = accounts[OWNER] || {};
-      list = Object.keys(pool).filter((n) => a.c._set && a.c._set.has(n.toLowerCase())).map((n) => pool[n]);
+      list = Object.keys(pool).filter((n) => a.c._set && a.c._set.has(n.toLowerCase())).map((n) => {
+        const r = rjState.get(n);
+        return r && r.n ? Object.assign({}, pool[n], { rejoin: { at: r.at, n: r.n } }) : pool[n];
+      });
     } else list = Object.values(accounts[a.id] || {});
     return send(res, 200, { serverTime: now(), expires: a.c.expires || null, mode: settings.mode, accounts: list });
   }

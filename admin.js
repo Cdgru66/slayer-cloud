@@ -6,6 +6,7 @@
 //   node admin.js assign <id> a,b,c        เพิ่มไอดีในเกมให้ลูกค้า     node admin.js unassign <id> a,b
 //   node admin.js setpass <id> [--pass รหัส]  ตั้งรหัสผ่านเข้าเว็บของลูกค้า (ไม่ใส่ = สุ่มให้)
 //   node admin.js links --url URL          แสดงลิงก์ลูกค้าทุกคน (ใช้ตอนลิงก์เซิร์ฟเวอร์เปลี่ยน)
+//   node admin.js rejoin show | set key=value ... | test | log   ตั้งค่ารีจอยอัตโนมัติผ่าน Roblox Account Manager
 //   node admin.js seen                     ไอดีที่ส่งข้อมูลเข้ามา และเป็นของใคร
 //   node admin.js list | renew <id> --days 30 | revoke <id> | unrevoke <id> | rotate <id> --url URL | remove <id>
 const fs = require('fs');
@@ -156,6 +157,54 @@ if (cmd === 'mode') {
   c.pass = hashPass(pw); save();
   console.log(`\nรหัสผ่านใหม่ของ ${c.name}: ${pw}`);
   console.log('ล็อกอินด้วยชื่อผู้ใช้ Roblox: ' + ((c.accounts || []).join(', ') || '(ยังไม่ได้กำหนดไอดี ใช้เมนูกำหนดไอดีก่อน)') + '\n');
+} else if (cmd === 'rejoin') {
+  const RF = path.join(DATA_DIR, 'rejoin.json');
+  const cfg = readJson(RF, {});
+  const sub = pos[0] || 'show';
+  const showCfg = () => {
+    console.log('\n===== รีจอยอัตโนมัติ (ผ่าน Roblox Account Manager) =====');
+    console.log('สถานะ:            ' + (cfg.enabled ? 'เปิด' : 'ปิด') + (cfg.enabled ? '' : (cfg.discordWebhook ? '  (แจ้งเตือน Discord อย่างเดียว)' : '')));
+    console.log('พอร์ต RAM:         ' + (cfg.port || 7963));
+    console.log('รหัส Web Server:    ' + (cfg.password ? '(ตั้งไว้แล้ว)' : '(ไม่มี)'));
+    console.log('ถือว่าหลุดหลังเงียบ: ' + (cfg.afterMin || 5) + ' นาที');
+    console.log('Discord แจ้งเตือน:  ' + (cfg.discordWebhook ? '(ตั้งไว้แล้ว)' : '(ไม่มี)'));
+    console.log('ไอดีที่ไม่ต้องรีจอย: ' + ((cfg.exclude || []).join(', ') || '(ไม่มี)'));
+  };
+  if (sub === 'show') showCfg();
+  else if (sub === 'set') {
+    for (const kv of pos.slice(1)) {
+      const i = kv.indexOf('='); if (i < 0) continue;
+      const k = kv.slice(0, i), v = kv.slice(i + 1);
+      if (k === 'enabled') cfg.enabled = v === '1' || v === 'true' || v === 'on';
+      else if (k === 'port') { if (!/^\d{2,5}$/.test(v)) die('พอร์ตต้องเป็นตัวเลข'); cfg.port = Number(v); }
+      else if (k === 'password') { if (v && !/^[A-Za-z0-9]{6,}$/.test(v)) die('รหัส RAM ต้องเป็นตัวอักษร/ตัวเลข 6 ตัวขึ้นไป (ตามกติกาของ RAM)'); cfg.password = v || undefined; }
+      else if (k === 'afterMin') { const n = Number(v); if (!(n >= 2 && n <= 120)) die('afterMin ต้องอยู่ระหว่าง 2-120'); cfg.afterMin = n; }
+      else if (k === 'discord') { if (v && !/^https:\/\/(discord\.com|discordapp\.com|ptb\.discord\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(v)) die('ลิงก์ Discord webhook ไม่ถูกต้อง'); cfg.discordWebhook = v || undefined; }
+      else if (k === 'exclude') cfg.exclude = parseNames(v);
+      else if (k === 'placeId') { if (!/^\d+$/.test(v)) die('placeId ต้องเป็นตัวเลข'); cfg.placeId = Number(v); }
+    }
+    writeJson(RF, cfg); console.log('บันทึกแล้ว (เซิร์ฟเวอร์ใช้ค่าใหม่ภายใน 30 วินาที ไม่ต้องรีสตาร์ท)'); showCfg();
+  } else if (sub === 'test') {
+    const port = cfg.port || 7963;
+    const u = `http://127.0.0.1:${port}/GetAccounts` + (cfg.password ? `?Password=${encodeURIComponent(cfg.password)}` : '');
+    console.log('\nกำลังทดสอบต่อ Roblox Account Manager ที่พอร์ต ' + port + ' ...');
+    fetch(u, { signal: AbortSignal.timeout(8000) }).then(async (r) => {
+      const t = (await r.text()).trim();
+      if (!r.ok) { console.log(`RAM ตอบกลับ ${r.status}: ${t.slice(0, 150)}`); console.log('เช็คใน RAM: เปิด Web Server, ติ๊ก Allow GetAccounts และ Allow LaunchAccount, รหัสตรงกัน'); process.exit(1); }
+      const inRam = new Set(t.split(',').map((x) => x.trim().toLowerCase()).filter(Boolean));
+      console.log(`ต่อสำเร็จ RAM มีไอดี ${inRam.size} ตัว`);
+      const pool = (readJson(path.join(DATA_DIR, 'data.json'), {}).__owner__) || {};
+      const names = Object.keys(pool);
+      if (!names.length) { console.log('(ยังไม่มีไอดีส่งข้อมูลเข้ามา จึงยังเทียบชื่อไม่ได้)'); return; }
+      const miss = names.filter((n) => !inRam.has(n.toLowerCase()));
+      console.log(`ไอดีที่ส่งข้อมูลเข้ามา ${names.length} ตัว รีจอยได้ ${names.length - miss.length} ตัว`);
+      if (miss.length) console.log('*** ไม่มีใน RAM (รีจอยไม่ได้): ' + miss.join(', '));
+    }).catch(() => { console.log('ต่อไม่ได้: เปิด Roblox Account Manager แล้วหรือยัง และเปิด Web Server ที่พอร์ต ' + port + ' หรือเปล่า'); process.exit(1); });
+  } else if (sub === 'log') {
+    let t = ''; try { t = fs.readFileSync(path.join(DATA_DIR, 'rejoin.log'), 'utf8'); } catch (e) {}
+    const lines = t.trim().split('\n').filter(Boolean);
+    console.log(lines.length ? '\n' + lines.slice(-15).join('\n') : 'ยังไม่มีประวัติรีจอย');
+  }
 } else if (cmd === 'links') {
   const base = baseUrl();
   const rows = Object.entries(j);

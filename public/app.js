@@ -22,11 +22,11 @@ function rate(a){const p=a.hist.filter(x=>x.t>=now()-3600);if(p.length<2)return 
 /* นับถอยหลังรอบอัปเดต + บอส */
 const mmss=x=>{x=Math.max(0,Math.round(x));return Math.floor(x/60)+':'+String(x%60).padStart(2,'0')};
 const nextIn=a=>a.s.time+(a.s.interval||300)-now();
-function cdText(a,st){if(st==='off')return'ออฟไลน์ '+ago(now()-a.s.time);const l=nextIn(a);return l>0?'อีก '+mmss(l):l>-30?'กำลังอัปเดต…':'ไม่มีข้อมูลใหม่ '+mmss(-l)}
+function cdText(a,st){if(st==='off'){if(a.rejoin&&now()-a.rejoin.at<600)return'กำลังเข้าเกมใหม่…'+(a.rejoin.n>1?' (ครั้งที่ '+a.rejoin.n+')':'');return'ออฟไลน์ '+ago(now()-a.s.time)}const l=nextIn(a);return l>0?'อีก '+mmss(l):l>-30?'กำลังอัปเดต…':'ไม่มีข้อมูลใหม่ '+mmss(-l)}
 function bossRate(a){const p=a.hist.filter(x=>x.t>=now()-3600&&x.b!=null);if(p.length<2)return null;return Math.max(0,p[p.length-1].b-p[0].b)}
 function power(s){if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},h('b',{},'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},h('b',{},'息'),s.breathing);return null}
 function fight(s,st,big){if(!s.boss||st==='off')return null;return h('span',{class:'fight'+(big?' big':''),title:'บอสที่อยู่ใกล้ตัวละครที่สุดตอนส่งข้อมูล'},h('i',{class:'sw','aria-hidden':'true'}),'กำลังสู้ ',h('b',{},s.boss.name),s.boss.hp!=null?h('span',{class:'hp'},h('i',{style:`width:${Math.max(0,Math.min(100,s.boss.hp))}%`})):null)}
-function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.get(el.dataset.cd);if(!a)return;const st=stat(a);el.textContent=cdText(a,st);el.classList.toggle('late',st!=='off'&&nextIn(a)<=-30)});
+function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.get(el.dataset.cd);if(!a)return;const st=stat(a);el.textContent=cdText(a,st);el.classList.toggle('late',st!=='off'&&nextIn(a)<=-30);el.classList.toggle('rj',st==='off'&&!!a.rejoin&&now()-a.rejoin.at<600)});
  const on=[...A.values()].filter(a=>stat(a)!=='off');const el=$('#t-next');if(!el)return;
  if(!on.length){el.textContent='';return}const iv=Math.min(...on.map(a=>a.s.interval||300)),l=Math.min(...on.map(nextIn));
  el.replaceChildren(h('i',{class:'live'+(l<=0?(l>-30?' busy':' late'):'')}),l>0?'อัปเดตทุก '+Math.round(iv/60)+' นาที · รอบถัดไปใน '+mmss(l):l>-30?'กำลังรับข้อมูลรอบใหม่…':'ยังไม่ได้รับข้อมูลรอบใหม่ (เลยมา '+mmss(-l)+')')}
@@ -121,7 +121,7 @@ if(VIEW){const hs=location.hash.slice(1);if(/^sfv_[0-9a-f]{48}$/.test(hs))VTOKEN
 async function pull(){try{const r=await fetch(VIEW?'/api/v1/state':'/api/state',{cache:'no-store',headers:VIEW?{Authorization:'Bearer '+VTOKEN}:{}});
  if(!r.ok){if(VIEW&&(r.status===401||r.status===403)){let m='';try{m=(await r.json()).error}catch(e){}A.clear();render();gate(r.status===401?'เซสชันหมดอายุหรือร้านออกคีย์ใหม่ กรุณาเข้าสู่ระบบอีกครั้ง':m==='license expired'?'หมดอายุแล้ว ติดต่อร้านเพื่อต่ออายุ':m==='access revoked'?'บัญชีนี้ถูกระงับ ติดต่อร้าน':'ใช้งานไม่ได้: '+m);return}throw 0}const d=await r.json();
  if(VIEW&&d.expires){const l=$('#lic');l.hidden=false;l.textContent='ใช้งานได้ถึง '+new Date(d.expires*1000).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}
- const off=d.serverTime-now();A.clear();for(const a of d.accounts){if(a&&a.s){a.s.time-=off;a.hist.forEach(x=>x.t-=off);A.set(a.s.name,a)}}
+ const off=d.serverTime-now();A.clear();for(const a of d.accounts){if(a&&a.s){a.s.time-=off;a.hist.forEach(x=>x.t-=off);if(a.rejoin)a.rejoin.at-=off;A.set(a.s.name,a)}}
  a_ok();render()}catch(e){$('#mode').textContent='ต่อเซิร์ฟเวอร์ไม่ได้ (ปิดอยู่หรือเปล่า)'}}
 function a_ok(){$('#mode').textContent=A.size?'ข้อมูลสดจากสคริปต์ · '+A.size+' ไอดี':(VIEW?'ยังไม่มีข้อมูลไอดีของคุณ (ผู้ดูแลยังไม่ได้เริ่มรัน หรือยังไม่ได้เพิ่มไอดีให้)':'รอข้อมูลจากสคริปต์... วางสคริปต์ใน executor แล้วรัน')}
 /* ---------- เข้าสู่ระบบ (หน้าลูกค้า) ---------- */
