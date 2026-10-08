@@ -35,6 +35,7 @@ const STATIC = {
   '/admin.js': ['admin.js', 'application/javascript; charset=utf-8'],
   '/order': ['order.html', 'text/html; charset=utf-8'],
   '/order.js': ['order.js', 'application/javascript; charset=utf-8'],
+  '/pay-qr.jpg': ['pay-qr.jpg', 'image/jpeg'], // QR พร้อมเพย์ของร้าน (เปลี่ยนรูปได้ที่ public/pay-qr.jpg)
 };
 const CSP = [
   "default-src 'none'", "script-src 'self'",

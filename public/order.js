@@ -76,7 +76,8 @@ $('#send').onclick = async () => {
       Object.assign(document.createElement('h2'), { textContent: 'ส่งออเดอร์แล้ว' }),
       Object.assign(document.createElement('p'), { className: 'tk-id', textContent: 'เลขที่ ' + j.id }),
       Object.assign(document.createElement('p'), { textContent: 'ร้านจะติดต่อกลับทาง ' + (via ? via + ' ' : '') + d.contact.handle + ' เร็ว ๆ นี้ เพื่อสรุปรายละเอียด ราคา และการชำระเงิน' }),
-      Object.assign(document.createElement('pre'), { className: 'tk-body', textContent: text(d) }));
+      Object.assign(document.createElement('pre'), { className: 'tk-body', textContent: text(d) }),
+      payBox(j.id));
     $('#ticket').scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch (e) { $('#err').textContent = 'ต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง'; } finally { btn.disabled = false; }
 };
@@ -178,3 +179,16 @@ function buildPickers() {
 fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); });
 // ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
 $('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
+
+// หลังส่งออเดอร์: ขั้นตอนชำระเงิน + QR พร้อมเพย์
+function payBox(id) {
+  const el = (t, c, txt) => { const e = document.createElement(t); if (c) e.className = c; if (txt) e.textContent = txt; return e; };
+  const box = el('div', 'paydone');
+  box.append(el('h3', '', 'ขั้นตอนต่อไป'));
+  const ol = el('ol', 'steps');
+  for (const t of ['รอร้านติดต่อกลับเพื่อสรุปรายละเอียดและราคา', 'ร้านยืนยันราคาแล้ว จึงโอนผ่าน QR ด้านล่าง', 'ส่งสลิปพร้อมเลขออเดอร์ ' + id + ' ให้ร้าน', 'ร้านเริ่มทำไอดี ติดตามความคืบหน้าได้ตลอด']) ol.append(el('li', '', t));
+  const img = new Image(590, 800); img.src = '/pay-qr.jpg'; img.alt = 'QR พร้อมเพย์ของร้าน'; img.className = 'qr';
+  const dl = el('a', 'btn', 'บันทึกรูป QR'); dl.href = '/pay-qr.jpg'; dl.download = 'qr-promptpay.jpg';
+  box.append(ol, img, el('p', 'warn', 'กรุณาโอนหลังร้านยืนยันราคาแล้วเท่านั้น'), dl);
+  return box;
+}

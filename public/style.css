@@ -451,3 +451,17 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 @media (prefers-reduced-motion:reduce){.livetag{animation:none}}
 img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-shadow:0 0 0 1.5px rgba(216,67,44,.55)}
 .pw img.pwi{width:18px;height:18px;flex:none;object-fit:contain;margin:-2px 0 -2px -3px;filter:drop-shadow(0 0 3px rgba(0,0,0,.6))}
+/* ชำระเงิน */
+.pay{margin:12px 0 4px;border-radius:12px;background:var(--lac);box-shadow:inset 0 0 0 1px var(--edge);overflow:hidden}
+.pay summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:14px}
+.pay summary::-webkit-details-marker{display:none}
+.pay summary small{margin-left:auto;color:var(--gold-hi);font-size:12.5px}
+.pay[open] summary small{visibility:hidden}
+.pay-ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:#1d4a73;color:#fff;font-weight:700;font-size:13px}
+.pay img,.paydone .qr{display:block;width:100%;max-width:280px;height:auto;margin:0 auto;border-radius:12px;animation:sf-in .2s ease-out}
+.pay p{padding:10px 14px 14px;margin:0;font-size:12.5px;color:var(--mu);text-align:center}.pay p b{color:var(--tx);font-weight:500}
+.paydone{margin-top:16px;display:grid;gap:12px;text-align:left}
+.paydone h3{font:600 16px var(--serif);margin:0}
+.paydone .steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:13.5px;color:var(--tx)}
+.paydone .warn{margin:0;text-align:center;font-size:12.5px;color:var(--warn)}
+.paydone .btn{justify-self:center}
