@@ -29,7 +29,7 @@ function data() {
   const top = gear('t'), bottom = $('#same').checked ? top : gear('b');
   return {
     clan: $('#clan').value.trim(),
-    weapon: Object.assign(gear('w'), { type: $('#w-type').value, mastery: num('#w-mas') }),
+    weapon: Object.assign(gear('w'), { type: $('#w-type').value, variant: varEl() ? varEl().value : '', mastery: num('#w-mas') }),
     power: { kind, name: $('#p-name').value.trim(), mastery: num('#p-mas') },
     top, bottom, title: $('#title').value.trim(), level: num('#level'),
     brief: $('#brief').value.trim(), roblox: $('#roblox').value.trim(),
@@ -41,7 +41,7 @@ function text(d) {
   const L = [];
   if (d.pack) L.push('แพ็กเกจ: ' + d.pack);
   if (d.clan) L.push('ตระกูล: ' + d.clan);
-  if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.type} ${g(d.weapon)}`.trim() + (d.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${d.weapon.mastery})` : ''));
+  if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.variant ? d.weapon.variant + ' ' + d.weapon.type + ' · ' : d.weapon.type + ' '}${g(d.weapon)}`.trim() + (d.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${d.weapon.mastery})` : ''));
   if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + (d.power.mastery ? ` (ฟาร์มให้จน Mastery ${d.power.mastery})` : ''));
   else if (d.power.mastery) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: (ฟาร์มให้จน Mastery ${d.power.mastery})`);
   if ($('#same').checked) { if (g(d.top)) L.push('เสื้อ, กางเกง: ' + g(d.top)); }
@@ -62,6 +62,7 @@ $('#copy').onclick = async () => {
 };
 $('#send').onclick = async () => {
   const d = data(); $('#err').textContent = '';
+  { const cp = typeof compatProblem === 'function' ? compatProblem() : null; if (cp) { $('#err').textContent = 'อาวุธกับปราณจับคู่กันไม่ได้: ' + cp; $('#w-type').closest('fieldset').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; } }
   if (!d.contact.handle) { $('#err').textContent = 'กรุณาใส่ช่องทางติดต่อกลับ (ข้อ 6)'; $('#c-handle').focus(); return; }
   if (d.roblox && !/^[A-Za-z0-9_]{3,20}$/.test(d.roblox)) { $('#err').textContent = 'ชื่อไอดี Roblox ใช้ได้แค่ตัวอักษรอังกฤษ ตัวเลข และ _'; $('#roblox').focus(); return; }
   const btn = $('#send'); btn.disabled = true;
@@ -128,7 +129,7 @@ let openDD = null;
 function closeDD() { if (openDD) { openDD.list.hidden = true; openDD.btn.setAttribute('aria-expanded', 'false'); openDD = null; } }
 document.addEventListener('click', (e) => { if (openDD && !openDD.box.contains(e.target)) closeDD(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && openDD) { const b = openDD.btn; closeDD(); b.focus(); } });
-function picker(el, list, iconOf, title, where, isClan) {
+function picker(el, list, iconOf, title, where, isClan, dis) {
   const box = document.createElement('div'); box.className = 'dd';
   const lab = document.createElement('span'); lab.className = 'dd-cap'; lab.textContent = title;
   const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dd-btn f'; btn.setAttribute('aria-haspopup', 'listbox'); btn.setAttribute('aria-expanded', 'false');
@@ -136,15 +137,17 @@ function picker(el, list, iconOf, title, where, isClan) {
   box.append(lab, btn, ul);
   const items = () => (typeof list === 'function' ? list() : list);
   const draw = () => {
-    const cur = el.value, label = cur || (el.tagName === 'INPUT' ? 'เลือก หรือพิมพ์เองด้านล่าง' : 'ไม่ระบุ');
+    const cur = el.value, label = cur || (el.tagName === 'INPUT' ? 'เลือก หรือพิมพ์เองด้านล่าง' : el.id === 'w-var' ? 'ร่างปกติ' : 'ไม่ระบุ');
     const t = document.createElement('span'); t.className = 'dd-t'; t.textContent = label;
     const chev = document.createElement('span'); chev.className = 'dd-chev'; chev.textContent = '▾';
     btn.replaceChildren(icon(cur || 'ไม่ระบุ', iconOf(cur), isClan), t, chev);
     ul.replaceChildren(...items().map((v) => {
       const o = document.createElement('button'); o.type = 'button'; o.className = 'dd-opt'; o.setAttribute('role', 'option'); o.setAttribute('aria-selected', String(v === cur));
-      const ot = document.createElement('span'); ot.textContent = v || 'ไม่ระบุ';
+      const ot = document.createElement('span'); ot.textContent = v || (el.id === 'w-var' ? 'ร่างปกติ' : 'ไม่ระบุ');
       o.append(icon(v || 'ไม่ระบุ', iconOf(v), isClan), ot);
-      o.onclick = () => { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); closeDD(); redrawAll(); btn.focus(); };
+      const r = dis ? dis(v) : null, why = r && (r.text || r), block = r && !r.soft;
+      if (why) { if (block) o.setAttribute('aria-disabled', 'true'); o.title = why; const sm = document.createElement('small'); sm.className = 'dd-why' + (block ? '' : ' soft'); sm.textContent = why; o.append(sm); }
+      o.onclick = () => { if (block) { toast(why, true); return; } el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); closeDD(); redrawAll(); btn.focus(); };
       return o;
     }));
   };
@@ -180,7 +183,7 @@ function buildPickers() {
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
   redrawAll();
 }
-fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildPacks(); });
+fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildVariant(); buildPacks(); });
 // ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
 $('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
 
@@ -215,6 +218,7 @@ function applyPack(pk) {
   packSel = pk.id;
   if (pk.set.kind) { kind = pk.set.kind; document.querySelectorAll('.seg.big button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.k === kind))); setPowerList(); }
   for (const [k, v] of Object.entries(pk.set)) { if (k === 'kind') continue; const el = $('#' + k); if (el) el.value = v; }
+  if (varEl()) { varEl().value = pk.set['w-var'] || ''; }
   $('#same').checked = true; $('#row-bot').hidden = true; $('#lbl-top').textContent = 'เสื้อ + กางเกง';
   redrawAll(); drawPacks(); drawChips(); update();
   if (pk.id === 'custom') $('#brief').focus({ preventScroll: true });
@@ -253,4 +257,73 @@ function buildPacks() {
   const form = $('#of'); $('.ord-main').before(sec); form.prepend(ch);
   for (const s of ['#w-tier', '#t-tier', '#b-tier']) chips(s);
   drawPacks();
+}
+
+// ===== จับคู่อาวุธกับปราณ (แก้กฎได้ตรงนี้) =====
+// ร่างอาวุธที่อัปเกรดจาก Nightfall/Firstlight Katana T1 ได้ในโรงตีดาบ แต่ละร่างผูกกับปราณ 1 สาย
+// mastery = ปราณที่ใช้ได้ (ไม่ใส่ = ได้ทุกสาย), line = สายที่ทำได้ (ไม่ใส่ = ได้ทุกสาย) · มนต์อสูรใช้ได้กับทุกอาวุธ
+var VARIANTS = {
+  Katana: [
+    { v: '', label: 'ร่างปกติ (ปราณไหนก็ได้)' },
+    { v: 'Thundercloud', label: 'Thundercloud Katana', breath: ['Thunder'] },
+    { v: 'Tidal', label: 'Tidal Katana', breath: ['Water'] },
+    { v: 'Tornadic', label: 'Tornadic Katana', breath: ['Wind'] },
+    { v: 'Volcanic', label: 'Volcanic Katana', breath: ['Flame'] },
+    { v: 'Insect', label: 'Insect Katana', breath: ['Insect'], line: ['Firstlight'] },
+  ],
+};
+// อาวุธทั้งประเภทที่ใช้ได้กับปราณบางสายเท่านั้น (เติมเมื่อรู้กฎ เช่น 'War Fans': ['Wind'])
+var TYPE_BREATH = {};
+function varEl() { return document.getElementById('w-var'); }
+const variantOf = () => { const t = $('#w-type').value, list = VARIANTS[t] || []; return list.find((x) => x.v === (varEl() ? varEl().value : '')) || null; };
+// คืนข้อความปัญหา ถ้าจับคู่ไม่ได้
+function compatProblem() {
+  if (kind !== 'breath') return null;
+  const b = $('#p-name').value.trim(), t = $('#w-type').value, line = $('#w-line').value, va = variantOf();
+  if (va && va.line && line && !va.line.includes(line)) return `${va.label} ทำได้เฉพาะสาย ${va.line.join('/')}`;
+  if (!b) return null;
+  if (va && va.breath && !va.breath.includes(b)) return `${va.label} ใช้ได้กับปราณ ${va.breath.join('/')} เท่านั้น (เลือก ${b} อยู่)`;
+  if (TYPE_BREATH[t] && !TYPE_BREATH[t].includes(b)) return `${t} ใช้ได้กับปราณ ${TYPE_BREATH[t].join('/')} เท่านั้น`;
+  return null;
+}
+function showCompat() {
+  let w = $('#compat'); const msg = compatProblem();
+  if (!w) { w = document.createElement('p'); w.id = 'compat'; w.className = 'compat'; w.setAttribute('role', 'alert'); $('#w-mas').closest('label').after(w); }
+  w.hidden = !msg; w.textContent = msg ? '⚠ ' + msg : '';
+  const ok = $('#compat-ok'); if (ok) ok.hidden = !!msg;
+}
+function buildVariant() {
+  const sel = document.createElement('select'); sel.id = 'w-var'; sel.className = 'f';
+  const lab = document.createElement('label'); lab.textContent = 'ร่างอาวุธ'; lab.append(sel); lab.hidden = true;
+  $('#w-type').closest('label').after(lab);
+  const syncOpts = () => { const list = VARIANTS[$('#w-type').value] || []; const cur = sel.value; sel.replaceChildren(...list.map((x) => new Option(x.label, x.v))); sel.value = list.some((x) => x.v === cur) ? cur : ''; };
+  syncOpts();
+  const at = (box) => { lab.parentNode.insertBefore(box, lab); boxRef = box; };
+  let boxRef = null;
+  picker(sel, () => (VARIANTS[$('#w-type').value] || []).map((x) => x.v), (v) => (v ? v + ' Katana' : $('#w-type').value ? (ICON_OF[$('#w-type').value] || null) : null), 'ร่างอาวุธ', at, false,
+    (v) => { if (kind !== 'breath') return null; const va = (VARIANTS[$('#w-type').value] || []).find((x) => x.v === v), b = $('#p-name').value.trim(); return va && va.breath && b && !va.breath.includes(b) ? { soft: true, text: 'คู่กับปราณ ' + va.breath.join('/') } : null; });
+  // ป้ายชื่อร่างในปุ่ม: แสดงชื่อเต็มแทนค่าว่าง
+  const hide = () => { const has = (VARIANTS[$('#w-type').value] || []).length > 0; if (boxRef) boxRef.hidden = !has; };
+  $('#w-type').addEventListener('change', () => { syncOpts(); hide(); autoPair('type'); redrawAll(); });
+  sel.addEventListener('change', () => autoPair('variant'));
+  $('#p-name').addEventListener('change', () => autoPair('breath')); $('#p-name').addEventListener('input', () => { showCompat(); });
+  document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', () => { showCompat(); }));
+  $('#w-line').addEventListener('change', () => autoPair('line'));
+  hide(); showCompat();
+}
+// จับคู่ให้อัตโนมัติ: เลือกปราณ -> ตั้งร่างดาบที่คู่กัน / เลือกร่าง -> ตั้งปราณที่คู่กัน
+function autoPair(src) {
+  const t = $('#w-type').value, list = VARIANTS[t] || [], sel = varEl();
+  if (sel && list.length && kind === 'breath') {
+    const b = $('#p-name').value.trim(), va = variantOf();
+    if (src === 'breath' && b) {
+      const match = list.find((x) => x.breath && x.breath.includes(b));
+      if (match && sel.value !== match.v) { sel.value = match.v; toast('จับคู่ ' + match.label + ' กับปราณ ' + b + ' ให้แล้ว'); }
+      else if (!match && va && va.breath) { sel.value = ''; toast('ปราณ ' + b + ' ใช้ร่างปกติ'); }
+    }
+    if (src === 'variant' && va && va.breath && !va.breath.includes(b)) { $('#p-name').value = va.breath[0]; toast('ตั้งปราณเป็น ' + va.breath[0] + ' ให้เข้าคู่กับ ' + va.label); }
+    const v2 = variantOf();
+    if (v2 && v2.line && !v2.line.includes($('#w-line').value)) { $('#w-line').value = v2.line[0]; }
+  }
+  redrawAll(); showCompat(); update();
 }

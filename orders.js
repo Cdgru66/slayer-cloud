@@ -22,7 +22,7 @@ module.exports = function createOrders(ctx) {
       roblox: str(j.roblox, 20).replace(/[^A-Za-z0-9_]/g, ''),
       pack: str(j.pack, 40),
       clan: str(j.clan, 40),
-      weapon: j.weapon && typeof j.weapon === 'object' ? Object.assign(gear(j.weapon), { type: str(j.weapon.type, 40), mastery: int(j.weapon.mastery, 0, 9999) }) : null,
+      weapon: j.weapon && typeof j.weapon === 'object' ? Object.assign(gear(j.weapon), { type: str(j.weapon.type, 40), variant: str(j.weapon.variant, 30), mastery: int(j.weapon.mastery, 0, 9999) }) : null,
       power: j.power && typeof j.power === 'object' ? { kind: j.power.kind === 'demon' ? 'demon' : 'breath', name: str(j.power.name, 40), mastery: int(j.power.mastery, 0, 9999) } : null,
       top: gear(j.top), bottom: gear(j.bottom),
       title: str(j.title, 40), level: int(j.level, 0, 9999),
@@ -38,7 +38,7 @@ module.exports = function createOrders(ctx) {
     const L = [];
     if (o.pack) L.push('แพ็กเกจ: ' + o.pack);
     if (o.clan) L.push('ตระกูล: ' + o.clan);
-    if (o.weapon && o.weapon.type) L.push(`อาวุธ: ${o.weapon.type} ${g(o.weapon)}`.trim() + (o.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${o.weapon.mastery})` : ''));
+    if (o.weapon && o.weapon.type) L.push(`อาวุธ: ${o.weapon.variant ? o.weapon.variant + ' ' : ''}${o.weapon.type} ${g(o.weapon)}`.trim() + (o.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${o.weapon.mastery})` : ''));
     if (o.power && o.power.name) L.push(`${o.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${o.power.name}` + (o.power.mastery ? ` (ฟาร์มให้จน Mastery ${o.power.mastery})` : ''));
     if (g(o.top) && g(o.top) === g(o.bottom)) L.push('เสื้อ, กางเกง: ' + g(o.top));
     else { if (g(o.top)) L.push('เสื้อ: ' + g(o.top)); if (g(o.bottom)) L.push('กางเกง: ' + g(o.bottom)); }
