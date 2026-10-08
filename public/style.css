@@ -131,7 +131,8 @@ img.ic{padding:3px;background:radial-gradient(circle at 50% 40%,rgba(241,233,221
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border-radius:12px;overflow:hidden}
 .kv div{background:#1a1114;padding:10px 12px;font-size:12px;color:var(--mu)}
 .kv b{display:block;color:var(--tx);font:600 16px var(--serif);margin-top:1px}
-.ms{display:grid;grid-template-columns:76px 1fr 44px;gap:12px;align-items:center;font-size:13px;margin:8px 0}
+.ms{display:grid;grid-template-columns:84px 1fr auto;gap:12px;align-items:center;font-size:13px;margin:8px 0}
+.msv{text-align:right;color:var(--mu);font-size:12px;white-space:nowrap;min-width:96px}.msv b{color:var(--tx);font:600 13px var(--serif)}
 .bar{height:5px;background:rgba(241,233,221,.07);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--seal),var(--gold))}
 .ig{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .it{display:flex;align-items:center;gap:10px;background:var(--lac3);border-radius:10px;padding:7px 10px;font-size:13px;min-width:0}
