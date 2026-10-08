@@ -770,7 +770,13 @@ local function exportSnapshot(s)
         if WEB_API_KEY ~= "" then extra["Authorization"] = "Bearer " .. WEB_API_KEY end
         local ok2, res = post(WEB_API_URL, json, extra)
         local code = ok2 and type(res) == "table" and res.StatusCode or nil
-        if ok2 and statusOk(res) then
+        local r = nil
+        if ok2 and type(res) == "table" and res.Body then pcall(function() r = HttpService:JSONDecode(res.Body) end) end
+        if ok2 and statusOk(res) and type(r) == "table" and (r.rejected or 0) > 0 then
+            local why = type(r.why) == "table" and table.concat(r.why, ", ") or "?"
+            local th = { ["bad name"] = "ชื่อไอดีไม่ถูกต้อง", ["too big"] = "ข้อมูลใหญ่เกินไป", ["account limit"] = "ไอดีเกินจำนวนที่กำหนด" }
+            warn(">> เว็บไม่รับข้อมูลรอบนี้: " .. (th[why] or why) .. " (ถ่ายภาพส่งให้ผู้ขาย)")
+        elseif ok2 and statusOk(res) then
             print(">> ส่งข้อมูลขึ้นเว็บแล้ว " .. os.date("%H:%M:%S") .. (s.boss and ("  (บอสใกล้ตัว: " .. s.boss.name .. ")") or ""))
         elseif code == 401 then
             warn("ส่งขึ้นเว็บไม่ได้: คีย์ไม่ถูกต้อง (ขอสคริปต์ใหม่จากผู้ขาย)")

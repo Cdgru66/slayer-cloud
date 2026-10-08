@@ -381,9 +381,9 @@ function handleReq(req, res) {
       // แอปส่งเป็นชุด {accounts:[...]} / สคริปต์ในเกมส่งตรงทีละไอดี {name:...}
       const list = j && Array.isArray(j.accounts) ? j.accounts : (j && typeof j.name === 'string' ? [j] : []);
       if (list.length > MAX_BATCH) return send(res, 400, { error: 'batch too large' });
-      let accepted = 0, rejected = 0;
-      for (const s of list) (ingest(a.id, a.c, s) ? rejected++ : accepted++);
-      send(res, 200, { ok: true, accepted, rejected, expires: a.c.expires || null });
+      let accepted = 0, rejected = 0; const why = [];
+      for (const s of list) { const e = ingest(a.id, a.c, s); if (e) { rejected++; if (why.length < 5) why.push(e); } else accepted++; }
+      send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null });
     });
   }
 
