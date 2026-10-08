@@ -12,7 +12,7 @@ let kind = 'breath', sent = false;
 const opt = (sel, list, first) => { const e = $(sel); e.replaceChildren(); if (first) e.append(new Option(first, '')); for (const v of list) e.append(typeof v === 'object' ? new Option(v[1], v[0]) : new Option(v, v)); };
 const tiers = [['', '—'], ['1', 'T1'], ['2', 'T2'], ['3', 'T3']], pluses = [['', '—'], ...Array.from({ length: 11 }, (_, i) => [String(i), '+' + i])];
 opt('#w-type', WEAPONS, 'ไม่ระบุ'); opt('#w-line', LINES, 'ไม่ระบุ');
-for (const p of ['t', 'b']) { opt('#' + p + '-line', LINES, 'ไม่ระบุ'); opt('#' + p + '-tier', tiers); opt('#' + p + '-plus', pluses); }
+for (const p of ['t', 'b', 'h']) { opt('#' + p + '-line', LINES, 'ไม่ระบุ'); opt('#' + p + '-tier', tiers); opt('#' + p + '-plus', pluses); }
 opt('#w-tier', tiers); opt('#w-plus', pluses);
 // ค่าเริ่มต้นแบบตัวอย่าง End Game
 $('#w-type').value = 'Katana'; $('#w-line').value = 'Nightfall'; $('#w-tier').value = '3'; $('#w-plus').value = '10';
@@ -21,17 +21,44 @@ $('#dl-clan').replaceChildren(...CLANS.map((c) => new Option(c)));
 const setPowerList = () => { $('#dl-power').replaceChildren(...(kind === 'demon' ? DEMONS : BREATHS).map((c) => new Option(c))); $('#p-name').placeholder = kind === 'demon' ? 'เช่น Blood Manipulation' : 'เช่น Water'; };
 setPowerList();
 document.querySelectorAll('.seg.big button').forEach((b) => (b.onclick = () => { kind = b.dataset.k; document.querySelectorAll('.seg.big button').forEach((x) => x.setAttribute('aria-pressed', x === b)); setPowerList(); update(); }));
-$('#same').onchange = () => { $('#row-bot').hidden = $('#same').checked; $('#lbl-top').textContent = $('#same').checked ? 'เสื้อ + กางเกง' : 'เสื้อ'; update(); };
+// ชุด: Nightfall หมวกกับกางเกงตีบวกได้สูงสุด +3 (เสื้อได้ถึง +10)
+const PLUS_CAP = { Nightfall: 3 };
+const capOf = (line) => PLUS_CAP[line] ?? null;
+const capped = (plus, line) => (plus == null || capOf(line) == null ? plus : Math.min(plus, capOf(line)));
+function limitPlus(p) { // จำกัดตัวเลือกตีบวกของกางเกง/หมวกตามสาย
+  const sel = $('#' + p + '-plus'), cap = capOf($('#' + p + '-line').value), cur = sel.value;
+  opt('#' + p + '-plus', pluses.filter(([v]) => v === '' || cap == null || Number(v) <= cap));
+  sel.value = cur !== '' && cap != null && Number(cur) > cap ? String(cap) : cur;
+}
+function armorSync() {
+  const same = $('#same').checked;
+  $('#row-bot').hidden = same; $('#row-hat').hidden = same;
+  $('#lbl-top').textContent = same ? 'ทั้งชุด' : 'เสื้อ'; $('#lbl-tplus').textContent = same ? 'ตีบวกเสื้อ' : 'ตีบวก';
+  limitPlus('b'); limitPlus('h');
+  const info = $('#capinfo'), line = $('#t-line').value, tp = num('#t-plus');
+  if (same && line && tp != null) {
+    const c = capped(tp, line); info.hidden = false;
+    info.textContent = c < tp ? `หมวก + กางเกง ${line} ตีบวกได้สูงสุด +${capOf(line)} · ตั้งให้ +${c} อัตโนมัติ` : `หมวก + กางเกง ตีบวก +${c} เท่าเสื้อ`;
+  } else info.hidden = true;
+}
+$('#same').onchange = () => {
+  if (!$('#same').checked) for (const p of ['b', 'h']) { // แยกชิ้น: เริ่มจากค่าของเสื้อ (ตีบวกตามเพดานของสาย)
+    $('#' + p + '-line').value = $('#t-line').value; $('#' + p + '-tier').value = $('#t-tier').value;
+    limitPlus(p); const c = capped(num('#t-plus'), $('#t-line').value); $('#' + p + '-plus').value = c == null ? '' : String(c);
+  }
+  armorSync(); if (typeof redrawAll === 'function') redrawAll(); if (typeof drawChips === 'function') drawChips(); update();
+};
+for (const id of ['#t-line', '#t-plus', '#b-line', '#h-line']) $(id).addEventListener('change', () => { armorSync(); update(); });
 
 const num = (id) => { const v = $(id).value; return v === '' ? null : Number(v); };
 const gear = (p) => ({ line: $('#' + p + '-line').value, tier: num('#' + p + '-tier'), plus: num('#' + p + '-plus') });
 function data() {
-  const top = gear('t'), bottom = $('#same').checked ? top : gear('b');
+  const top = gear('t'), same = $('#same').checked, bottom = same ? Object.assign({}, top, { plus: capped(top.plus, top.line) }) : gear('b'), hat = same ? Object.assign({}, bottom) : gear('h');
   return {
     clan: $('#clan').value.trim(),
     weapon: Object.assign(gear('w'), { type: $('#w-type').value, variant: varEl() ? varEl().value : '', mastery: num('#w-mas') }),
     power: { kind, name: $('#p-name').value.trim(), mastery: num('#p-mas') },
-    top, bottom, title: $('#title').value.trim(), level: num('#level'),
+    top, bottom, hat, title: $('#title').value.trim(), level: num('#level'),
     brief: $('#brief').value.trim(), roblox: $('#roblox').value.trim(),
     contact: { via: $('#c-via').value, handle: $('#c-handle').value.trim() }, website: $('#hp').value, pack: packName(),
   };
@@ -43,8 +70,8 @@ function text(d) {
   if (d.clan) L.push('ตระกูล: ' + d.clan);
   if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.variant ? d.weapon.variant + ' ' + d.weapon.type + ' · ' : d.weapon.type + ' '}${g(d.weapon)}`.trim() + ' · Mastery ตัน');
   if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + ' · Mastery ตัน');
-  if ($('#same').checked) { if (g(d.top)) L.push('เสื้อ, กางเกง: ' + g(d.top)); }
-  else { if (g(d.top)) L.push('เสื้อ: ' + g(d.top)); if (g(d.bottom)) L.push('กางเกง: ' + g(d.bottom)); }
+  if ($('#same').checked) { if (d.top.line) L.push(`ชุด ${d.top.line}${d.top.tier ? ' T' + d.top.tier : ''}: เสื้อ${d.top.plus != null ? ' +' + d.top.plus : ''} · หมวก/กางเกง${d.bottom.plus != null ? ' +' + d.bottom.plus : ''}`); }
+  else { if (g(d.top)) L.push('เสื้อ: ' + g(d.top)); if (g(d.bottom)) L.push('กางเกง: ' + g(d.bottom)); if (g(d.hat)) L.push('หมวก: ' + g(d.hat)); }
   if (d.title) L.push('(ฉายา): ' + d.title);
   if (d.level) L.push('เลเวล: ' + d.level);
   if (d.brief) L.push('บรีฟ: ' + d.brief);
@@ -180,13 +207,14 @@ function buildPickers() {
   picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภท', at('#w-type'));
   // ไอคอนสายอาวุธตามประเภทที่เลือก: ใช้ตัวอาวุธจริงก่อน ไม่มีค่อยใช้แบบพิมพ์เขียว ไม่ใช้รูปแร่
   const wLineIcon = (v) => (v ? v + ' Forged Ingot' : null); // สาย = แร่ที่ใช้ตีอาวุธ
-  picker($('#w-line'), ['', ...LINES], wLineIcon, 'สาย', at('#w-line'));
+  picker($('#w-line'), ['', ...LINES], wLineIcon, 'สาย', at('#w-line'), false, (v) => { const al = TYPE_LINES[$('#w-type').value]; return v && al && !al.includes(v) ? $('#w-type').value + ' ไม่มีสาย ' + v : null; });
   hideLabel('#w-type'); hideLabel('#w-line');
   picker($('#clan'), CLANS, () => null, 'ตระกูล', before($('#clan')), true);
   picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'เลือกสาย', before($('#p-name')));
   picker($('#t-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#t-line'));
   picker($('#b-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#b-line'));
-  hideLabel('#t-line'); hideLabel('#b-line');
+  picker($('#h-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#h-line'));
+  hideLabel('#t-line'); hideLabel('#b-line'); hideLabel('#h-line'); armorSync();
   $('#clan').addEventListener('input', redrawAll); $('#p-name').addEventListener('input', redrawAll);
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
   redrawAll();
@@ -211,10 +239,10 @@ function payBox(id) {
 // ===== แพ็กเกจสำเร็จรูป (แก้ชื่อ/รายละเอียด/ราคาได้ที่นี่) =====
 var PACKS = [
   { id: 'slayer', name: 'สายดาบ End Game', icon: 'Nightfall Katana', price: 'เริ่มต้น 200 บาท',
-    lines: ['Katana Nightfall T3+10', 'ปราณ Mastery 400', 'ชุด Nightfall T3+10'],
+    lines: ['Katana Nightfall T3+10', 'ปราณ Mastery ตัน', 'ชุด Nightfall T3 (เสื้อ +10)'],
     set: { 'w-type': 'Katana', 'w-line': 'Nightfall', 'w-tier': '3', 'w-plus': '10', 'w-mas': '400', kind: 'breath', 'p-name': 'Water', 'p-mas': '400', 't-line': 'Nightfall', 't-tier': '3', 't-plus': '10' } },
   { id: 'demon', name: 'สายอสูร End Game', icon: 'Blood Manipulation Orb', price: 'เริ่มต้น 200 บาท',
-    lines: ['Katana Nightfall T3+10', 'มนต์อสูร Mastery 400', 'ชุด Nightfall T3+10'],
+    lines: ['Katana Nightfall T3+10', 'มนต์อสูร Mastery ตัน', 'ชุด Nightfall T3 (เสื้อ +10)'],
     set: { 'w-type': 'Katana', 'w-line': 'Nightfall', 'w-tier': '3', 'w-plus': '10', 'w-mas': '400', kind: 'demon', 'p-name': 'Blood Manipulation', 'p-mas': '400', 't-line': 'Nightfall', 't-tier': '3', 't-plus': '10' } },
   { id: 'custom', name: 'ออกแบบเอง', icon: null, price: 'ราคาตามบรีฟ',
     lines: ['เลือกทุกอย่างเอง', 'หรือเขียนบรีฟอย่างเดียว', 'ร้านประเมินราคาให้'],
@@ -227,7 +255,7 @@ function applyPack(pk) {
   if (pk.set.kind) { kind = pk.set.kind; document.querySelectorAll('.seg.big button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.k === kind))); setPowerList(); }
   for (const [k, v] of Object.entries(pk.set)) { if (k === 'kind') continue; const el = $('#' + k); if (el) el.value = v; }
   if (varEl()) { varEl().value = pk.set['w-var'] || ''; }
-  $('#same').checked = true; $('#row-bot').hidden = true; $('#lbl-top').textContent = 'เสื้อ + กางเกง';
+  $('#same').checked = true; armorSync();
   redrawAll(); drawPacks(); drawChips(); if (typeof autoPair === 'function') autoPair('pack'); update();
   if (pk.id === 'custom') $('#brief').focus({ preventScroll: true });
   $('#custom-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -263,7 +291,7 @@ function buildPacks() {
   const ch = document.createElement('h2'); ch.className = 'packs-h'; ch.id = 'custom-head'; ch.textContent = 'ปรับแต่งเพิ่ม';
   sec.append(h, sub, packBox);
   const form = $('#of'); $('.ord-main').before(sec); form.prepend(ch);
-  for (const s of ['#w-tier', '#t-tier', '#b-tier']) chips(s);
+  for (const s of ['#w-tier', '#t-tier', '#b-tier', '#h-tier']) chips(s);
   drawPacks();
 }
 
@@ -282,12 +310,15 @@ var VARIANTS = {
 };
 // อาวุธทั้งประเภทที่ใช้ได้กับปราณบางสายเท่านั้น (เติมเมื่อรู้กฎ เช่น 'War Fans': ['Wind'])
 var TYPE_BREATH = {};
+// อาวุธที่ไม่มีสาย Firstlight (มีแต่ Nightfall)
+var TYPE_LINES = { Sickles: ['Nightfall'], Scythe: ['Nightfall'], 'Axe and Mace': ['Nightfall'] };
 function varEl() { return document.getElementById('w-var'); }
 const variantOf = () => { const t = $('#w-type').value, list = VARIANTS[t] || []; return list.find((x) => x.v === (varEl() ? varEl().value : '')) || null; };
 // คืนข้อความปัญหา ถ้าจับคู่ไม่ได้
 function compatProblem() {
   if (kind !== 'breath') return null;
   const b = $('#p-name').value.trim(), t = $('#w-type').value, line = $('#w-line').value, va = variantOf();
+  if (TYPE_LINES[t] && line && !TYPE_LINES[t].includes(line)) return `${t} มีแต่สาย ${TYPE_LINES[t].join('/')}`;
   if (va && va.line && line && !va.line.includes(line)) return `${va.label} ทำได้เฉพาะสาย ${va.line.join('/')}`;
   if (!b) return null;
   if (va && va.breath && !va.breath.includes(b)) return `${va.label} ใช้ได้กับปราณ ${va.breath.join('/')} เท่านั้น (เลือก ${b} อยู่)`;
@@ -320,6 +351,7 @@ function buildVariant() {
 // จับคู่ให้อัตโนมัติ: เลือกปราณ -> ตั้งร่างดาบที่คู่กัน / เลือกร่าง -> ตั้งปราณที่คู่กัน
 function autoPair(src) {
   const t = $('#w-type').value, list = VARIANTS[t] || [], sel = varEl(), b = $('#p-name').value.trim();
+  { const al = TYPE_LINES[t], ln = $('#w-line').value; if (al && ln && !al.includes(ln)) { $('#w-line').value = al[0]; if (src === 'type') toast(t + ' มีแต่สาย ' + al.join('/') + ' ตั้งให้แล้ว'); } }
   let match = null;
   if (sel) {
     match = kind === 'breath' && b ? list.find((x) => x.breath && x.breath.includes(b)) : null;

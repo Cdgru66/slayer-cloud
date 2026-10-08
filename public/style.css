@@ -527,3 +527,7 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
   body.ord{padding-bottom:80px}
 }
 @media (max-width:720px){body.ord .toast{bottom:calc(84px + env(safe-area-inset-bottom))}}
+#row-hat{grid-template-columns:110px repeat(3,minmax(0,1fr))}
+@media (max-width:720px){#row-hat{grid-template-columns:1fr 1fr 1fr}#row-hat .og-lbl{grid-column:1/-1;padding:0}}
+@media (max-width:560px){#row-hat{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}#row-hat .dd{grid-column:1/-1}}
+#capinfo{margin-top:2px}

@@ -52,12 +52,15 @@
       <input type="hidden" id="p-mas" value="400"><p class="maxnote">✦ ฟาร์ม Mastery ปราณ / มนต์อสูรจนตันให้ทุกออเดอร์</p>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">4</span>ชุด (เสื้อ / กางเกง)</legend>
-      <label class="tg"><input type="checkbox" id="same" checked><span class="tgk"></span><span>เสื้อกับกางเกงเหมือนกันทั้งชุด</span></label>
-      <div class="og-row" id="row-top"><span class="og-lbl" id="lbl-top">เสื้อ + กางเกง</span>
-        <label>สาย<select class="f" id="t-line"></select></label><label>ระดับ<select class="f" id="t-tier"></select></label><label>ตีบวก<select class="f" id="t-plus"></select></label></div>
+    <fieldset class="og"><legend><span class="on">4</span>ชุด (เสื้อ / กางเกง / หมวก)</legend>
+      <label class="tg"><input type="checkbox" id="same" checked><span class="tgk"></span><span>ใช้สายและระดับเดียวกันทั้งชุด</span></label>
+      <div class="og-row" id="row-top"><span class="og-lbl" id="lbl-top">ทั้งชุด</span>
+        <label>สาย<select class="f" id="t-line"></select></label><label>ระดับ<select class="f" id="t-tier"></select></label><label><span id="lbl-tplus">ตีบวกเสื้อ</span><select class="f" id="t-plus"></select></label></div>
+      <p class="varinfo" id="capinfo" hidden></p>
       <div class="og-row" id="row-bot" hidden><span class="og-lbl">กางเกง</span>
         <label>สาย<select class="f" id="b-line"></select></label><label>ระดับ<select class="f" id="b-tier"></select></label><label>ตีบวก<select class="f" id="b-plus"></select></label></div>
+      <div class="og-row" id="row-hat" hidden><span class="og-lbl">หมวก</span>
+        <label>สาย<select class="f" id="h-line"></select></label><label>ระดับ<select class="f" id="h-tier"></select></label><label>ตีบวก<select class="f" id="h-plus"></select></label></div>
     </fieldset>
 
     <fieldset class="og"><legend><span class="on">5</span>อยากได้อะไรเพิ่ม (ไม่บังคับ)</legend>
