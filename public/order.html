@@ -27,12 +27,12 @@
   <form id="of" class="ord-form" novalidate autocomplete="off">
     <input type="text" name="website" id="hp" tabindex="-1" autocomplete="off" class="hpot" aria-hidden="true">
 
-    <fieldset class="og"><legend><span class="on">1</span>ตระกูล</legend>
+    <fieldset class="og"><legend><span class="on">2</span>ตระกูล</legend>
       <input type="hidden" id="clan">
       <datalist id="dl-clan"></datalist>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">2</span>อาวุธ</legend>
+    <fieldset class="og adv"><legend><span class="on">⚙</span>ปรับละเอียด: อาวุธ</legend>
       <div class="og-row">
         <label>ประเภท<select class="f" id="w-type"></select></label>
         <label>สาย<select class="f" id="w-line"></select></label>
@@ -42,7 +42,7 @@
       <input type="hidden" id="w-mas" value="400"><p class="maxnote">✦ ฟาร์ม Mastery อาวุธจนตันให้ทุกออเดอร์</p>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">3</span>ปราณ / มนต์อสูร</legend>
+    <fieldset class="og adv"><legend><span class="on">⚙</span>ปรับละเอียด: ปราณ / มนต์อสูร</legend>
       <div class="seg big" role="group" aria-label="เลือกปราณหรือมนต์อสูร">
         <button type="button" data-k="breath" aria-pressed="true">ปราณ (มนุษย์)</button>
         <button type="button" data-k="demon" aria-pressed="false">มนต์อสูร (อสูร)</button>
@@ -52,7 +52,7 @@
       <input type="hidden" id="p-mas" value="400"><p class="maxnote">✦ ฟาร์ม Mastery ปราณ / มนต์อสูรจนตันให้ทุกออเดอร์</p>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">4</span>ชุด (เสื้อ / กางเกง / หมวก)</legend>
+    <fieldset class="og adv"><legend><span class="on">⚙</span>ปรับละเอียด: ชุด (เสื้อ / กางเกง / หมวก)</legend>
       <label class="tg"><input type="checkbox" id="same" checked><span class="tgk"></span><span>ใช้สายและระดับเดียวกันทั้งชุด</span></label>
       <div class="og-row" id="row-top"><span class="og-lbl" id="lbl-top">ทั้งชุด</span>
         <label>สาย<select class="f" id="t-line"></select></label><label>ระดับ<select class="f" id="t-tier"></select></label><label><span id="lbl-tplus">ตีบวกเสื้อ</span><select class="f" id="t-plus"></select></label></div>
@@ -63,14 +63,14 @@
         <label>สาย<select class="f" id="h-line"></select></label><label>ระดับ<select class="f" id="h-tier"></select></label><label>ตีบวก<select class="f" id="h-plus"></select></label></div>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">5</span>อยากได้อะไรเพิ่ม (ไม่บังคับ)</legend>
+    <fieldset class="og"><legend><span class="on">3</span>อยากได้อะไรเพิ่ม (ไม่บังคับ)</legend>
       <input type="hidden" id="title"><input type="hidden" id="level">
       <label class="blk">บรีฟเพิ่มเติม · อยากได้อะไรบอกได้หมด
         <textarea class="f" id="brief" rows="4" maxlength="1500" placeholder="เช่น อยากได้ Demon Art Blood Manipulation, ตีบวกอาวุธสำรองอีกเล่ม, ฟาร์ม Wen ให้ 1M"></textarea></label>
       <label class="blk">ชื่อไอดี Roblox ของคุณ (ถ้าให้ทำในไอดีเดิม)<input class="f" id="roblox" maxlength="20" placeholder="ชื่อผู้ใช้ เช่น Blopcoco22"></label>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">6</span>ติดต่อกลับทาง</legend>
+    <fieldset class="og"><legend><span class="on">4</span>ติดต่อกลับทาง</legend>
       <div class="og-row two">
         <label>ช่องทาง<select class="f" id="c-via"><option value="facebook">Facebook</option><option value="discord">Discord</option><option value="line">LINE</option><option value="other">อื่น ๆ</option></select></label>
         <label><span>ชื่อ / ไอดี / ลิงก์ <b class="req">*</b></span><input class="f" id="c-handle" maxlength="100" required placeholder="เช่น ชื่อเฟซ หรือ @discord"></label>

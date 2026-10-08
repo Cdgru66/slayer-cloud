@@ -219,7 +219,7 @@ function buildPickers() {
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
   redrawAll();
 }
-fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildVariant(); buildPacks(); });
+fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); buildVariant(); buildSet(); });
 // ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
 $('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
 
@@ -357,7 +357,7 @@ function autoPair(src) {
     match = kind === 'breath' && b ? list.find((x) => x.breath && x.breath.includes(b)) : null;
     const before = sel.value; sel.value = match ? match.v : '';
     if (match && match.line && !match.line.includes($('#w-line').value)) $('#w-line').value = match.line[0];
-    if (src === 'breath' && match && before !== match.v) toast('ปราณ ' + b + ' ใช้ ' + match.label + ' ให้อัตโนมัติ');
+    if (src === 'breath' && match && before !== match.v && !setBox) toast('ปราณ ' + b + ' ใช้ ' + match.label + ' ให้อัตโนมัติ');
   }
   const info = $('#w-varinfo');
   if (info) {
@@ -378,3 +378,67 @@ function autoPair(src) {
   new MutationObserver(sync).observe($('#sum'), { childList: true, characterData: true, subtree: true }); sync();
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { bar.classList.toggle('away', es[0].isIntersecting); }).observe($('#ticket'));
 })();
+
+// ===== จัดเซท: สาย + อาวุธ + แร่ ในที่เดียว (ค่าที่เหลือตั้งเป็น End Game ให้อัตโนมัติ) =====
+function setDefaults() { // อาวุธ T3+10, ชุดสายเดียวกับอาวุธ T3 เสื้อ +10 (หมวก/กางเกงตามเพดาน), Mastery ตัน
+  if (!$('#w-tier').value) $('#w-tier').value = '3'; if ($('#w-plus').value === '') $('#w-plus').value = '10';
+  $('#same').checked = true; $('#t-line').value = $('#w-line').value; if (!$('#t-tier').value) $('#t-tier').value = '3'; if ($('#t-plus').value === '') $('#t-plus').value = '10';
+  armorSync(); drawChips();
+}
+function tileBtn(label, iconName, on, onClick, opts = {}) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'st' + (opts.big ? ' big' : ''); b.setAttribute('aria-pressed', String(on));
+  if (opts.off) { b.setAttribute('aria-disabled', 'true'); b.title = opts.off; }
+  const ic = icon(label, iconName, false); const t = document.createElement('span'); t.className = 'st-t'; t.textContent = label;
+  b.append(ic, t);
+  if (opts.sub) { const sm = document.createElement('small'); sm.textContent = opts.sub; t.append(sm); }
+  b.onclick = () => { if (opts.off) { toast(opts.off, true); return; } onClick(); };
+  return b;
+}
+let setBox;
+function weaponLabel(t) { // ถ้าปราณมีร่างดาบคู่กัน แสดงชื่อร่าง เช่น Tidal Katana
+  const b = $('#p-name').value.trim(); const va = kind === 'breath' && b ? (VARIANTS[t] || []).find((x) => x.breath && x.breath.includes(b)) : null;
+  return va ? va.label : t;
+}
+function drawSet() {
+  if (!setBox) return;
+  const b = $('#p-name').value.trim(), t = $('#w-type').value, line = $('#w-line').value;
+  const head = (n, txt) => { const h = document.createElement('p'); h.className = 'st-h'; const i = document.createElement('span'); i.className = 'stepn'; i.textContent = 'ขั้น ' + n; h.append(i, txt); return h; };
+  // การ์ดสรุปเซท
+  const card = document.createElement('div'); card.className = 'setcard';
+  const icons = document.createElement('div'); icons.className = 'sc-icons';
+  const wl = t ? weaponLabel(t) : '';
+  const parts = [[wl || 'อาวุธ', wl ? (ICONS[wl] ? wl : ICON_OF[t]) : null], [b || 'สาย', ICON_OF[b] || null], [line || 'แร่', line ? line + ' Forged Ingot' : null]];
+  parts.forEach(([l, ic], i) => { if (i) { const plus = document.createElement('span'); plus.className = 'sc-plus'; plus.textContent = '+'; icons.append(plus); } const c = icon(l, ic, false); c.classList.add('sc-ic'); if (!ic && !ICONS[l]) c.classList.add('empty'); icons.append(c); });
+  const ttl = document.createElement('b'); ttl.className = 'sc-t'; ttl.textContent = [wl, b, line].filter(Boolean).join(' + ') || 'ยังไม่ได้เลือกเซท';
+  const sub = document.createElement('small'); sub.className = 'sc-s';
+  sub.textContent = line ? `อาวุธ ${line} T${$('#w-tier').value || 3}+${$('#w-plus').value || 10} · ชุด ${$('#t-line').value || line} T${$('#t-tier').value || 3} · Mastery ตันทุกอย่าง` : 'เลือก 3 ขั้นด้านล่าง ที่เหลือร้านจัดเป็น End Game ให้';
+  const txt = document.createElement('div'); txt.append(ttl, sub); card.append(icons, txt);
+  // ขั้น 1: สาย
+  const seg = document.createElement('div'); seg.className = 'seg big';
+  for (const [k, l] of [['breath', 'ปราณ (มนุษย์)'], ['demon', 'มนต์อสูร (อสูร)']]) { const x = document.createElement('button'); x.type = 'button'; x.textContent = l; x.setAttribute('aria-pressed', String(kind === k)); x.onclick = () => { if (kind === k) return; kind = k; document.querySelectorAll('.seg.big button[data-k]').forEach((y) => y.setAttribute('aria-pressed', String(y.dataset.k === k))); setPowerList(); $('#p-name').value = ''; autoPair('kind'); drawSet(); }; seg.append(x); }
+  const g1 = document.createElement('div'); g1.className = 'st-grid';
+  for (const n of kind === 'demon' ? DEMONS : BREATHS) g1.append(tileBtn(n, ICON_OF[n], b === n, () => { $('#p-name').value = n; autoPair('breath'); drawSet(); }));
+  // ขั้น 2: อาวุธ
+  const g2 = document.createElement('div'); g2.className = 'st-grid';
+  for (const w of WEAPONS) { const lab = weaponLabel(w); g2.append(tileBtn(lab, ICONS[lab] ? lab : ICON_OF[w], t === w, () => { $('#w-type').value = w; $('#w-type').dispatchEvent(new Event('change', { bubbles: true })); setDefaults(); drawSet(); })); }
+  // ขั้น 3: แร่
+  const g3 = document.createElement('div'); g3.className = 'st-grid two';
+  const va = variantOf();
+  for (const l of LINES) {
+    const al = TYPE_LINES[t]; let off = null;
+    if (al && !al.includes(l)) off = `${t} ไม่มีสาย ${l}`; else if (va && va.line && !va.line.includes(l)) off = `${va.label} มีแต่สาย ${va.line.join('/')}`;
+    g3.append(tileBtn(l, l + ' Forged Ingot', line === l, () => { $('#w-line').value = l; $('#w-line').dispatchEvent(new Event('change', { bubbles: true })); $('#t-line').value = l; setDefaults(); autoPair('line'); drawSet(); }, { big: true, off, sub: off ? 'ไม่มีให้เลือก' : l === 'Nightfall' ? 'หมวก/กางเกงตีได้ถึง +3' : '' }));
+  }
+  const adv = document.createElement('button'); adv.type = 'button'; adv.className = 'btn advbtn'; adv.textContent = document.body.classList.contains('show-adv') ? 'ซ่อนการปรับละเอียด' : '⚙ ปรับละเอียด (ระดับ / ตีบวก / ชุดแยกชิ้น)';
+  adv.onclick = () => { document.body.classList.toggle('show-adv'); drawSet(); if (document.body.classList.contains('show-adv')) document.querySelector('.og.adv').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  setBox.replaceChildren(card, head('1', 'เลือกสาย'), seg, g1, head('2', 'เลือกอาวุธ'), g2, head('3', 'เลือกแร่'), g3, adv);
+}
+function buildSet() {
+  const fs = document.createElement('fieldset'); fs.className = 'og setb';
+  const lg = document.createElement('legend'); lg.innerHTML = '<span class="on">1</span>จัดเซทของคุณ';
+  setBox = document.createElement('div'); setBox.className = 'setbox';
+  fs.append(lg, setBox);
+  const first = document.querySelector('#of fieldset.og'); first.parentNode.insertBefore(fs, first);
+  $('#p-name').value = ''; setDefaults(); autoPair('init');
+  $('#of').addEventListener('change', () => drawSet()); drawSet();
+}
