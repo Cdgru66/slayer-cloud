@@ -28,11 +28,34 @@ function run(args, url) {
   return r.status === 0;
 }
 
+// หาลิงก์ถาวรจาก Tailscale Funnel (ถ้าติดตั้งและเปิดไว้) จะได้ไม่ต้องพิมพ์ลิงก์เอง
+function detectFunnel() {
+  const bins = ['tailscale', path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Tailscale', 'tailscale.exe')];
+  for (const b of bins) {
+    try {
+      const st = spawnSync(b, ['funnel', 'status', '--json'], { encoding: 'utf8', timeout: 8000, windowsHide: true });
+      if (st.status !== 0 || !/AllowFunnel/.test(st.stdout || '')) continue; // ยังไม่ได้เปิด funnel
+      const r = spawnSync(b, ['status', '--json'], { encoding: 'utf8', timeout: 8000, windowsHide: true });
+      const dns = r.status === 0 && JSON.parse(r.stdout).Self && JSON.parse(r.stdout).Self.DNSName;
+      if (dns && /^[a-z0-9.-]+\.ts\.net\.?$/i.test(dns)) return 'https://' + dns.replace(/\.$/, '');
+    } catch (e) {}
+  }
+  return null;
+}
+
 async function getUrl() {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL;
   let saved = '';
   try { saved = fs.readFileSync(URL_FILE, 'utf8').trim(); } catch (e) {}
-  console.log('\nที่อยู่เซิร์ฟเวอร์ = ลิงก์ https://....trycloudflare.com ที่ขึ้นในหน้าต่าง cloudflared (ก๊อปมาวางตรงนี้)');
+  const auto = detectFunnel();
+  if (auto) {
+    if (saved !== auto) {
+      console.log('\nเจอลิงก์ถาวรจาก Tailscale: ' + auto);
+      const a = ((await ask('ใช้ลิงก์นี้? [Enter = ใช้ / n = ใส่เอง]: ')) || '').trim().toLowerCase();
+      if (a !== 'n') { fs.writeFileSync(URL_FILE, auto); return auto; }
+    } else { console.log('\nใช้ลิงก์ถาวร: ' + auto); return auto; }
+  }
+  console.log('\nที่อยู่เซิร์ฟเวอร์ = ลิงก์ https://... ที่ขึ้นในหน้าต่าง start-funnel (ลิงก์ถาวร .ts.net) หรือ cloudflared (.trycloudflare.com)');
   console.log('(ช่องนี้ไม่ใช่ที่สำหรับแชร์ลิงก์ ลิงก์ให้ลูกค้าจะได้หลังกด Enter)');
   console.log('*** ถ้าใช้ http://127.0.0.1 มือถือจะเปิดไม่ได้ (127.0.0.1 บนมือถือหมายถึงตัวมือถือเอง) ***');
   if (saved) console.log('ที่อยู่ที่ใช้ครั้งก่อน: ' + saved + '  (ถ้าเปิดอุโมงค์ใหม่ ลิงก์จะเปลี่ยน ต้องวางใหม่)');
