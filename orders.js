@@ -269,13 +269,13 @@ module.exports = function createOrders(ctx) {
   let goals = Object.create(null); try { Object.assign(goals, JSON.parse(fs.readFileSync(GOALS_FILE, 'utf8'))); } catch (e) {}
   let goalsDirty = false; setInterval(() => { if (goalsDirty) { goalsDirty = false; try { saveGoals(); } catch (e) {} } }, 60000).unref();
   // แก้เป้าหมายเก่าที่เคยจับ Gauntlet ไปคู่กับ Fist (หมัดเปล่า) ผิด
-  for (const g of Object.values(goals)) for (const it of (g && g.items) || []) if (it.k === 'mastery' && it.key === 'Fist' && /gauntlet/i.test(it.label || '')) { it.key = 'Gauntlet'; g.hist = []; goalsDirty = true; }
+  for (const g of Object.values(goals)) for (const it of (g && g.items) || []) if (it.k === 'mastery' && /gauntlet/i.test(it.label || '') && !it.need) { it.key = 'Fist'; it.need = 'Gauntlet'; g.hist = []; goalsDirty = true; }
   const saveGoals = () => { const t = GOALS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(goals, null, 1)); fs.renameSync(t, GOALS_FILE); };
   const gkey = (n) => String(n || '').toLowerCase();
   function cleanGoal(j) {
     const items = (Array.isArray(j.items) ? j.items : []).slice(0, 20).map((x) => {
       const k = ['mastery', 'level', 'manual'].includes(x && x.k) ? x.k : 'manual';
-      return { k, label: str(x.label, 80), key: str(x.key, 40), target: k === 'manual' ? null : int(x.target, 1, 100000), done: !!x.done };
+      return { k, label: str(x.label, 80), key: str(x.key, 40), need: str(x.need, 40), target: k === 'manual' ? null : int(x.target, 1, 100000), done: !!x.done };
     }).filter((x) => x.label || x.key);
     return { title: str(j.title, 80), order: str(j.order, 20), items, created: Math.floor(ctx.now()) };
   }
@@ -283,7 +283,7 @@ module.exports = function createOrders(ctx) {
   function goalFromOrder(o, masteryKeys) {
     const find = (...names) => { for (const n of names) { if (!n) continue; const k = masteryKeys.find((m) => m.toLowerCase() === n.toLowerCase()) || masteryKeys.find((m) => m.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(m.toLowerCase())); if (k) return k; } return names.find(Boolean) || ''; };
     const items = [];
-    if (o.weapon && o.weapon.type) items.push({ k: 'mastery', label: 'Mastery ' + o.weapon.type, key: find(o.weapon.type, o.weapon.type === 'Katana' ? 'Sword' : ''), target: 400 });
+    if (o.weapon && o.weapon.type) items.push({ k: 'mastery', label: 'Mastery ' + o.weapon.type, key: find(o.weapon.type, o.weapon.type === 'Katana' ? 'Sword' : '', o.weapon.type === 'Gauntlet' ? 'Fist' : ''), target: 400, need: o.weapon.type });
     if (o.power && o.power.name) items.push({ k: 'mastery', label: 'Mastery ' + o.power.name, key: find(o.power.name), target: 400 });
     const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus != null ? '+' + x.plus : ''}` : '');
     if (o.weapon && o.weapon.type) items.push({ k: 'manual', label: `ได้อาวุธ ${o.weapon.variant ? o.weapon.variant + ' ' : ''}${o.weapon.type} ${g(o.weapon)}`.trim() });
@@ -330,7 +330,8 @@ module.exports = function createOrders(ctx) {
       const g = goals[gkey(name)]; if (!g || !s) return;
       if (!g.lvMode) { g.lvMode = 1; g.hist = []; } // ประวัติเดิมเก็บเป็น EXP ล้างครั้งเดียว
       const mlv = (x) => { if (!x) return 0; const lv = Number.isFinite(x.lv) ? x.lv : Math.round((Number(x.goal) || 0) / 30); const fr = x.goal > 0 ? Math.min(1, Math.max(0, x.current / x.goal)) : 0; return Math.min(400, Math.round((lv + (lv >= 400 ? 0 : fr)) * 100) / 100); };
-      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? mlv(m[it.key]) : it.k === 'level' ? Number(s.level) || 0 : it.done ? 1 : 0));
+      const owns = (n) => !n || (typeof s.holding === 'string' && s.holding.toLowerCase().includes(n.toLowerCase())) || (s.items || []).some((i) => i && typeof i.name === 'string' && i.name.toLowerCase().includes(n.toLowerCase()));
+      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? (owns(it.need) ? mlv(m[it.key]) : 0) : it.k === 'level' ? Number(s.level) || 0 : it.done ? 1 : 0));
       const h = g.hist || (g.hist = []), last = h[h.length - 1], t = Math.floor(ctx.now());
       const same = last && last.v.length === v.length && last.v.every((x, i) => x === v[i]);
       if (last && (t - last.t < 60 || (same && t - last.t < 1800))) return;

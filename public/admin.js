@@ -272,7 +272,7 @@ function goalSec(o) {
     if (it.k === 'manual') return h('div', { class: 'gi' }, h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !!it.done, onchange: (e) => { it.done = e.target.checked; render(); } }), h('span', { class: 'tgk' }), h('span', {}, it.label)), del);
     const cur = it.k === 'mastery' ? Number((acc && acc.mastery || {})[it.key]) || 0 : Number(acc && acc.level) || 0;
     const ks = h('select', { class: 'f', onchange: (e) => { it.key = e.target.value; render(); } }, h('option', { value: it.key }, (it.key || '— เลือก —') + (it.key && !keys.includes(it.key) ? ' (ยังไม่มีในไอดี)' : '')), keys.filter((k) => k !== it.key).map((k) => h('option', { value: k }, k)));
-    return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || (it.k === 'level' ? 'เลเวล' : 'Mastery')), it.k === 'mastery' ? ks : null,
+    return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || (it.k === 'level' ? 'เลเวล' : 'Mastery'), it.need ? h('small', { class: 'mu' }, ' (นับเมื่อมี ' + it.need + ')') : null), it.k === 'mastery' ? ks : null,
       h('input', { class: 'f num', type: 'number', value: it.target, oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
       h('span', { class: 'mu' }, cur + ' / ' + it.target), del);
   });
