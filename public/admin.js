@@ -239,10 +239,11 @@ function renderSets() {
   const save = h('button', { class: 'btn primary', id: 'sets-save', disabled: !setsDirty, onclick: () => act(async () => { await api('sets', { method: 'POST', body: { sets: setsDraft } }); setsDirty = false; }, 'บันทึกเซทแล้ว ลูกค้าเห็นทันที') }, 'บันทึกทั้งหมด');
   const missing = (D.defaultSets || []).filter((d) => !setsDraft.some((x) => x.id === d.id || (x.name || '').toLowerCase() === d.name.toLowerCase()));
   const addDef = missing.length ? h('button', { class: 'btn', onclick: () => { setsDraft.push(...JSON.parse(JSON.stringify(missing))); dirty(); renderSets(); toast('เพิ่มเซทตัวละคร ' + missing.length + ' เซทแล้ว กด "บันทึกทั้งหมด" เพื่อให้ลูกค้าเห็น'); } }, '+ เซทตัวละครเริ่มต้น (' + missing.length + ')') : null;
+  const reset = h('button', { class: 'btn', onclick: () => { if (!confirm('แทนที่เซททั้งหมดด้วยเซทเริ่มต้น (Akaza, Douma และเสาหลัก)? เซทที่แก้ไว้จะหายหลังกดบันทึก')) return; setsDraft = JSON.parse(JSON.stringify(D.defaultSets || [])); dirty(); renderSets(); toast('ใช้เซทเริ่มต้นแล้ว กด "บันทึกทั้งหมด" เพื่อให้ลูกค้าเห็น'); } }, 'รีเซ็ตเป็นเซทเริ่มต้น');
   const add = h('button', { class: 'btn', onclick: () => { setsDraft.push({ name: '', price: 'เริ่มต้น 200 บาท', weapon: { line: 'Nightfall', tier: 3, plus: 10 }, power: { kind: 'breath' }, armor: { line: 'Nightfall', tier: 3, plus: 10 } }); dirty(); renderSets(); } }, '+ เพิ่มเซท');
   p.replaceChildren(
     h('p', { class: 'note' }, 'เซทที่ลูกค้าเห็นในหน้าสั่งทำ เรียงตามลำดับนี้ แก้แล้วกด "บันทึกทั้งหมด" · ชุด Nightfall หมวก/กางเกงจะถูกจำกัดที่ +3 ให้เอง'),
     h('datalist', { id: 'icon-keys' }, (iconKeys || []).map((k) => h('option', { value: k }))),
     h('div', { class: 'clist' }, cards.length ? cards : h('p', { class: 'empty' }, 'ยังไม่มีเซท กด "+ เพิ่มเซท"')),
-    h('div', { class: 'rowb setbar' }, addDef, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
+    h('div', { class: 'rowb setbar' }, reset, addDef, add, h('a', { class: 'btn', href: '/order' }, 'ดูหน้าสั่งทำ'), save));
 }
