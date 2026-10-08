@@ -21,7 +21,7 @@ local WATCH_ITEMS = {
     "Ore", "Refinement Ore", "Metal Scraps", "Silk Thread",
     "Firstlight Forged Ingot", "Beast Core", "Demon Horns",
     "Health Potion", "Demonic Lantern", "Healing Gem Necklace",
-    "Coin", "Coin Stack", "Coin Pile",
+    "Coin", "Coin Stack", "Coin Pile", "Coin Pouch",
 }
 
 -- ===== ส่วนหลัก =====
@@ -266,8 +266,9 @@ local function refreshIcons(names)
     if isfile and readfile and isfile(CACHE_FILE) then
         local ok, d = pcall(function() return HttpService:JSONDecode(readfile(CACHE_FILE)) end)
         if ok and type(d) == "table" then
-            for k, v in pairs(d.items or {}) do if not itemIconId[k] then itemIconId[k] = v end end
-            for k, v in pairs(d.urls or {}) do if not idUrl[k] then idUrl[k] = v end end
+            for k, v in pairs(d.items or {}) do itemIconId[k] = v end -- ไฟล์ล่าสุดชนะ (ตัวสแกนอาจแก้รูปผิด)
+            for k, v in pairs(d.urls or {}) do idUrl[k] = v end
+            for _, k in ipairs(d.drop or {}) do if not (d.items or {})[k] then itemIconId[k] = nil end end
         end
     end
     -- 1) หา asset id ของไอคอนจากหน้า Inventory (ครั้งเดียวต่อชิ้น แล้วจำไว้)
@@ -356,6 +357,7 @@ end
 
 -- ===== รวบรวมข้อมูลทั้งหมดเป็น snapshot (ใช้ได้ทั้ง Discord และเว็บ) =====
 local prevItems = {}
+local itemCat = nil
 
 local function collect()
     local data = getData()
@@ -441,6 +443,20 @@ local function collect()
         table.sort(extra, function(a, b) return a.name < b.name end)
         for i = 1, math.min(#extra, 150) do table.insert(entries, extra[i]) end
     end
+
+    -- หมวดของไอเทมจาก ReplicatedStorage.Items.<หมวด>.<ชื่อ> (อ่านครั้งเดียวแล้วจำไว้)
+    if not itemCat then
+        itemCat = {}
+        pcall(function()
+            local root = RS:FindFirstChild("Items")
+            for _, folder in ipairs(root and root:GetChildren() or {}) do
+                for _, it in ipairs(folder:GetChildren()) do
+                    if not itemCat[it.Name] then itemCat[it.Name] = folder.Name end
+                end
+            end
+        end)
+    end
+    for _, e in ipairs(entries) do e.cat = itemCat[e.name] end
 
     -- ของที่ใส่อยู่ (เกมเก็บเป็น Id ของชิ้นนั้น)
     pcall(function()

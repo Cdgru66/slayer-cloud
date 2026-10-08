@@ -7,6 +7,7 @@
 //   node admin.js setpass <id> [--pass รหัส]  ตั้งรหัสผ่านเข้าเว็บของลูกค้า (ไม่ใส่ = สุ่มให้)
 //   node admin.js links --url URL          แสดงลิงก์ลูกค้าทุกคน (ใช้ตอนลิงก์เซิร์ฟเวอร์เปลี่ยน)
 //   node admin.js rejoin show | set key=value ... | test | log   ตั้งค่ารีจอยอัตโนมัติผ่าน Roblox Account Manager
+//   node admin.js backup now | list | restore <ชื่อ>   สำรอง/กู้ข้อมูล (กู้ต้องปิดเซิร์ฟเวอร์ก่อน)
 //   node admin.js seen                     ไอดีที่ส่งข้อมูลเข้ามา และเป็นของใคร
 //   node admin.js list | renew <id> --days 30 | revoke <id> | unrevoke <id> | rotate <id> --url URL | remove <id>
 const fs = require('fs');
@@ -204,6 +205,45 @@ if (cmd === 'mode') {
     let t = ''; try { t = fs.readFileSync(path.join(DATA_DIR, 'rejoin.log'), 'utf8'); } catch (e) {}
     const lines = t.trim().split('\n').filter(Boolean);
     console.log(lines.length ? '\n' + lines.slice(-15).join('\n') : 'ยังไม่มีประวัติรีจอย');
+  }
+} else if (cmd === 'backup') {
+  const BK = path.join(DATA_DIR, '..', 'backups');
+  const copyDir = (src, dst) => {
+    fs.mkdirSync(dst, { recursive: true });
+    for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+      const a = path.join(src, e.name), b = path.join(dst, e.name);
+      if (e.isDirectory()) copyDir(a, b); else if (e.isFile()) fs.copyFileSync(a, b);
+    }
+  };
+  const stamp = () => { const d = new Date(), z = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; };
+  const list = () => { try { return fs.readdirSync(BK, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort().reverse(); } catch (e) { return []; } };
+  const describe = (n) => {
+    const c = readJson(path.join(BK, n, 'customers.json'), {}), d = readJson(path.join(BK, n, 'data.json'), {});
+    const ids = Object.values(d).reduce((t, x) => t + Object.keys(x || {}).length, 0);
+    return `${n.padEnd(28)} ลูกค้า ${String(Object.keys(c).length).padStart(3)} คน  ไอดี ${String(ids).padStart(4)} ตัว`;
+  };
+  const sub = pos[0] || 'list';
+  if (sub === 'now') {
+    const name = 'manual-' + stamp(); copyDir(DATA_DIR, path.join(BK, name));
+    console.log('สำรองแล้ว: backups\\' + name + '\n(ถ้าเซิร์ฟเวอร์เปิดอยู่ ข้อมูลไอดีอาจช้ากว่าจริงไม่เกิน 30 วินาที)');
+  } else if (sub === 'list') {
+    const l = list();
+    if (!l.length) console.log('ยังไม่มีชุดสำรอง');
+    else { console.log('\nชุดสำรอง (ใหม่สุดอยู่บน):'); l.slice(0, 40).forEach((n, i) => console.log(String(i + 1).padStart(3) + ') ' + describe(n))); }
+  } else if (sub === 'restore') {
+    let name = pos[1]; const l = list();
+    if (/^\d+$/.test(name || '')) name = l[Number(name) - 1];
+    if (!name || !l.includes(name)) die('ไม่พบชุดสำรองนี้ (ดูรายการด้วย backup list)');
+    const port = Number(process.env.PORT) || 8800;
+    fetch(`http://127.0.0.1:${port}/healthz`, { signal: AbortSignal.timeout(2000) }).then(() => {
+      console.log('*** เซิร์ฟเวอร์ยังเปิดอยู่ ปิดหน้าต่าง start-cloud.bat ก่อน แล้วค่อยกู้ (ไม่อย่างนั้นเซิร์ฟเวอร์จะเขียนทับข้อมูลที่กู้) ***');
+      process.exit(1);
+    }).catch(() => {
+      const safety = 'before-restore-' + stamp();
+      copyDir(DATA_DIR, path.join(BK, safety));
+      copyDir(path.join(BK, name), DATA_DIR);
+      console.log(`กู้ข้อมูลจาก ${name} แล้ว\nข้อมูลก่อนกู้ถูกเก็บไว้ที่ backups\\${safety} (เผื่ออยากย้อนกลับ)\nเปิด start-cloud.bat ได้เลย`);
+    });
   }
 } else if (cmd === 'links') {
   const base = baseUrl();

@@ -102,6 +102,7 @@ const askId = async () => {
     console.log(' 10) ลบลูกค้า');
     console.log(' 11) ตั้งรหัสผ่านเข้าเว็บใหม่ (ลูกค้าลืมรหัส)');
     console.log(' 12) รีจอยอัตโนมัติ / แจ้งเตือน Discord');
+    console.log(' 13) สำรอง / กู้ข้อมูล');
     console.log(' M) สลับโหมด');
     console.log(' 0) ออก');
     const c = await ask('เลือก: ');
@@ -146,6 +147,20 @@ const askId = async () => {
       const url = await getUrl(); if (!url) continue;
       run(['links'], url);
       if (owner) console.log('ถ้าที่อยู่เซิร์ฟเวอร์เปลี่ยน อย่าลืมเลือก 5 สร้างสคริปต์ของคุณใหม่ด้วย (สคริปต์เก่ายังส่งไปที่อยู่เดิม)');
+    } else if (k === '13') {
+      console.log('\n ระบบสำรองข้อมูลให้เองทุก 6 ชั่วโมง เก็บย้อนหลังประมาณ 7 วัน (ในโฟลเดอร์ backups)');
+      console.log(' 1) สำรองตอนนี้   2) ดูรายการชุดสำรอง   3) กู้ข้อมูลจากชุดสำรอง   0) กลับ');
+      const m = ((await ask('เลือก: ')) || '').trim();
+      if (m === '1') run(['backup', 'now']);
+      else if (m === '2') run(['backup', 'list']);
+      else if (m === '3') {
+        run(['backup', 'list']);
+        console.log('\n*** ต้องปิดหน้าต่าง start-cloud.bat ก่อนกู้ ***');
+        const n = ((await ask('พิมพ์เลขลำดับชุดที่จะกู้ (Enter = ยกเลิก): ')) || '').trim();
+        if (!/^\d+$/.test(n)) { console.log('ยกเลิก'); continue; }
+        const sure = ((await ask('ข้อมูลปัจจุบันจะถูกแทนที่ (ระบบเก็บสำรองไว้ให้ก่อน) พิมพ์ YES เพื่อยืนยัน: ')) || '').trim();
+        if (sure === 'YES') run(['backup', 'restore', n]); else console.log('ยกเลิก');
+      }
     } else if (k === '12') {
       run(['rejoin', 'show']);
       console.log('\n 1) ตั้งค่า   2) ทดสอบต่อ RAM   3) ดูประวัติรีจอยล่าสุด   0) กลับ');

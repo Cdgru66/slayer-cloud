@@ -1,6 +1,6 @@
--- สแกนไอคอนของทุกชิ้นในกระเป๋า แล้วบันทึกลงแคช (slayer_icon_cache.json) ให้สคริปต์หลักใช้ต่อ
+-- (v3) สแกนไอคอนของทุกชิ้นในกระเป๋า แล้วบันทึกลงแคช (slayer_icon_cache.json) ให้สคริปต์หลักใช้ต่อ
 -- ใช้ครั้งเดียว (หรือเมื่อได้ของใหม่) ไม่ส่งข้อมูลไปไหนนอกจากขอลิงก์รูปจาก Roblox
--- แนะนำ: กด M เปิดหน้า Inventory ค้างไว้ก่อนรัน จะเจอไอคอนได้มากขึ้น
+-- *** กด M เปิดหน้า Inventory ค้างไว้ก่อนรัน *** (ไอคอนส่วนใหญ่หาได้จากหน้านี้เท่านั้น)
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
@@ -24,7 +24,7 @@ if data then
         if not nameSet[it.Name] then nameSet[it.Name] = true; table.insert(names, it.Name) end
     end
 end
-for _, n in ipairs({ "Ore", "Refinement Ore", "Coin", "Coin Stack", "Coin Pile", "Metal Scraps", "Silk Thread", "Beast Core", "Demon Horns", "Health Potion" }) do
+for _, n in ipairs({ "Ore", "Refinement Ore", "Coin", "Coin Stack", "Coin Pile", "Coin Pouch", "Metal Scraps", "Silk Thread", "Beast Core", "Demon Horns", "Health Potion" }) do
     if not nameSet[n] then nameSet[n] = true; table.insert(names, n) end
 end
 table.sort(names)
@@ -35,6 +35,10 @@ if isfile and readfile and isfile(CACHE_FILE) then
     local ok, d = pcall(function() return HttpService:JSONDecode(readfile(CACHE_FILE)) end)
     if ok and type(d) == "table" then cache.items = d.items or {}; cache.urls = d.urls or {} end
 end
+
+-- v2 หยิบรูปเอฟเฟกต์/NPC มาผิด 5 ชิ้น ล้างทิ้งให้หาใหม่
+cache.drop = { "Bladed Wagasa", "Horse", "Spear", "Tanto", "War Fans" }
+for _, bad in ipairs(cache.drop) do cache.items[bad] = nil end
 
 local function assetId(v)
     if type(v) ~= "string" then return nil end
@@ -69,13 +73,10 @@ local pg = player:FindFirstChild("PlayerGui")
 local main = pg and pg:FindFirstChild("CharactersMain", true)
 local holder = main and main:FindFirstChild("ActualHolder", true)
 local rsIndex = {}
-for _, d in ipairs(RS:GetDescendants()) do
-    if nameSet[d.Name] and not d:IsA("ValueBase") then
-        local p = d:GetFullName()
-        if not p:find("Player_Service.Data", 1, true) then -- ข้ามข้อมูลผู้เล่น
-            rsIndex[d.Name] = rsIndex[d.Name] or {}
-            table.insert(rsIndex[d.Name], d)
-        end
+local itemsRoot = RS:FindFirstChild("Items") -- นิยามไอเทมของเกม (ไม่ใช้ Effects/NPC เพราะรูปไม่ใช่ไอคอน)
+for _, folder in ipairs(itemsRoot and itemsRoot:GetChildren() or {}) do
+    for _, d in ipairs(folder:GetChildren()) do
+        if nameSet[d.Name] then rsIndex[d.Name] = rsIndex[d.Name] or {}; table.insert(rsIndex[d.Name], d) end
     end
 end
 
@@ -131,6 +132,28 @@ add("\n== ไม่เจอ ==")
 for _, n in ipairs(missing) do
     local hits = rsIndex[n]
     add("  " .. n .. (hits and ("   (มีใน ReplicatedStorage " .. #hits .. " ที่ เช่น " .. hits[1]:GetFullName():sub(1, 80) .. ")") or ""))
+end
+-- ตัวอย่างนิยามไอเทม 2 ชิ้นที่หาไม่เจอ (ให้ผมดูว่าเกมเก็บรูปไว้ตรงไหน)
+local shown = 0
+for _, n in ipairs(missing) do
+    local d = rsIndex[n] and rsIndex[n][1]
+    if d and shown < 2 then
+        shown = shown + 1
+        add("\n== ตัวอย่างข้อมูลไอเทม: " .. d:GetFullName() .. " ==")
+        local cnt = 0
+        local function dump(o, depth)
+            if cnt > 40 then return end
+            cnt = cnt + 1
+            local line = string.rep("  ", depth) .. o.Name .. " [" .. o.ClassName .. "]"
+            if o:IsA("ValueBase") then line = line .. " = " .. tostring(o.Value):sub(1, 60) end
+            pcall(function() if o:IsA("MeshPart") then line = line .. " Tex=" .. o.TextureID end end)
+            pcall(function() if o:IsA("SpecialMesh") then line = line .. " Tex=" .. o.TextureId end end)
+            for k, v in pairs(o:GetAttributes()) do line = line .. " {" .. k .. "=" .. tostring(v):sub(1, 50) .. "}" end
+            add(line)
+            if depth < 3 then for _, c in ipairs(o:GetChildren()) do dump(c, depth + 1) end end
+        end
+        dump(d, 0)
+    end
 end
 add("\nบันทึกลง " .. CACHE_FILE .. " แล้ว สคริปต์หลักจะใช้ไอคอนเหล่านี้ในรอบส่งถัดไป (ไม่ต้องรีเกม)")
 local text = table.concat(out, "\n")

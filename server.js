@@ -93,6 +93,29 @@ function flush() {
 }
 setInterval(flush, 30000).unref();
 
+// ---------- สำรองข้อมูลอัตโนมัติ: ทุก 6 ชม. + ตอนเปิดเซิร์ฟเวอร์ เก็บ 28 ชุดล่าสุด (ประมาณ 7 วัน) ----------
+const BACKUP_DIR = path.join(DATA_DIR, '..', 'backups');
+function copyDir(src, dst) {
+  fs.mkdirSync(dst, { recursive: true });
+  for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+    const a = path.join(src, e.name), b = path.join(dst, e.name);
+    if (e.isDirectory()) copyDir(a, b); else if (e.isFile()) fs.copyFileSync(a, b);
+  }
+}
+function autoBackup() {
+  try {
+    flush();
+    const d = new Date(), z = (n) => String(n).padStart(2, '0');
+    const name = `auto-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
+    copyDir(DATA_DIR, path.join(BACKUP_DIR, name));
+    const autos = fs.readdirSync(BACKUP_DIR).filter((n) => n.startsWith('auto-')).sort();
+    for (const old of autos.slice(0, Math.max(0, autos.length - 28))) fs.rmSync(path.join(BACKUP_DIR, old), { recursive: true, force: true });
+    console.log('สำรองข้อมูลอัตโนมัติ: backups/' + name);
+  } catch (e) { console.error('สำรองข้อมูลไม่สำเร็จ:', e.message); }
+}
+setTimeout(autoBackup, Number(process.env.BACKUP_FIRST_MS) || 60000).unref();
+setInterval(autoBackup, 6 * 3600 * 1000).unref();
+
 // ---------- รีจอยอัตโนมัติผ่าน Roblox Account Manager (RAM) ----------
 // ตั้งค่าใน data/rejoin.json ผ่าน admin.bat เมนูรีจอย  ไม่มีการเก็บ cookie/รหัส Roblox ใด ๆ ที่นี่ ใช้ RAM เปิดไอดีให้
 const REJOIN_FILE = path.join(DATA_DIR, 'rejoin.json');

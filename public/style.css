@@ -168,7 +168,7 @@ img.ic{padding:3px;background:radial-gradient(circle at 50% 40%,rgba(241,233,221
   .vault>div{padding:18px}
   .wen .big{font-size:52px}
   .res{grid-template-columns:1fr 1fr}
-  .coins .res{grid-template-columns:1fr 1fr 1fr}
+  .coins .res{grid-template-columns:1fr 1fr}
   .vault .ri,.vault .ri.sm{grid-template-columns:1fr;gap:6px;min-width:0}.vault .ri .ic{width:34px!important;height:34px!important}.ri .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ri{min-width:0}
   .vault .ri .v{font-size:22px}
   .lh{display:none}
