@@ -92,6 +92,7 @@ const pctOfVals=(items,vals)=>items.length?items.reduce((t,it,i)=>t+fracOf(it,va
 const r1=x=>Math.floor(x*10)/10;
 function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;const s=a.s,st=goalStats(a);
  return g.items.map((it,i)=>{const cur=curOf(it,s);if(it.k==='manual')return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true};
+  if(it.k==='mastery'&&!(a.s.mastery||{})[it.key])return{label:it.label||('Mastery '+it.key),cur:0,t:it.target||400,f:0,txt:'ยังไม่มี',missing:true};
   const t=it.target||(it.k==='mastery'?400:1),x=st&&st.items[i];
   return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),cur,t,f:fracOf(it,cur),txt:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta}})}
 function goalPct(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;return r1(pctOfVals(g.items,g.items.map(it=>curOf(it,a.s))))}
@@ -116,9 +117,9 @@ function ring(pct,z,key){const NS='http://www.w3.org/2000/svg',r=(z-8)/2,c=2*Mat
  if(from==null||Math.abs(from-pct)<0.05||matchMedia('(prefers-reduced-motion: reduce)').matches)set(pct);
  else{set(from);const t0=performance.now();const step=n=>{const k=Math.min(1,(n-t0)/1200),e=1-Math.pow(1-k,3);set(from+(pct-from)*e);if(k<1)requestAnimationFrame(step);else svg.classList.add('bump')};requestAnimationFrame(step)}
  return svg}
-function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),
+function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':x.missing?'miss':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),
   x.manual?null:h('span',{class:'gb'},h('i',{style:`width:${(x.f*100).toFixed(1)}%`})),
-  !x.manual&&x.f<1?h('span',{class:'gr'},x.rate>0?['+'+(x.rate>=10?Math.round(x.rate):x.rate.toFixed(1))+' / ชม.',x.eta?' · อีก '+dur(x.eta):'']:'รอข้อมูลความเร็ว…'):null)))}
+  x.missing?h('span',{class:'gr miss'},'ยังไม่ได้อาวุธ/พลังนี้ · จะเริ่มนับเมื่อได้แล้ว'):!x.manual&&x.f<1?h('span',{class:'gr'},x.rate>0?['+'+(x.rate>=10?Math.round(x.rate):x.rate.toFixed(1))+' / ชม.',x.eta?' · อีก '+dur(x.eta):'']:'รอข้อมูลความเร็ว…'):null)))}
 function goalMeta(a){const st=goalStats(a),pct=goalPct(a);if(!st)return null;const out=[];
  if(pct>=100)out.push(h('span',{class:'gm ok'},'ครบทุกเป้าหมายแล้ว 🎉'));
  else{out.push(h('span',{class:'gm'+(st.pctHr>0?' up':'')},st.pctHr>0?'▲ +'+st.pctHr.toFixed(1)+'% ใน 1 ชม.ล่าสุด':'กำลังเก็บข้อมูลความเร็ว'));
@@ -130,11 +131,16 @@ function spark(a,w,hh){const st=goalStats(a);if(!st||st.series.length<3)return n
  const x=t=>4+(t-t0)/Math.max(1,t1-t0)*(w-8),y=p=>hh-4-p/100*(hh-8);
  const pl=document.createElementNS(NS,'polyline');pl.setAttribute('points',S.map(p=>x(p[0]).toFixed(1)+','+y(p[1]).toFixed(1)).join(' '));pl.setAttribute('class','sl');svg.append(pl);
  const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x(S[S.length-1][0]));c.setAttribute('cy',y(S[S.length-1][1]));c.setAttribute('r',4);c.setAttribute('class','sd');svg.append(c);return svg}
+// ตอนนี้กำลังใช้อะไรฟาร์มอยู่ (อาวุธที่ถืออยู่ + ปราณ/มนต์อสูร)
+const WEAPON_RE=/katana|gauntlet|sickle|scythe|spear|war fans|wagasa|axe|mace|cutlass|tanto|shotgun|sword|blade/i;
+function usingNow(s){const w=(s.items||[]).filter(i=>i.equipped&&(WEAPON_RE.test(i.name)||/weapon/i.test(i.cat||''))).map(i=>i.name);
+ const parts=[];if(w.length)parts.push(w.slice(0,2).join(', '));if(s.demonArt)parts.push('มนต์อสูร '+s.demonArt);else if(s.breathing)parts.push('ปราณ '+s.breathing);
+ return parts.length?h('div',{class:'using'},h('span',{class:'mu'},'กำลังใช้ฟาร์ม:'),' ',h('b',{},parts.join(' · '))):null}
 function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=>x.a.goal&&x.a.goal.items&&x.a.goal.items.length);box.hidden=!G.length;if(!G.length){box.replaceChildren();return}
  box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
   return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},
    h('div',{class:'gc-top'},ring(pct,96,'c:'+s.name),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
-   goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
+   usingNow(s),goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
 function render(){
  const L=[...A.values()].map(a=>({a,st:stat(a)})),c={all:L.length,on:0,stuck:0,off:0};L.forEach(x=>c[x.st]++);
  for(const k in c)$('#n-'+k).textContent=c[k];
@@ -248,7 +254,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
  d.replaceChildren(h('button',{class:'btn x',onclick:hide,'aria-label':'ปิด'},'ปิด'),
   h('div',{class:'dh'},lvSeal(s),h('div',{},h('h2',{},s.display||s.name),h('p',{class:'us'},s.name+(s.userId?'  ·  ID '+s.userId:'')))),
   h('p',{style:'margin-top:14px'},h('span',{class:'pill',style:'--c:'+ST[st][1]},h('i',{class:'dot',style:'--c:'+ST[st][1]}),ST[st][0]+' · อัปเดตเมื่อ '+ago(now()-s.time)+'ที่แล้ว'),' ',h('span',{class:'pill cdp','data-cd':s.name,style:'--c:var(--mu)'},cdText(a,st))),
-  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),goalMeta(a),spark(a,320,64),goalList(a,false)):null,
+  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),usingNow(s),goalMeta(a),spark(a,320,64),goalList(a,false)):null,
   fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):null,
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),
