@@ -80,3 +80,52 @@ $('#send').onclick = async () => {
     $('#ticket').scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch (e) { $('#err').textContent = 'ต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง'; } finally { btn.disabled = false; }
 };
+
+// ===== ตัวเลือกแบบการ์ดมีรูปไอเทมจากในเกม =====
+const ICON_OF = {
+  Katana: 'Nightfall Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
+  Water: 'Water Katana', Flame: 'Flame Katana', Thunder: 'Thunder Katana', Wind: 'Wind Katana', Insect: 'Insect Katana', Stone: 'Stone Haori', Sound: 'Sound Katanas', Mist: 'Mist Kumo Sodenashi', Serpent: 'Serpent Katana', Beast: 'Beast Core',
+  'Blood Manipulation': 'Blood Sickles', Cryokinesis: 'Frozen Heart', Dream: 'Sweet Dreams Eye Mask', Tamari: 'Demon Horns', 'Obi Manipulation': 'Demonic Lantern',
+};
+const LINE_ICON = { w: { Nightfall: 'Nightfall Katana', Firstlight: 'Firstlight Forged Ingot' }, a: { Nightfall: "Nightfall Weaver's Cloth", Firstlight: "Firstlight Weaver's Silk" } };
+let ICONS = {};
+const pickers = [];
+function tile(label, icon, on, click) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'pk'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(on));
+  const f = document.createElement('span'); f.className = 'pk-ic';
+  if (icon && ICONS[icon]) { const im = new Image(); im.src = ICONS[icon]; im.alt = ''; im.loading = 'lazy'; im.onerror = () => { im.remove(); f.textContent = label[0]; }; f.append(im); } else f.textContent = label === 'ไม่ระบุ' ? '–' : label[0];
+  const t = document.createElement('span'); t.className = 'pk-t'; t.textContent = label;
+  b.append(f, t); b.onclick = click; return b;
+}
+// el = select หรือ input ที่ฟอร์มใช้อยู่ (ยังเก็บค่าไว้ที่เดิม การ์ดแค่ช่วยเลือก)
+function picker(el, list, iconOf, title, where) {
+  const box = document.createElement('div'); box.className = 'pk-wrap';
+  const cap = document.createElement('p'); cap.className = 'pk-cap'; cap.textContent = title;
+  const grid = document.createElement('div'); grid.className = 'pk-grid'; grid.setAttribute('role', 'radiogroup'); grid.setAttribute('aria-label', title);
+  box.append(cap, grid);
+  const draw = () => {
+    const items = typeof list === 'function' ? list() : list, cur = el.value;
+    grid.replaceChildren(...items.map((v) => tile(v || 'ไม่ระบุ', iconOf(v), cur === v, () => { el.value = cur === v && el.tagName === 'INPUT' ? '' : v; el.dispatchEvent(new Event('change', { bubbles: true })); redrawAll(); })));
+  };
+  where(box); pickers.push(draw); return draw;
+}
+function redrawAll() { for (const d of pickers) d(); }
+const hideLabel = (sel) => { const l = $(sel).closest('label'); if (l) l.hidden = true; };
+function buildPickers() {
+  const before = (ref) => (box) => ref.parentNode.insertBefore(box, ref);
+  const wRow = $('#w-type').closest('.og-row');
+  picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภทอาวุธ', before(wRow));
+  picker($('#w-line'), ['', ...LINES], (v) => LINE_ICON.w[v], 'สายอาวุธ', before(wRow));
+  hideLabel('#w-type'); hideLabel('#w-line');
+  picker($('#clan'), CLANS, () => null, 'เลือกตระกูล หรือพิมพ์เองด้านล่าง', before($('#clan')));
+  picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'เลือก หรือพิมพ์เองด้านล่าง', before($('#p-name')));
+  picker($('#t-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สายชุด', before($('#row-top')));
+  picker($('#b-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สายกางเกง', (box) => { box.classList.add('pk-bot'); $('#row-bot').prepend(box); });
+  hideLabel('#t-line'); hideLabel('#b-line');
+  $('#clan').addEventListener('input', redrawAll); $('#p-name').addEventListener('input', redrawAll);
+  document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', redrawAll));
+  redrawAll();
+}
+fetch('/api/v1/icons').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((j) => { ICONS = j || {}; buildPickers(); });
+// ปุ่มกลับ: มาจากหน้าในเว็บนี้ -> ย้อนกลับ, เปิดลิงก์ตรง -> ไปหน้าเข้าสู่ระบบ
+$('#back').onclick = (e) => { try { if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) { e.preventDefault(); history.back(); } } catch (x) {} };
