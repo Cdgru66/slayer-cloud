@@ -6,7 +6,7 @@ const CLANS = ['Kamado', 'Tomioka', 'Agatsuma', 'Hashibira', 'Rengoku', 'Tokito'
 const WEAPONS = ['Katana', 'Sickles', 'Scythe', 'Spear', 'War Fans', 'Bladed Wagasa', 'Axe and Mace', 'Cutlass', 'Tanto', 'Gauntlet'];
 const LINES = ['Nightfall', 'Firstlight'];
 const BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Mist', 'Serpent', 'Beast', 'Moon', 'Sun'];
-const DEMONS = ['Blood Manipulation', 'Cryokinesis', 'Dream', 'Tamari', 'Obi Manipulation'];
+const DEMONS = ['Blood Manipulation', 'Cryokinesis', 'Pyrokinesis', 'Shockwave', 'Reaper', 'Dream', 'Tamari', 'Obi Manipulation'];
 let kind = 'breath', sent = false;
 
 const opt = (sel, list, first) => { const e = $(sel); e.replaceChildren(); if (first) e.append(new Option(first, '')); for (const v of list) e.append(typeof v === 'object' ? new Option(v[1], v[0]) : new Option(v, v)); };
@@ -85,7 +85,8 @@ $('#send').onclick = async () => {
 const ICON_OF = {
   Katana: 'Nightfall Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
   Water: 'Water Katana', Flame: 'Flame Katana', Thunder: 'Thunder Katana', Wind: 'Wind Katana', Insect: 'Insect Katana', Stone: 'Stone Haori', Sound: 'Sound Katanas', Mist: 'Mist Kumo Sodenashi', Serpent: 'Serpent Katana', Beast: 'Beast Core',
-  'Blood Manipulation': 'Blood Sickles', Cryokinesis: 'Frozen Heart', Dream: 'Sweet Dreams Eye Mask', Tamari: 'Demon Horns', 'Obi Manipulation': 'Demonic Lantern',
+  'Blood Manipulation': 'Blood Manipulation Orb', Cryokinesis: 'Cryokinesis Orb', Pyrokinesis: 'Pyrokenesis Orb', Shockwave: 'Shockwave Orb', Reaper: 'Reaper Orb',
+  Dream: 'Dream Orb', Tamari: 'Tamari Orb', 'Obi Manipulation': 'Obi Manipulation Orb',
 };
 const LINE_ICON = { w: { Nightfall: 'Nightfall Katana', Firstlight: 'Firstlight Forged Ingot' }, a: { Nightfall: "Nightfall Weaver's Cloth", Firstlight: "Firstlight Weaver's Silk" } };
 let ICONS = {};
