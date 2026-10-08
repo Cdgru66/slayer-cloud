@@ -369,7 +369,7 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 .ord-promise b{font:600 15px var(--serif);color:var(--gold)}.ord-promise span{font-size:12px;color:var(--mu)}
 .ord-main{max-width:1080px;margin:0 auto;padding:22px 18px 70px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
 .ord-form{display:grid;gap:12px}
-.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.hpot{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .og{border:0;margin:0;padding:16px 18px 18px;border-radius:16px;background:linear-gradient(180deg,var(--lac2),#170f11);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:12px;min-width:0}
 .og legend{float:left;width:100%;display:flex;align-items:center;gap:10px;font:600 17px var(--serif);margin-bottom:2px;padding:0}
 .og legend+*{clear:both}
@@ -440,3 +440,12 @@ select.f{appearance:none;background-image:linear-gradient(45deg,transparent 50%,
 .dd-opt:hover,.dd-opt:focus{background:var(--lac3)}
 .dd-opt[aria-selected=true]{color:var(--gold-hi);background:rgba(226,182,92,.1)}
 .og-row .dd{flex:1 1 150px}
+/* เรียลไทม์: บอส LIVE แร่ต่อชั่วโมง */
+.fight .bossic{flex:none;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+.fight{display:inline-flex;align-items:center;gap:5px}
+.livetag{font:700 9.5px/1 var(--sans);letter-spacing:.06em;color:#ff6b5e;padding:2px 5px;border-radius:5px;background:rgba(255,80,60,.12);box-shadow:inset 0 0 0 1px rgba(255,90,70,.35);animation:sf-pulse 1.6s ease-in-out infinite}
+@keyframes sf-pulse{50%{opacity:.45}}
+.orr{display:block;font-size:11px;color:var(--ok);font-weight:500;margin-top:1px}
+.orate{margin:10px 0 0;font-size:12.5px;color:var(--ok)}
+#t-wen.bump{text-shadow:0 0 22px rgba(226,182,92,.55)}
+@media (prefers-reduced-motion:reduce){.livetag{animation:none}}

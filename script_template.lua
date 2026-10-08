@@ -7,6 +7,7 @@ local WEB_ALL_ITEMS = true      -- true = ส่งของทุกชิ้�
 local ICON_STYLE = "author"     -- "author" = ไอคอนเล็กหน้าชื่อ, "thumbnail" = ไอคอนใหญ่ด้านขวา
 local LIVE_EDIT = true       -- true = แก้ข้อความเดิมในห้อง (ไม่ส่งใหม่ทุกรอบ ห้องไม่รก)
 local USE_ANSI = true        -- true = แถบสี/ตัวอักษรสีในกล่องโค้ด (ถ้าเห็นเป็นตัวอักษรแปลก ๆ ให้ปิด)
+local LIVE_INTERVAL = 20        -- ส่งข้อมูลสด (บอสที่กำลังสู้ / Wen / แร่) ทุกกี่วินาที ให้เว็บดูเรียลไทม์ (0 = ปิด)
 local AUTO_REJOIN = true        -- true = หลุด/โดนเตะ (หน้าต่างเกมยังอยู่) แล้วพากลับเข้าเกมเอง
 local DEBUG_ICONS = false       -- true = พิมพ์รายการรูปที่เจอใน UI ลง console + คลิปบอร์ด (ไว้ส่งให้ผมแก้)
 
@@ -904,5 +905,33 @@ task.spawn(function()
     while true do
         cycle()
         task.wait(INTERVAL)
+    end
+end)
+
+-- ข้อมูลสดระหว่างรอบ: เบามาก ส่งแค่บอสใกล้ตัว Wen เลเวล และจำนวนแร่
+task.spawn(function()
+    if LIVE_INTERVAL <= 0 or WEB_API_URL == "" or not req then return end
+    task.wait(LIVE_INTERVAL)
+    while true do
+        pcall(function()
+            local data = getData()
+            local slot = getSlot(data)
+            if not slot then return end
+            local items = itemsFromData(slot)
+            local ui = itemsFromUI()
+            for k, v in pairs(ui) do items[k] = v end
+            local pt = data:FindFirstChild("PlayerTitles")
+            local okB, boss = pcall(nearestBoss)
+            local p = {
+                name = player.Name, live = true,
+                wen = val(slot, "Wen", 0), level = val(pt and pt:FindFirstChild("Progress"), "level"),
+                ore = items["Ore"] or 0, refine = items["Refinement Ore"] or 0,
+                boss = (okB and boss) and { name = boss.name, hp = boss.hp } or nil,
+            }
+            local extra = {}
+            if WEB_API_KEY ~= "" then extra["Authorization"] = "Bearer " .. WEB_API_KEY end
+            post(WEB_API_URL, HttpService:JSONEncode(p), extra)
+        end)
+        task.wait(LIVE_INTERVAL)
     end
 end)

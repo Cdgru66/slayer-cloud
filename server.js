@@ -21,7 +21,7 @@ const MAX_BODY = 512 * 1024;
 const MAX_BATCH = 100;
 const MAX_HIST = 2000;
 const DEFAULT_MAX_ACCOUNTS = 50;
-const RATE_INGEST_PER_MIN = Number(process.env.RATE_INGEST_PER_MIN) || 120;
+const RATE_INGEST_PER_MIN = Number(process.env.RATE_INGEST_PER_MIN) || 600; // รวมข้อมูลสด (ทุก 20 วิ ต่อไอดี)
 const RATE_VIEW_PER_MIN = Number(process.env.RATE_VIEW_PER_MIN) || 300;
 const FAIL_PER_MIN = 30;
 
@@ -318,11 +318,29 @@ function tidy(v, d) {
   }
   return o;
 }
+// ข้อมูลสดระหว่างรอบ (บอส/Wen/แร่) อัปเดตทับของเดิม ไม่เพิ่มจุดประวัติ ไม่เลื่อนเวลานับถอยหลัง
+const okBoss = (b) => b && typeof b === 'object' && typeof b.name === 'string' && b.name.length <= 40 ? { name: b.name, hp: isNum(b.hp) ? Math.max(0, Math.min(100, b.hp)) : null } : null;
+function liveUpdate(id, name, snap) {
+  const mine = accounts[id], a = mine && Object.hasOwn(mine, name) ? mine[name] : null;
+  if (!a || !a.s) return null; // ยังไม่มีข้อมูลเต็ม รอรอบปกติก่อน
+  if (!rate('live:' + id + ':' + name, 6)) return null;
+  const b = okBoss(snap.boss); if (b) a.s.boss = b; else delete a.s.boss;
+  if (isNum(snap.wen)) a.s.wen = snap.wen;
+  if (isNum(snap.level)) a.s.level = snap.level;
+  for (const [k, n] of [['ore', 'Ore'], ['refine', 'Refinement Ore']]) {
+    if (!isNum(snap[k])) continue;
+    const it = (a.s.items || []).find((i) => i && i.name === n);
+    if (it) it.amount = snap[k]; else if (Array.isArray(a.s.items)) a.s.items.push({ name: n, amount: snap[k] });
+  }
+  a.s.liveAt = now(); dirty = true;
+  return null;
+}
 function ingest(id, c, snap) {
   if (!snap || typeof snap !== 'object') return 'bad json';
   const name = snap.name;
   if (typeof name !== 'string' || !/^[A-Za-z0-9_]{3,20}$/.test(name) || name in Object.prototype || name === '__proto__') return 'bad name'; // ชื่อผู้ใช้ Roblox
   snap = tidy(snap, 0);
+  if (snap.live === true) return liveUpdate(id, name, snap);
   if (JSON.stringify(snap).length > MAX_SNAP) return 'too big';
   const mine = accounts[id] || (accounts[id] = Object.create(null));
   if (!Object.hasOwn(mine, name) && Object.keys(mine).length >= (c.maxAccounts || DEFAULT_MAX_ACCOUNTS)) return 'account limit';
@@ -339,7 +357,8 @@ function ingest(id, c, snap) {
   snap.time = now(); // ใช้เวลาของเซิร์ฟเวอร์เสมอ
   const a = Object.hasOwn(mine, name) ? mine[name] : (mine[name] = { s: null, hist: [] });
   a.s = snap;
-  a.hist.push({ t: snap.time, w: isNum(snap.wen) ? snap.wen : 0, k: isNum(snap.progress && snap.progress.kills) ? snap.progress.kills : 0, b: isNum(snap.progress && snap.progress.boss_kills) ? snap.progress.boss_kills : 0 });
+  const amtOf = (n) => { const it = snap.items.find((i) => i.name === n); return it ? it.amount : 0; };
+  a.hist.push({ o: amtOf('Ore'), r: amtOf('Refinement Ore'), t: snap.time, w: isNum(snap.wen) ? snap.wen : 0, k: isNum(snap.progress && snap.progress.kills) ? snap.progress.kills : 0, b: isNum(snap.progress && snap.progress.boss_kills) ? snap.progress.boss_kills : 0 });
   if (a.hist.length > MAX_HIST) a.hist.splice(0, a.hist.length - MAX_HIST);
   try { notify.onSnapshot(id === OWNER, name, a); } catch (e) { console.error('notify:', e.message); }
   dirty = true;
