@@ -41,9 +41,8 @@ function text(d) {
   const L = [];
   if (d.pack) L.push('แพ็กเกจ: ' + d.pack);
   if (d.clan) L.push('ตระกูล: ' + d.clan);
-  if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.variant ? d.weapon.variant + ' ' + d.weapon.type + ' · ' : d.weapon.type + ' '}${g(d.weapon)}`.trim() + (d.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${d.weapon.mastery})` : ''));
-  if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + (d.power.mastery ? ` (ฟาร์มให้จน Mastery ${d.power.mastery})` : ''));
-  else if (d.power.mastery) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: (ฟาร์มให้จน Mastery ${d.power.mastery})`);
+  if (d.weapon.type) L.push(`อาวุธ: ${d.weapon.variant ? d.weapon.variant + ' ' + d.weapon.type + ' · ' : d.weapon.type + ' '}${g(d.weapon)}`.trim() + ' · Mastery ตัน');
+  if (d.power.name) L.push(`${d.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${d.power.name}` + ' · Mastery ตัน');
   if ($('#same').checked) { if (g(d.top)) L.push('เสื้อ, กางเกง: ' + g(d.top)); }
   else { if (g(d.top)) L.push('เสื้อ: ' + g(d.top)); if (g(d.bottom)) L.push('กางเกง: ' + g(d.bottom)); }
   if (d.title) L.push('(ฉายา): ' + d.title);
@@ -117,9 +116,19 @@ function crest(name) {
   else { el('circle', { r: 9, fill: 'none', stroke: gold, 'stroke-width': 3 }); el('circle', { r: 3.5, fill: gold }); }
   return svg;
 }
+// ไอคอนธาตุ (ใช้ระหว่างที่ยังไม่มีรูปจริงจากเกม)
+const ELEM = {
+  Thundercloud: ['#ffd84a', 'M13 2 4 14h6l-2 8 10-13h-6l3-7z'],
+  Tidal: ['#5fc7ff', 'M2 14c3-4 6-4 9 0s6 4 9 0v3c-3 4-6 4-9 0s-6-4-9 0zM2 8c3-4 6-4 9 0s6 4 9 0v3c-3 4-6 4-9 0S5 7 2 11z'],
+  Tornadic: ['#9fe6c8', 'M3 4h18v2H3zM5 9h14v2H5zM7 14h10v2H7zM10 19h5v2h-5z'],
+  Volcanic: ['#ff7a3d', 'M12 2c1 4 6 6 6 12a6 6 0 0 1-12 0c0-3 2-5 3-7 1 2 1 4 3 5 1-3-1-6 0-10z'],
+};
+function elemIcon(k) { const e = ELEM[k]; if (!e) return null; const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true'); svg.classList.add('elem');
+  const p = document.createElementNS(NS, 'path'); p.setAttribute('d', e[1]); p.setAttribute('fill', e[0]); svg.append(p); return svg; }
 function icon(label, iconName, isClan) {
   const f = document.createElement('span'); f.className = 'dd-ic';
   if (isClan && label !== 'ไม่ระบุ') f.append(crest(label));
+  else if (!ICONS[iconName] && ELEM[label]) f.append(elemIcon(label));
   else if (iconName && ICONS[iconName]) { const im = new Image(); im.src = ICONS[iconName]; im.alt = ''; im.onerror = () => { im.remove(); f.textContent = label[0]; }; f.append(im); }
   else f.textContent = label === 'ไม่ระบุ' ? '–' : label[0];
   return f;
@@ -137,7 +146,7 @@ function picker(el, list, iconOf, title, where, isClan, dis) {
   box.append(lab, btn, ul);
   const items = () => (typeof list === 'function' ? list() : list);
   const draw = () => {
-    const cur = el.value, label = cur || (el.tagName === 'INPUT' ? 'เลือก หรือพิมพ์เองด้านล่าง' : el.id === 'w-var' ? 'ร่างปกติ' : 'ไม่ระบุ');
+    const cur = el.value, label = cur || (el.tagName === 'INPUT' ? 'แตะเพื่อเลือก' : el.id === 'w-var' ? 'ร่างปกติ' : 'ไม่ระบุ');
     const t = document.createElement('span'); t.className = 'dd-t'; t.textContent = label;
     const chev = document.createElement('span'); chev.className = 'dd-chev'; chev.textContent = '▾';
     btn.replaceChildren(icon(cur || 'ไม่ระบุ', iconOf(cur), isClan), t, chev);
@@ -175,7 +184,7 @@ function buildPickers() {
   picker($('#w-line'), ['', ...LINES], wLineIcon, 'สาย', at('#w-line'));
   hideLabel('#w-type'); hideLabel('#w-line');
   picker($('#clan'), CLANS, () => null, 'ตระกูล', before($('#clan')), true);
-  picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'ชื่อ', before($('#p-name')));
+  picker($('#p-name'), () => (kind === 'demon' ? DEMONS : BREATHS), (v) => ICON_OF[v], 'เลือกสาย', before($('#p-name')));
   picker($('#t-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#t-line'));
   picker($('#b-line'), ['', ...LINES], (v) => LINE_ICON.a[v], 'สาย', at('#b-line'));
   hideLabel('#t-line'); hideLabel('#b-line');
@@ -288,7 +297,7 @@ function compatProblem() {
 }
 function showCompat() {
   let w = $('#compat'); const msg = compatProblem();
-  if (!w) { w = document.createElement('p'); w.id = 'compat'; w.className = 'compat'; w.setAttribute('role', 'alert'); $('#w-mas').closest('label').after(w); }
+  if (!w) { w = document.createElement('p'); w.id = 'compat'; w.className = 'compat'; w.setAttribute('role', 'alert'); $('#w-mas').after(w); }
   w.hidden = !msg; w.textContent = msg ? '⚠ ' + msg : '';
   const ok = $('#compat-ok'); if (ok) ok.hidden = !!msg;
 }
@@ -301,7 +310,7 @@ function buildVariant() {
   const at = (box) => { lab.parentNode.insertBefore(box, lab); boxRef = box; };
   let boxRef = null;
   picker(sel, () => (VARIANTS[$('#w-type').value] || []).map((x) => x.v), (v) => (v ? v + ' Katana' : $('#w-type').value ? (ICON_OF[$('#w-type').value] || null) : null), 'ร่างอาวุธ', at, false,
-    (v) => { if (kind !== 'breath') return null; const va = (VARIANTS[$('#w-type').value] || []).find((x) => x.v === v), b = $('#p-name').value.trim(); return va && va.breath && b && !va.breath.includes(b) ? { soft: true, text: 'คู่กับปราณ ' + va.breath.join('/') } : null; });
+    (v) => { if (kind !== 'breath') return null; const va = (VARIANTS[$('#w-type').value] || []).find((x) => x.v === v), b = $('#p-name').value.trim(); return va && va.breath && b && !va.breath.includes(b) ? { soft: true, text: '→ ' + va.breath.join('/') } : null; });
   // ป้ายชื่อร่างในปุ่ม: แสดงชื่อเต็มแทนค่าว่าง
   const hide = () => { const has = (VARIANTS[$('#w-type').value] || []).length > 0; if (boxRef) boxRef.hidden = !has; };
   $('#w-type').addEventListener('change', () => { syncOpts(); hide(); autoPair('type'); redrawAll(); });
@@ -309,7 +318,7 @@ function buildVariant() {
   $('#p-name').addEventListener('change', () => autoPair('breath')); $('#p-name').addEventListener('input', () => { showCompat(); });
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', () => { showCompat(); }));
   $('#w-line').addEventListener('change', () => autoPair('line'));
-  hide(); showCompat();
+  hide(); redrawAll(); showCompat();
 }
 // จับคู่ให้อัตโนมัติ: เลือกปราณ -> ตั้งร่างดาบที่คู่กัน / เลือกร่าง -> ตั้งปราณที่คู่กัน
 function autoPair(src) {

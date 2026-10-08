@@ -17,7 +17,7 @@
   <h1>รับทำไอดี <span class="eg">End Game</span></h1>
   <p class="ord-sub">บอกมาว่าอยากได้ไอดีแบบไหน เลือกตามด้านล่างหรือเขียนบรีฟเองได้หมด ร้านจะติดต่อกลับเพื่อสรุปรายละเอียดและราคา</p>
   <ul class="ord-promise">
-    <li><b>บรีฟได้ทุกอย่าง</b><span>ตระกูล อาวุธ ปราณ ชุด ฉายา</span></li>
+    <li><b>บรีฟได้ทุกอย่าง</b><span>ตระกูล อาวุธ ปราณ ชุด</span></li>
     <li><b>รับประกันทุกไอดี</b><span>ส่งงานตามที่ตกลง</span></li>
     <li><b>เริ่มต้น 200 บาท</b><span>ราคาตามความต้องการ</span></li>
   </ul>
@@ -28,7 +28,7 @@
     <input type="text" name="website" id="hp" tabindex="-1" autocomplete="off" class="hpot" aria-hidden="true">
 
     <fieldset class="og"><legend><span class="on">1</span>ตระกูล</legend>
-      <input class="f" id="clan" list="dl-clan" maxlength="40" placeholder="เช่น Kamado">
+      <input type="hidden" id="clan">
       <datalist id="dl-clan"></datalist>
     </fieldset>
 
@@ -39,7 +39,7 @@
         <label>ระดับ<select class="f" id="w-tier"></select></label>
         <label>ตีบวก<select class="f" id="w-plus"></select></label>
       </div>
-      <label class="og-m">ฟาร์ม Mastery อาวุธถึง <input class="f num" id="w-mas" type="number" min="0" max="9999" value="400"> <span class="mu">(400 = ตัน, 0 = ไม่ต้องฟาร์ม)</span></label>
+      <input type="hidden" id="w-mas" value="400"><p class="maxnote">✦ ฟาร์ม Mastery อาวุธจนตันให้ทุกออเดอร์</p>
     </fieldset>
 
     <fieldset class="og"><legend><span class="on">3</span>ปราณ / มนต์อสูร</legend>
@@ -47,9 +47,9 @@
         <button type="button" data-k="breath" aria-pressed="true">ปราณ (มนุษย์)</button>
         <button type="button" data-k="demon" aria-pressed="false">มนต์อสูร (อสูร)</button>
       </div>
-      <input class="f" id="p-name" list="dl-power" maxlength="40" placeholder="เช่น Water">
+      <input type="hidden" id="p-name">
       <datalist id="dl-power"></datalist>
-      <label class="og-m">ฟาร์ม Mastery ถึง <input class="f num" id="p-mas" type="number" min="0" max="9999" value="400"> <span class="mu">(400 = ตัน)</span></label>
+      <input type="hidden" id="p-mas" value="400"><p class="maxnote">✦ ฟาร์ม Mastery ปราณ / มนต์อสูรจนตันให้ทุกออเดอร์</p>
     </fieldset>
 
     <fieldset class="og"><legend><span class="on">4</span>ชุด (เสื้อ / กางเกง)</legend>
@@ -60,11 +60,8 @@
         <label>สาย<select class="f" id="b-line"></select></label><label>ระดับ<select class="f" id="b-tier"></select></label><label>ตีบวก<select class="f" id="b-plus"></select></label></div>
     </fieldset>
 
-    <fieldset class="og"><legend><span class="on">5</span>ฉายาและอื่น ๆ</legend>
-      <div class="og-row two">
-        <label>ฉายา<input class="f" id="title" maxlength="40" placeholder="เช่น Twilight"></label>
-        <label>เลเวลที่ต้องการ (ถ้ามี)<input class="f" id="level" type="number" min="0" max="9999" placeholder="เช่น 225"></label>
-      </div>
+    <fieldset class="og"><legend><span class="on">5</span>อยากได้อะไรเพิ่ม (ไม่บังคับ)</legend>
+      <input type="hidden" id="title"><input type="hidden" id="level">
       <label class="blk">บรีฟเพิ่มเติม · อยากได้อะไรบอกได้หมด
         <textarea class="f" id="brief" rows="4" maxlength="1500" placeholder="เช่น อยากได้ Demon Art Blood Manipulation, ตีบวกอาวุธสำรองอีกเล่ม, ฟาร์ม Wen ให้ 1M"></textarea></label>
       <label class="blk">ชื่อไอดี Roblox ของคุณ (ถ้าให้ทำในไอดีเดิม)<input class="f" id="roblox" maxlength="20" placeholder="ชื่อผู้ใช้ เช่น Blopcoco22"></label>

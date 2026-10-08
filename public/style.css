@@ -498,3 +498,13 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .compat{margin:0;padding:9px 12px;border-radius:10px;font-size:13px;color:#ffd7a8;background:rgba(240,160,60,.1);box-shadow:inset 0 0 0 1px rgba(240,160,60,.35)}
 .dd-why.soft{color:var(--mu)}
 .dd-list{min-width:270px}
+.maxnote{margin:2px 0 0;font-size:12.5px;color:var(--gold-hi);opacity:.85}
+.dd-ic svg.elem{width:20px;height:20px;filter:drop-shadow(0 0 4px rgba(0,0,0,.6))}
+@media (max-width:560px){
+  .dd-list{min-width:0}.dd-why{white-space:normal;text-align:right;max-width:45%}
+  .og-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .og-row .og-lbl{grid-column:1/-1}.og-row .chips{grid-column:auto}
+}
+.og-row[hidden]{display:none!important}
+@media (max-width:560px){#row-top,#row-bot{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}#row-top .dd,#row-bot .dd{grid-column:1/-1}}
+@media (max-width:560px){.dd-why.soft{display:none}}
