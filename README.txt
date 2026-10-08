@@ -1,10 +1,16 @@
 Slayer Fleet Cloud - เซิร์ฟเวอร์กลาง ให้ลูกค้าดูข้อมูลไอดีผ่านเว็บ (มือถือ/คอม)
 ทุกอย่างจัดการผ่าน admin.bat มี 2 โหมด (กด M ในเมนูเพื่อสลับ)
 
-อัปเดตเวอร์ชันใหม่ (ไม่ต้องแตกไฟล์เอง)
-  1. ดาวน์โหลด slayer-cloud.zip ตัวใหม่ไว้ในโฟลเดอร์ Downloads
-  2. ดับเบิลคลิก update.bat ในโฟลเดอร์นี้ -> สำรอง data ไว้ใน backups แล้ว อัปเดตไฟล์ และเปิดเซิร์ฟเวอร์ใหม่ให้เอง
-  สคริปต์ในเกม: ใช้ data\scripts\OWNER-LOADER.lua (3 บรรทัด) จะดึงสคริปต์ล่าสุดจากเซิร์ฟเวอร์เองทุกครั้งที่รัน
+อัปเดตเวอร์ชันใหม่: ดับเบิลคลิก update.bat อย่างเดียว
+  ดึงไฟล์ล่าสุดจาก GitHub (Cdgru66/slayer-cloud) สำรอง data ไว้ใน backups แล้วเปิดเซิร์ฟเวอร์ใหม่ให้เอง
+  repo เป็น private จึงต้องมี token ครั้งแรกครั้งเดียว:
+    1. github.com > รูปโปรไฟล์ > Settings > Developer settings > Personal access tokens > Fine-grained tokens > Generate new token
+    2. Repository access: Only select repositories > เลือก slayer-cloud
+    3. Permissions > Repository permissions > Contents: Read-only  (อย่างเดียวพอ)
+    4. Expiration ตั้งได้ตามสะดวก (หมดอายุแล้วทำใหม่) > Generate token > ก๊อป
+    5. สร้างไฟล์ data\github_token.txt วาง token ลงไป บันทึก (อยู่ใน data จึงไม่ถูกอัปโหลด/ทับ)
+  ถ้าดึงจาก GitHub ไม่ได้ จะใช้ไฟล์ slayer-cloud*.zip ล่าสุดในโฟลเดอร์ Downloads แทน
+  สคริปต์ในเกม: ใช้ data\scripts\OWNER-LOADER.lua (3 บรรทัด) ดึงสคริปต์ล่าสุดจากเซิร์ฟเวอร์เองทุกครั้งที่รัน
   (ถ้าลิงก์อุโมงค์เปลี่ยน ต้องสร้างตัวโหลดใหม่ด้วยเมนู 5)
 
 โหมดเจ้าของรันเอง (ค่าเริ่มต้น): คุณรันสคริปต์ ลูกค้าดูอย่างเดียว
