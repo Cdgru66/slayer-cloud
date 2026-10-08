@@ -27,17 +27,40 @@ try {
   $tokenFile = Join-Path $App 'data\github_token.txt'
   $headers = @{ 'User-Agent' = 'slayer-updater'; 'Accept' = 'application/vnd.github+json' }
   if (Test-Path $tokenFile) { $headers['Authorization'] = 'Bearer ' + (Get-Content $tokenFile -Raw).Trim() }
+  $url = "https://api.github.com/repos/$Repo/zipball/$Branch"
+  Say "กำลังดาวน์โหลดเวอร์ชันล่าสุดจาก GitHub ($Repo)..."
+  $why = ''
   try {
-    Say "กำลังดาวน์โหลดเวอร์ชันล่าสุดจาก GitHub ($Repo)..."
-    Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri "https://api.github.com/repos/$Repo/zipball/$Branch" -OutFile $zip
+    Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $url -OutFile $zip
     $got = $true
-    Say 'ดาวน์โหลดสำเร็จ' 'Green'
   } catch {
     $code = $null; try { $code = [int]$_.Exception.Response.StatusCode } catch {}
-    if ($code -eq 404 -or $code -eq 401) {
-      if (Test-Path $tokenFile) { Say "GitHub ไม่ให้ดาวน์โหลด (รหัส $code): token ผิดหรือหมดอายุ ให้สร้างใหม่แล้ววางทับใน data\github_token.txt" 'Yellow' }
-      else { Say "GitHub ไม่ให้ดาวน์โหลด (รหัส $code): repo เป็นแบบส่วนตัว ต้องสร้างไฟล์ data\github_token.txt ก่อน (ดู README.txt)" 'Yellow' }
-    } else { Say ('ดาวน์โหลดจาก GitHub ไม่สำเร็จ: ' + $_.Exception.Message) 'Yellow' }
+    if ($code -eq 404 -or $code -eq 401) { $why = "token ($code)" } else { $why = $_.Exception.Message }
+  }
+  # วิธีที่ 2: curl ที่มากับ Windows 10/11 (ตรวจใบรับรองเหมือนเดิม แค่ไม่บังคับเช็คการเพิกถอนใบรับรองออนไลน์)
+  if (-not $got -and $why -notlike 'token*') {
+    $curl = Join-Path $env:SystemRoot 'System32\curl.exe'
+    if (Test-Path $curl) {
+      Say 'ลองดาวน์โหลดอีกวิธี (curl)...'
+      $cargs = @('-sS', '-L', '-f', '--ssl-no-revoke', '-o', $zip, '-H', 'User-Agent: slayer-updater', '-H', 'Accept: application/vnd.github+json')
+      if ($headers['Authorization']) { $cargs += @('-H', ('Authorization: ' + $headers['Authorization'])) }
+      $cargs += $url
+      $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+      $o = & $curl @cargs 2>&1
+      $ErrorActionPreference = $prevEap
+      if ($LASTEXITCODE -eq 0 -and (Test-Path $zip) -and (Get-Item $zip).Length -gt 1000) { $got = $true }
+      else { $why = 'curl: ' + ($o | Out-String).Trim(); if ($o -match '40[14]') { $why = 'token (curl)' } }
+    }
+  }
+  if ($got) { Say 'ดาวน์โหลดสำเร็จ' 'Green' }
+  elseif ($why -like 'token*') {
+    if (Test-Path $tokenFile) { Say "GitHub ไม่ให้ดาวน์โหลด: token ผิดหรือหมดอายุ ให้สร้างใหม่แล้ววางทับใน data\github_token.txt" 'Yellow' }
+    else { Say "GitHub ไม่ให้ดาวน์โหลด: repo เป็นแบบส่วนตัว ต้องสร้างไฟล์ data\github_token.txt ก่อน (ดู README.txt)" 'Yellow' }
+  } else {
+    Say ('ดาวน์โหลดจาก GitHub ไม่สำเร็จ: ' + $why) 'Yellow'
+    if ($why -match 'trust|SSL|TLS|certificate|schannel') {
+      Say 'สาเหตุมักเป็นโปรแกรมแอนตี้ไวรัสที่สแกนเว็บ HTTPS: ลองปิด "Web/HTTPS scanning" ชั่วคราว แล้วกด update.bat ใหม่' 'Yellow'
+    }
   }
 
   # 2) สำรอง: ใช้ไฟล์ slayer-cloud*.zip ล่าสุดในโฟลเดอร์ Downloads
