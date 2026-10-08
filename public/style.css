@@ -249,3 +249,14 @@ img.ic{padding:3px;background:radial-gradient(circle at 50% 40%,rgba(241,233,221
 .mc.max .mb i{background:linear-gradient(90deg,var(--gold-lo),var(--gold-hi))}
 .mx{font:700 10px var(--sans);letter-spacing:.06em;padding:2px 7px;border-radius:999px;color:#2a1a08;background:linear-gradient(180deg,var(--gold-hi),var(--gold))}
 @media (max-width:400px){.mg{grid-template-columns:1fr}}
+
+/* ---------- กระเป๋า ---------- */
+.bagc{margin-top:14px}
+.bagt{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mu);margin-bottom:7px}
+.bagt span{font-size:11px;padding:0 7px;border-radius:999px;background:rgba(241,233,221,.07);color:var(--dim)}
+.it{position:relative;padding:8px 10px;gap:10px;box-shadow:inset 0 0 0 1px transparent}
+.it .itn{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25;color:var(--tx);font-size:12.5px;overflow:hidden}
+.it .itn em{font-style:normal;font-size:10.5px;color:var(--gold);margin-top:2px}
+.it b{font:600 14px var(--serif);color:var(--tx);white-space:nowrap}
+.it .dl{position:absolute;top:4px;right:8px;font-style:normal;font-size:10px}
+.it.eq{box-shadow:inset 0 0 0 1px rgba(226,182,92,.35);background:linear-gradient(170deg,#2a1f13,#1d1510)}

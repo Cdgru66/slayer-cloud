@@ -8,6 +8,9 @@ $Branch = 'main'
 Set-Location $App
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 function Say($t, $c = 'Gray') { Write-Host $t -ForegroundColor $c }
+# บันทึกทุกอย่างที่เกิดขึ้นไว้ใน data\update.log (ส่งไฟล์นี้มาได้ถ้าอัปเดตไม่สำเร็จ)
+try { New-Item -ItemType Directory -Force -Path (Join-Path $App 'data') | Out-Null; Start-Transcript -Path (Join-Path $App 'data\update.log') -Force | Out-Null } catch {}
+Say ('โฟลเดอร์ที่จะอัปเดต: ' + $App)
 
 Say '===== Slayer Fleet Cloud: อัปเดต =====' 'Cyan'
 $verFile = Join-Path $App 'version.txt'
@@ -74,7 +77,8 @@ try {
 } catch {
   Say ''
   Say ('อัปเดตไม่สำเร็จ: ' + $_.Exception.Message) 'Red'
-  Say 'ข้อมูลใน data ไม่ได้ถูกแก้ไข ถ่ายภาพหน้าต่างนี้ส่งมาได้เลย' 'Red'
+  Say 'ข้อมูลใน data ไม่ได้ถูกแก้ไข ถ่ายภาพหน้าต่างนี้ หรือส่งไฟล์ data\update.log มาได้เลย' 'Red'
+  try { Stop-Transcript | Out-Null } catch {}
   exit 1
 }
 
@@ -86,3 +90,4 @@ try {
 Start-Sleep -Seconds 1
 Start-Process -FilePath (Join-Path $App 'start-cloud.bat') -WorkingDirectory $App
 Say 'เสร็จแล้ว เปิดหน้าต่างเซิร์ฟเวอร์ใหม่ให้แล้ว (หน้าต่างเซิร์ฟเวอร์อันเก่าปิดทิ้งได้)' 'Green'
+try { Stop-Transcript | Out-Null } catch {}

@@ -2,7 +2,8 @@
 local WEBHOOK_URL = "ใส่ลิงก์ webhook ตรงนี้"
 local INTERVAL = 300            -- ส่งทุกกี่วินาที
 local SHOW_ALL_ITEMS = false    -- true = ส่งของทุกชิ้น (เรียงตามจำนวน), false = เฉพาะ WATCH_ITEMS
-local MAX_ITEMS = 18            -- จำกัดจำนวนของต่อรอบ
+local MAX_ITEMS = 18            -- จำกัดจำนวนของต่อรอบ (เฉพาะ Discord)
+local WEB_ALL_ITEMS = true      -- true = ส่งของทุกชิ้นในกระเป๋าขึ้นเว็บ (Discord ยังใช้ตามด้านบน)
 local ICON_STYLE = "author"     -- "author" = ไอคอนเล็กหน้าชื่อ, "thumbnail" = ไอคอนใหญ่ด้านขวา
 local LIVE_EDIT = true       -- true = แก้ข้อความเดิมในห้อง (ไม่ส่งใหม่ทุกรอบ ห้องไม่รก)
 local USE_ANSI = true        -- true = แถบสี/ตัวอักษรสีในกล่องโค้ด (ถ้าเห็นเป็นตัวอักษรแปลก ๆ ให้ปิด)
@@ -415,16 +416,44 @@ local function collect()
     -- ของ
     local items, uiFound = getItems(slot)
     s.uiFound = uiFound
-    local entries = {}
+    local entries, seen = {}, {}
     if SHOW_ALL_ITEMS then
-        for name, n in pairs(items) do table.insert(entries, { name = name, amount = n }) end
+        for name, n in pairs(items) do table.insert(entries, { name = name, amount = n, watch = true }); seen[name] = true end
         table.sort(entries, function(a, b) return a.amount > b.amount end)
     else
         for _, name in ipairs(WATCH_ITEMS) do
-            table.insert(entries, { name = name, amount = items[name] or 0 })
+            table.insert(entries, { name = name, amount = items[name] or 0, watch = true }); seen[name] = true
         end
     end
-    while #entries > MAX_ITEMS do table.remove(entries) end
+    if WEB_ALL_ITEMS then -- ของอื่นทั้งหมดในกระเป๋า (สำหรับหน้า "กระเป๋า" บนเว็บ)
+        local extra = {}
+        for name, n in pairs(items) do
+            if not seen[name] and n > 0 then table.insert(extra, { name = name, amount = n }) end
+        end
+        table.sort(extra, function(a, b) return a.name < b.name end)
+        for i = 1, math.min(#extra, 150) do table.insert(entries, extra[i]) end
+    end
+
+    -- ของที่ใส่อยู่ (เกมเก็บเป็น Id ของชิ้นนั้น)
+    pcall(function()
+        local invF = slot:FindFirstChild("Inventory")
+        local bag = invF and invF:FindFirstChild("Inventory")
+        local byId = {}
+        for _, it in ipairs(bag and bag:GetChildren() or {}) do
+            local idv = it:FindFirstChild("Id")
+            if idv and idv:IsA("ValueBase") then byId[idv.Value] = it.Name end
+        end
+        local eq = {}
+        local function scan(f)
+            for _, c in ipairs(f and f:GetDescendants() or {}) do
+                if c:IsA("ValueBase") and type(c.Value) == "number" and c.Value > 0 and byId[c.Value] then eq[byId[c.Value]] = true end
+            end
+        end
+        local acc = invF and invF:FindFirstChild("Accessories")
+        scan(acc and acc:FindFirstChild("Stats"))
+        scan(invF and invF:FindFirstChild("Toolbar"))
+        for _, e in ipairs(entries) do if eq[e.name] then e.equipped = true end end
+    end)
 
     for _, e in ipairs(entries) do
         e.delta = prevItems[e.name] and (e.amount - prevItems[e.name]) or 0
@@ -598,7 +627,9 @@ end
 local function buildMessages(s)
     local messages = {}
     local itemEmbeds = {}
-    for _, e in ipairs(s.items) do table.insert(itemEmbeds, itemEmbed(e)) end
+    for _, e in ipairs(s.items) do
+        if e.watch and #itemEmbeds < MAX_ITEMS then table.insert(itemEmbeds, itemEmbed(e)) end
+    end
 
     local first = { profileEmbed(s) }
     local idx = 1
