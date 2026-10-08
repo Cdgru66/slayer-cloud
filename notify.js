@@ -56,7 +56,7 @@ module.exports = function createNotify(ctx) {
   // ส่งให้เจ้าของ และลูกค้าเจ้าของไอดี (ถ้ามี webhook และเปิดให้ลูกค้าได้รับ)
   function emit(accountName, payload, toCustomer = true) {
     post(ctx.ownerWebhook(), payload);
-    if (toCustomer && cfg.customers && accountName) { const c = ownerOf(accountName); if (c && c.webhook && !c.revoked) post(c.webhook, payload); }
+    if (toCustomer && cfg.customers && accountName) { const c = ownerOf(accountName); if (c && c.webhook && !c.revoked && !(c.expires && now() > c.expires)) post(c.webhook, payload); }
   }
 
   // ---------- เมื่อได้ข้อมูลใหม่ของไอดี ----------
@@ -124,7 +124,7 @@ module.exports = function createNotify(ctx) {
       [{ name: 'Wen รวม', value: (all.tw >= 0 ? '+' : '') + fmt(all.tw), inline: true }, { name: 'บอสรวม', value: fmt(all.tb), inline: true }, { name: 'ไอดี', value: String(all.rows.length), inline: true }]));
     if (!cfg.customers) return;
     for (const c of Object.values(ctx.customers() || {})) {
-      if (!c.webhook || c.revoked) continue;
+      if (!c.webhook || c.revoked || (c.expires && now() > c.expires)) continue;
       const mine = Object.keys(pool).filter((n) => (c.accounts || []).some((x) => x.toLowerCase() === n.toLowerCase()));
       const r = summarize(mine, pool, y);
       if (r.rows.length) post(c.webhook, embed(`📊 สรุปวันที่ ${y}`, r.rows.join('\n'), 0x5fd0a0,

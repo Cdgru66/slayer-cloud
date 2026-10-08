@@ -336,6 +336,9 @@ function liveUpdate(id, name, snap) {
   a.s.liveAt = now(); dirty = true;
   return null;
 }
+// ลูกค้าโหมดคีย์เพิ่มไอคอนใหม่ได้ไม่เกิน 50 รูปต่อคน (กันยัดรูปจนเต็ม)
+const iconAdds = new Map();
+const iconQuota = (id) => { const n = iconAdds.get(id) || 0; if (n >= 50) return false; iconAdds.set(id, n + 1); return true; };
 function ingest(id, c, snap) {
   if (!snap || typeof snap !== 'object') return 'bad json';
   const name = snap.name;
@@ -350,7 +353,7 @@ function ingest(id, c, snap) {
   for (const i of snap.items) {
     if (typeof i.iconUrl === 'string' && ICON_RE.test(i.iconUrl)) {
       // ไอคอนกลางที่ทุกคนเห็น: ไอดีของร้านเขียนทับได้ ลูกค้า (โหมดคีย์) เพิ่มได้แค่ชื่อที่ยังไม่มีรูป
-      if (icons[i.name] !== i.iconUrl && (id === OWNER || !Object.hasOwn(icons, i.name)) && Object.keys(icons).length < 3000) { icons[i.name] = i.iconUrl; iconsDirty = true; }
+      if (icons[i.name] !== i.iconUrl && (id === OWNER || (!Object.hasOwn(icons, i.name) && Object.keys(icons).length < 3000 && iconQuota(id))) && Object.keys(icons).length < 6000) { icons[i.name] = i.iconUrl; iconsDirty = true; }
     } else delete i.iconUrl;
   }
   if (!(isNum(snap.interval) && snap.interval >= 5 && snap.interval <= 3600)) delete snap.interval;
@@ -414,7 +417,7 @@ function handleReq(req, res) {
     if (scryptBusy >= 6) return send(res, 503, { error: 'ระบบยุ่งอยู่ ลองใหม่อีกครั้ง' });
     return readBody(req, res, (body) => {
       let j; try { j = JSON.parse(body); } catch (e) { return send(res, 400, { error: 'bad json' }); }
-      const user = String((j && j.user) || '').trim().toLowerCase(), pass = String((j && j.pass) || '');
+      const user = (j && typeof j.user === 'string' ? j.user : '').trim().toLowerCase(), pass = j && typeof j.pass === 'string' ? j.pass : '';
       const bad = () => { recordFail(ip); send(res, 401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }); };
       if (!/^[a-z0-9_]{3,20}$/.test(user) || !pass || pass.length > 100) return bad();
       if (!rate('login:' + user + ':' + ip, 10)) return send(res, 429, { error: 'ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่' });
@@ -490,4 +493,5 @@ server.listen(PORT, HOST, () => console.log(`Slayer Fleet Cloud v${VERSION} ฟ�
 server.on('error', (e) => { console.error(e.message); process.exit(e.code === 'EADDRINUSE' ? 2 : 1); }); // 2 = มีเซิร์ฟเวอร์เปิดอยู่แล้ว (start-cloud.bat จะไม่เปิดซ้ำ)
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { flush(); process.exit(0); });
 // ถ้ามีข้อผิดพลาดที่ไม่คาดคิด: บันทึกข้อมูลแล้วปิด (start-cloud.bat จะเปิดใหม่ให้เองใน 3 วินาที)
+process.on('unhandledRejection', (e) => console.error('คำขอผิดพลาด (async):', e && e.stack || e)); // บันทึกไว้ ไม่ปิดเซิร์ฟเวอร์
 process.on('uncaughtException', (e) => { console.error('ข้อผิดพลาดร้ายแรง:', e && e.stack || e); try { flush(); } catch (_) {} process.exit(1); });

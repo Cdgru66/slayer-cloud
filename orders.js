@@ -17,14 +17,15 @@ module.exports = function createOrders(ctx) {
   const save = () => { const t = FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(orders, null, 1)); fs.renameSync(t, FILE); };
 
   function clean(j) {
-    const gear = (g) => (g && typeof g === 'object' ? { line: str(g.line, 30), tier: int(g.tier, 0, 9), plus: int(g.plus, 0, 30) } : null);
+    const LINES_OK = ['', 'Nightfall', 'Firstlight'];
+    const gear = (g, cap3) => { if (!g || typeof g !== 'object') return null; const line = LINES_OK.includes(g.line) ? g.line : ''; const blank = (v) => v == null || v === ''; let plus = blank(g.plus) ? null : int(g.plus, 0, 10); if (cap3 && line === 'Nightfall' && plus != null) plus = Math.min(plus, 3); return { line, tier: blank(g.tier) ? null : int(g.tier, 1, 3), plus }; };
     const o = {
       roblox: str(j.roblox, 20).replace(/[^A-Za-z0-9_]/g, ''),
-      pack: str(j.pack, 40),
+      pack: (() => { const n = str(j.pack, 60); const base = n.replace(/ \(ปรับเอง\)$/, ''); const hit = sets.find((x) => x.name === base); return !n ? '' : hit ? n : 'ลูกค้าพิมพ์เอง: ' + n.slice(0, 40); })(),
       clan: str(j.clan, 40),
       weapon: j.weapon && typeof j.weapon === 'object' ? Object.assign(gear(j.weapon), { type: str(j.weapon.type, 40), variant: str(j.weapon.variant, 30), mastery: int(j.weapon.mastery, 0, 9999) }) : null,
       power: j.power && typeof j.power === 'object' ? { kind: j.power.kind === 'demon' ? 'demon' : 'breath', name: str(j.power.name, 40), mastery: int(j.power.mastery, 0, 9999) } : null,
-      top: gear(j.top), bottom: gear(j.bottom), hat: gear(j.hat),
+      top: gear(j.top), bottom: gear(j.bottom, true), hat: gear(j.hat, true),
       title: str(j.title, 40), level: int(j.level, 0, 9999),
       brief: strML(j.brief, 1500),
       contact: { via: ['facebook', 'discord', 'line', 'other'].includes(j.contact && j.contact.via) ? j.contact.via : 'other', handle: str(j.contact && j.contact.handle, 100) },
@@ -36,7 +37,7 @@ module.exports = function createOrders(ctx) {
   const summary = (o) => {
     const g = (x) => (x && x.line ? `${x.line}${x.tier ? ' T' + x.tier : ''}${x.plus ? '+' + x.plus : ''}` : '');
     const L = [];
-    if (o.pack) L.push('แพ็กเกจ: ' + o.pack);
+    if (o.pack) L.push('เซท: ' + o.pack);
     if (o.clan) L.push('ตระกูล: ' + o.clan);
     if (o.weapon && o.weapon.type) L.push(`อาวุธ: ${o.weapon.variant ? o.weapon.variant + ' ' : ''}${o.weapon.type} ${g(o.weapon)}`.trim() + (o.weapon.mastery ? ` (ฟาร์มให้จน Mastery ${o.weapon.mastery})` : ''));
     if (o.power && o.power.name) L.push(`${o.power.kind === 'demon' ? 'มนต์อสูร' : 'ปราณ'}: ${o.power.name}` + (o.power.mastery ? ` (ฟาร์มให้จน Mastery ${o.power.mastery})` : ''));
@@ -269,7 +270,7 @@ module.exports = function createOrders(ctx) {
       ctx.send(res, 200, sets.filter((x) => !x.hidden)); return true;
     }
     if (url.pathname !== '/api/v1/order' || req.method !== 'POST') return false;
-    if (!ctx.rate('order:' + ip, 3) || !ctx.rate('orders', 30)) {
+    if (!ctx.rate('order:' + ip, 3) || !ctx.rate('orders', 300)) {
       ctx.send(res, 429, { error: 'ส่งบ่อยเกินไป รอสักครู่แล้วลองใหม่' }); return true;
     }
     ctx.readBody(req, res, (body) => {
@@ -282,9 +283,10 @@ module.exports = function createOrders(ctx) {
       orders.unshift(rec);
       if (orders.length > 2000) { // เก่าเกินเก็บไว้ในไฟล์สำรอง ไม่ทิ้ง
         const old = orders.splice(2000);
-        try { fs.appendFileSync(path.join(ctx.DATA_DIR, 'orders-archive.jsonl'), old.map((x) => JSON.stringify(x)).join('\n') + '\n'); } catch (e) {}
+        try { const af = path.join(ctx.DATA_DIR, 'orders-archive.jsonl'); let big = false; try { big = fs.statSync(af).size > 50 * 1024 * 1024; } catch (e) {} if (big) fs.renameSync(af, af + '.' + Date.now() + '.old'); fs.appendFileSync(af, old.map((x) => JSON.stringify(x)).join('\n') + '\n'); } catch (e) {}
       }
       try { save(); } catch (e) { return ctx.send(res, 500, { error: 'บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง' }); }
+      if (!ctx.rate('order-discord', 10)) { if (ctx.rate('order-discord-flood', 1)) ctx.notifyOwner({ content: '⚠ มีออเดอร์เข้ามาถี่ผิดปกติ ดูที่หน้าแอดมิน แท็บ ออเดอร์' }); return ctx.send(res, 200, { ok: true, id }); }
       ctx.notifyOwner({ embeds: [{ title: `🛒 ออเดอร์ใหม่ ${id}`, description: md(summary(rec)).slice(0, 3500), color: 0xe2b65c,
         fields: [{ name: 'ติดต่อกลับ', value: md(`${rec.contact.via}: ${rec.contact.handle}`).slice(0, 1000) }], timestamp: new Date().toISOString() }] });
       ctx.send(res, 200, { ok: true, id });

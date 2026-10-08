@@ -90,6 +90,7 @@ try {
     $b = Join-Path 'backups' ('data-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
     New-Item -ItemType Directory -Force -Path 'backups' | Out-Null
     Copy-Item 'data' $b -Recurse
+    Remove-Item (Join-Path $b 'github_token.txt') -Force -ErrorAction SilentlyContinue  # ไม่เก็บ token ไว้ในไฟล์สำรอง
     Say "สำรองข้อมูลไว้ที่ $b"
   }
   Get-ChildItem $src -Force | Where-Object { @('data', 'backups', '.git', 'cloudflared.exe') -notcontains $_.Name } | ForEach-Object {

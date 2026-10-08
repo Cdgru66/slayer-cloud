@@ -13,6 +13,7 @@ module.exports = function createAdmin(ctx) {
   const { DATA_DIR, send, readBody, rate, failBlocked, recordFail, sha, now } = ctx;
   const CUSTOMERS_FILE = path.join(DATA_DIR, 'customers.json');
   const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+  let adminBusy = 0; // จำกัดงานคำนวณรหัสแอดมินที่ทำพร้อมกัน
   const sessions = new Map(); // sha(token) -> หมดอายุ (ms)
   setInterval(() => { const t = Date.now(); for (const [k, e] of sessions) if (t > e.exp) sessions.delete(k); }, 600000).unref();
 
@@ -57,7 +58,8 @@ module.exports = function createAdmin(ctx) {
     readBody(req, res, (body) => {
       let j = {};
       if (body) { try { j = JSON.parse(body); } catch (e) { return send(res, 400, { error: 'bad json' }); } }
-      try { cb(j || {}); } catch (e) { send(res, 400, { error: e.message }); }
+      // รองรับ callback แบบ async: error ทุกชนิดตอบ 400 ไม่ทำให้เซิร์ฟเวอร์ล่ม
+      Promise.resolve().then(() => cb(j && typeof j === 'object' ? j : {})).catch((e) => { if (!res.headersSent) send(res, 400, { error: String(e && e.message || e).slice(0, 200) }); });
     });
   }
 
@@ -71,7 +73,11 @@ module.exports = function createAdmin(ctx) {
       json(req, res, async (j) => {
         const st = readJson(SETTINGS_FILE, {});
         if (!st.adminHash) return send(res, 403, { error: 'ยังไม่ได้ตั้งรหัสแอดมิน: เปิด admin.bat เมนู 14 ก่อน' });
-        if (!(await checkPass(j.pass || '', st.adminHash))) { recordFail(ip); return send(res, 401, { error: 'รหัสไม่ถูกต้อง' }); }
+        const pw = typeof j.pass === 'string' ? j.pass : '';
+        if (!pw || pw.length > 200) { recordFail(ip); return send(res, 401, { error: 'รหัสไม่ถูกต้อง' }); }
+        if (adminBusy >= 2) return send(res, 503, { error: 'ระบบยุ่งอยู่ ลองใหม่อีกครั้ง' });
+        adminBusy++; let ok; try { ok = await checkPass(pw, st.adminHash); } finally { adminBusy--; }
+        if (!ok) { recordFail(ip); return send(res, 401, { error: 'รหัสไม่ถูกต้อง' }); }
         const token = 'sfa_' + crypto.randomBytes(32).toString('hex');
         sessions.set(sha(token), { exp: Date.now() + SESSION_TTL, h: st.adminHash });
         send(res, 200, { token, expiresIn: SESSION_TTL / 1000 });
