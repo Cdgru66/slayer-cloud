@@ -333,7 +333,12 @@ function liveUpdate(id, name, snap) {
     const it = (a.s.items || []).find((i) => i && i.name === n);
     if (it) it.amount = snap[k]; else if (Array.isArray(a.s.items)) a.s.items.push({ name: n, amount: snap[k] });
   }
+  if (snap.mastery && typeof snap.mastery === 'object') { // Mastery สด (ค่าตัวเลขเท่านั้น)
+    const m = a.s.mastery && typeof a.s.mastery === 'object' ? a.s.mastery : (a.s.mastery = {});
+    for (const [k, v] of Object.entries(snap.mastery).slice(0, 60)) if (v && isNum(v.current)) m[k] = { current: v.current, goal: isNum(v.goal) ? v.goal : (m[k] && m[k].goal) };
+  }
   a.s.liveAt = now(); dirty = true;
+  try { orders.trackGoal(name, a.s); } catch (e) {}
   return null;
 }
 // ลูกค้าโหมดคีย์เพิ่มไอคอนใหม่ได้ไม่เกิน 50 รูปต่อคน (กันยัดรูปจนเต็ม)
@@ -365,6 +370,7 @@ function ingest(id, c, snap) {
   a.hist.push({ o: amtOf('Ore'), r: amtOf('Refinement Ore'), t: snap.time, w: isNum(snap.wen) ? snap.wen : 0, k: isNum(snap.progress && snap.progress.kills) ? snap.progress.kills : 0, b: isNum(snap.progress && snap.progress.boss_kills) ? snap.progress.boss_kills : 0 });
   if (a.hist.length > MAX_HIST) a.hist.splice(0, a.hist.length - MAX_HIST);
   try { notify.onSnapshot(id === OWNER, name, a); } catch (e) { console.error('notify:', e.message); }
+  try { orders.trackGoal(name, a.s); } catch (e) {}
   dirty = true;
   return null;
 }

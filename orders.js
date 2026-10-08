@@ -267,6 +267,7 @@ module.exports = function createOrders(ctx) {
   // ===== เป้าหมายของไอดี (ผูกกับออเดอร์) ใช้คำนวณ % ความคืบหน้าแบบเรียลไทม์ =====
   const GOALS_FILE = path.join(ctx.DATA_DIR, 'goals.json');
   let goals = Object.create(null); try { Object.assign(goals, JSON.parse(fs.readFileSync(GOALS_FILE, 'utf8'))); } catch (e) {}
+  let goalsDirty = false; setInterval(() => { if (goalsDirty) { goalsDirty = false; try { saveGoals(); } catch (e) {} } }, 60000).unref();
   const saveGoals = () => { const t = GOALS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(goals, null, 1)); fs.renameSync(t, GOALS_FILE); };
   const gkey = (n) => String(n || '').toLowerCase();
   function cleanGoal(j) {
@@ -322,8 +323,18 @@ module.exports = function createOrders(ctx) {
   return {
     handle, summary, STATUSES,
     goalOf: (name) => goals[gkey(name)] || null,
+    // บันทึกประวัติความคืบหน้า (ใช้คำนวณความเร็วและวันที่คาดว่าเสร็จ) ทุกครั้งที่ค่าเปลี่ยน อย่างน้อยห่างกัน 60 วิ เก็บ 1500 จุด
+    trackGoal: (name, s) => {
+      const g = goals[gkey(name)]; if (!g || !s) return;
+      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? Number(m[it.key] && m[it.key].current) || 0 : it.k === 'level' ? Number(s.level) || 0 : it.done ? 1 : 0));
+      const h = g.hist || (g.hist = []), last = h[h.length - 1], t = Math.floor(ctx.now());
+      const same = last && last.v.length === v.length && last.v.every((x, i) => x === v[i]);
+      if (last && (t - last.t < 60 || (same && t - last.t < 1800))) return;
+      h.push({ t, v }); if (h.length > 1500) h.splice(0, h.length - 1500);
+      goalsDirty = true;
+    },
     allGoals: () => goals,
-    setGoal: (name, j) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); goals[gkey(name)] = cleanGoal(j); saveGoals(); return goals[gkey(name)]; },
+    setGoal: (name, j) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); const old = goals[gkey(name)]; goals[gkey(name)] = cleanGoal(j); if (old && old.hist && old.items.length === goals[gkey(name)].items.length) goals[gkey(name)].hist = old.hist; if (old && old.order && !goals[gkey(name)].order) goals[gkey(name)].order = old.order; if (old && old.created) goals[gkey(name)].created = old.created; saveGoals(); return goals[gkey(name)]; },
     delGoal: (name) => { delete goals[gkey(name)]; saveGoals(); },
     linkOrder: (id, name, masteryKeys) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); const o = orders.find((x) => x.id === id); if (!o) throw new Error('ไม่พบออเดอร์'); goals[gkey(name)] = goalFromOrder(o, masteryKeys || []); o.account = name; save(); saveGoals(); return goals[gkey(name)]; },
     getSets: () => sets, defaultSets: () => DEFAULT_SETS,

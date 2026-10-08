@@ -928,6 +928,14 @@ task.spawn(function()
                 ore = items["Ore"] or 0, refine = items["Refinement Ore"] or 0,
                 boss = (okB and boss) and { name = boss.name, hp = boss.hp } or nil,
             }
+            local ml = slot:FindFirstChild("MasteryProgressionList")
+            if ml then
+                p.mastery = {}
+                for _, m in ipairs(ml:GetChildren()) do
+                    local cur, goal = val(m, "Current"), val(m, "Goal")
+                    if cur then p.mastery[m.Name] = { current = cur, goal = goal } end
+                end
+            end
             local extra = {}
             if WEB_API_KEY ~= "" then extra["Authorization"] = "Bearer " .. WEB_API_KEY end
             post(WEB_API_URL, HttpService:JSONEncode(p), extra)

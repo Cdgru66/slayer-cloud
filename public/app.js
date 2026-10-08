@@ -86,20 +86,55 @@ $('#bd').onclick=startDemo;
 function resRow(name,label,total,url,z,cls){return h('div',{class:'ri'+(cls?' '+cls:'')},ico(name,url,z),h('span',{class:'nm'},label),h('span',{class:'v',title:full(total)},cm(total)))}
 function lvSeal(s){const L=s.level;return h('div',{class:'lv'+(L>=225?' max':''),title:'เลเวล '+(L??'–')},h('small',{},'Lv'),h('b',{},L??'–'))}
 // ===== ความคืบหน้าตามเป้าหมายของออเดอร์ (คำนวณจากข้อมูลสดของไอดี) =====
-function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;const s=a.s,m=s.mastery||{};
- return g.items.map(it=>{if(it.k==='mastery'){const cur=Number(m[it.key]&&m[it.key].current)||0,t=it.target||400;return{label:it.label||('Mastery '+it.key),cur,t,f:Math.min(1,cur/t),txt:cm(Math.min(cur,t))+' / '+cm(t)}}
-  if(it.k==='level'){const cur=Number(s.level)||0,t=it.target||1;return{label:it.label||'เลเวล',cur,t,f:Math.min(1,cur/t),txt:cur+' / '+t}}
-  return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true}})}
-function goalPct(a){const p=goalParts(a);return p?Math.round(p.reduce((t,x)=>t+x.f,0)/p.length*100):null}
-function ring(pct,z){const NS='http://www.w3.org/2000/svg',r=(z-8)/2,c=2*Math.PI*r,svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${z} ${z}`);svg.setAttribute('width',z);svg.setAttribute('height',z);svg.classList.add('ring');
- const mk=(cls,dash)=>{const e=document.createElementNS(NS,'circle');e.setAttribute('cx',z/2);e.setAttribute('cy',z/2);e.setAttribute('r',r);e.setAttribute('class',cls);if(dash!=null){e.setAttribute('stroke-dasharray',c);e.setAttribute('stroke-dashoffset',c*(1-dash))}svg.append(e)};
- mk('rb');mk('rf',pct/100);const t=document.createElementNS(NS,'text');t.setAttribute('x','50%');t.setAttribute('y','50%');t.setAttribute('class','rt');t.textContent=pct+'%';svg.append(t);return svg}
-function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),x.manual?null:h('span',{class:'gb'},h('i',{style:`width:${Math.round(x.f*100)}%`})))))}
+const curOf=(it,s)=>it.k==='mastery'?Number((s.mastery||{})[it.key]&&s.mastery[it.key].current)||0:it.k==='level'?Number(s.level)||0:it.done?1:0;
+const fracOf=(it,v)=>it.k==='manual'?(v?1:0):Math.max(0,Math.min(1,v/(it.target||(it.k==='mastery'?400:1))));
+const pctOfVals=(items,vals)=>items.length?items.reduce((t,it,i)=>t+fracOf(it,vals[i]),0)/items.length*100:0;
+const r1=x=>Math.floor(x*10)/10;
+function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;const s=a.s,st=goalStats(a);
+ return g.items.map((it,i)=>{const cur=curOf(it,s);if(it.k==='manual')return{label:it.label,f:it.done?1:0,txt:it.done?'เสร็จแล้ว':'กำลังทำ',manual:true};
+  const t=it.target||(it.k==='mastery'?400:1),x=st&&st.items[i];
+  return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),cur,t,f:fracOf(it,cur),txt:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta}})}
+function goalPct(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;return r1(pctOfVals(g.items,g.items.map(it=>curOf(it,a.s))))}
+const dur=h=>{if(!(h>0))return'';if(h<1)return'~'+Math.max(1,Math.round(h*60))+' นาที';if(h<48){const H=Math.floor(h),M=Math.round((h-H)*60);return'~'+H+' ชม.'+(M?' '+M+' นาที':'')}const D=Math.floor(h/24),H=Math.round(h-D*24);return'~'+D+' วัน'+(H?' '+H+' ชม.':'')};
+const agoT=sec=>sec<60?'เมื่อสักครู่':sec<3600?Math.round(sec/60)+' นาทีที่แล้ว':sec<86400?Math.round(sec/3600)+' ชม.ที่แล้ว':Math.round(sec/86400)+' วันที่แล้ว';
+// ความเร็ว + เวลาที่คาดว่าเสร็จ จากประวัติของเป้าหมาย
+function goalStats(a){const g=a.goal;if(!g||!g.items)return null;const H=(g.hist||[]).slice(),T=now(),items=g.items,curV=items.map(it=>curOf(it,a.s));
+ H.push({t:T,v:curV});if(H.length<2)return{items:items.map(()=>null),pctHr:null,eta:null,last:null,series:[]};
+ const win=x=>{const from=T-x;let k=H.findIndex(p=>p.t>=from);if(k<0)k=H.length-1;if(k>0&&T-H[k].t<x*0.5)k=Math.max(0,k-1);return H[k]};
+ const base=win(6*3600),hrs=Math.max(1/60,(T-base.t)/3600);
+ const it2=items.map((it,i)=>{if(it.k==='manual')return null;const t=it.target||(it.k==='mastery'?400:1),cur=curV[i],d=cur-(base.v[i]||0),rate=d>0?d/hrs:0;return{rate,eta:cur>=t?0:rate>0?(t-cur)/rate:null}});
+ const farm=it2.filter(Boolean),eta=farm.length&&farm.every(x=>x.eta!=null)?Math.max(...farm.map(x=>x.eta)):null;
+ const b1=win(3600),pctNow=pctOfVals(items,curV),pctHr=pctNow-pctOfVals(items,b1.v);
+ let last=null;for(let k=H.length-1;k>0&&!last;k--){const A=H[k-1].v,B=H[k].v;for(let i=0;i<items.length;i++)if((B[i]||0)!==(A[i]||0)){last={label:items[i].k==='manual'?items[i].label:(items[i].label||items[i].key),d:(B[i]||0)-(A[i]||0),manual:items[i].k==='manual',t:H[k].t};break}}
+ return{items:it2,pctHr,eta,last,series:H.map(p=>[p.t,pctOfVals(items,p.v)])}}
+const prevPct=new Map();
+function ring(pct,z,key){const NS='http://www.w3.org/2000/svg',r=(z-8)/2,c=2*Math.PI*r,svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${z} ${z}`);svg.setAttribute('width',z);svg.setAttribute('height',z);svg.classList.add('ring');
+ const mk=(cls)=>{const e=document.createElementNS(NS,'circle');e.setAttribute('cx',z/2);e.setAttribute('cy',z/2);e.setAttribute('r',r);e.setAttribute('class',cls);svg.append(e);return e};
+ mk('rb');const f=mk('rf');f.setAttribute('stroke-dasharray',c);const t=document.createElementNS(NS,'text');t.setAttribute('x','50%');t.setAttribute('y','50%');t.setAttribute('class','rt');svg.append(t);
+ const set=p=>{f.setAttribute('stroke-dashoffset',c*(1-p/100));t.textContent=r1(p).toFixed(1)+'%'};
+ const from=key!=null?prevPct.get(key):null;if(key!=null)prevPct.set(key,pct);
+ if(from==null||Math.abs(from-pct)<0.05||matchMedia('(prefers-reduced-motion: reduce)').matches)set(pct);
+ else{set(from);const t0=performance.now();const step=n=>{const k=Math.min(1,(n-t0)/1200),e=1-Math.pow(1-k,3);set(from+(pct-from)*e);if(k<1)requestAnimationFrame(step);else svg.classList.add('bump')};requestAnimationFrame(step)}
+ return svg}
+function goalList(a,compact){const p=goalParts(a)||[];return h('ul',{class:'goall'+(compact?' c':'')},p.map(x=>h('li',{class:x.f>=1?'done':''},h('span',{class:'gk'},x.f>=1?'✓':x.manual?'○':''),h('span',{class:'gn'},x.label),h('span',{class:'gv'},x.txt),
+  x.manual?null:h('span',{class:'gb'},h('i',{style:`width:${(x.f*100).toFixed(1)}%`})),
+  !x.manual&&x.f<1?h('span',{class:'gr'},x.rate>0?['+'+(x.rate>=10?Math.round(x.rate):x.rate.toFixed(1))+' / ชม.',x.eta?' · อีก '+dur(x.eta):'']:'รอข้อมูลความเร็ว…'):null)))}
+function goalMeta(a){const st=goalStats(a),pct=goalPct(a);if(!st)return null;const out=[];
+ if(pct>=100)out.push(h('span',{class:'gm ok'},'ครบทุกเป้าหมายแล้ว 🎉'));
+ else{out.push(h('span',{class:'gm'+(st.pctHr>0?' up':'')},st.pctHr>0?'▲ +'+st.pctHr.toFixed(1)+'% ใน 1 ชม.ล่าสุด':'กำลังเก็บข้อมูลความเร็ว'));
+  if(st.eta!=null)out.push(h('span',{class:'gm eta'},'⏱ คาดว่าฟาร์มครบใน '+(st.eta>0?dur(st.eta):'ไม่นาน')))}
+ if(st.last)out.push(h('span',{class:'gm last'},'ล่าสุด: '+st.last.label+(st.last.manual?(st.last.d>0?' ✓ เสร็จแล้ว':''):' '+(st.last.d>0?'+':'')+cm(st.last.d))+' · '+agoT(now()-st.last.t)));
+ return h('div',{class:'gmeta'},out)}
+function spark(a,w,hh){const st=goalStats(a);if(!st||st.series.length<3)return null;const S=st.series,t0=S[0][0],t1=S[S.length-1][0]||t0+1,NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');
+ svg.setAttribute('viewBox',`0 0 ${w} ${hh}`);svg.setAttribute('class','gspark');svg.setAttribute('role','img');svg.setAttribute('aria-label','กราฟความคืบหน้าจาก '+r1(S[0][1])+'% เป็น '+r1(S[S.length-1][1])+'%');
+ const x=t=>4+(t-t0)/Math.max(1,t1-t0)*(w-8),y=p=>hh-4-p/100*(hh-8);
+ const pl=document.createElementNS(NS,'polyline');pl.setAttribute('points',S.map(p=>x(p[0]).toFixed(1)+','+y(p[1]).toFixed(1)).join(' '));pl.setAttribute('class','sl');svg.append(pl);
+ const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x(S[S.length-1][0]));c.setAttribute('cy',y(S[S.length-1][1]));c.setAttribute('r',4);c.setAttribute('class','sd');svg.append(c);return svg}
 function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=>x.a.goal&&x.a.goal.items&&x.a.goal.items.length);box.hidden=!G.length;if(!G.length){box.replaceChildren();return}
  box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
   return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},
-   h('div',{class:'gc-top'},ring(pct,92),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
-   goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
+   h('div',{class:'gc-top'},ring(pct,96,'c:'+s.name),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
+   goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
 function render(){
  const L=[...A.values()].map(a=>({a,st:stat(a)})),c={all:L.length,on:0,stuck:0,off:0};L.forEach(x=>c[x.st]++);
  for(const k in c)$('#n-'+k).textContent=c[k];
@@ -121,7 +156,7 @@ function render(){
   const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),coinT=COINS.reduce((t,n)=>t+amt(a,n),0);
   return h('div',{class:'row'+(st==='off'?' off':''),tabindex:'0',role:'button','aria-label':(s.display||s.name)+' เลเวล '+(s.level??'–'),onclick:()=>show(s.name),onkeydown:ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show(s.name)}}},
    lvSeal(s),
-   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
+   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp.toFixed(1)+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
    h('div',{class:'c wen-c',title:full(s.wen)+' Wen'},cm(s.wen)),
    h('div',{class:'c ore-c',title:full(oreV)},cm(oreV),(()=>{const q=oreRate(a);return q>0?h('small',{class:'orr'},'+'+cm(q)+'/ชม.'):null})()),
    h('div',{class:'c ore-c ref-c',title:full(refV)},cm(refV)),
@@ -213,7 +248,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
  d.replaceChildren(h('button',{class:'btn x',onclick:hide,'aria-label':'ปิด'},'ปิด'),
   h('div',{class:'dh'},lvSeal(s),h('div',{},h('h2',{},s.display||s.name),h('p',{class:'us'},s.name+(s.userId?'  ·  ID '+s.userId:'')))),
   h('p',{style:'margin-top:14px'},h('span',{class:'pill',style:'--c:'+ST[st][1]},h('i',{class:'dot',style:'--c:'+ST[st][1]}),ST[st][0]+' · อัปเดตเมื่อ '+ago(now()-s.time)+'ที่แล้ว'),' ',h('span',{class:'pill cdp','data-cd':s.name,style:'--c:var(--mu)'},cdText(a,st))),
-  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),76),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a)+'%'))),goalList(a,false)):null,
+  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),goalMeta(a),spark(a,320,64),goalList(a,false)):null,
   fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):null,
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),
