@@ -335,7 +335,7 @@ function liveUpdate(id, name, snap) {
   }
   if (snap.mastery && typeof snap.mastery === 'object') { // Mastery สด (ค่าตัวเลขเท่านั้น)
     const m = a.s.mastery && typeof a.s.mastery === 'object' ? a.s.mastery : (a.s.mastery = {});
-    for (const [k, v] of Object.entries(snap.mastery).slice(0, 60)) if (v && isNum(v.current)) m[k] = { current: v.current, goal: isNum(v.goal) ? v.goal : (m[k] && m[k].goal) };
+    for (const [k, v] of Object.entries(snap.mastery).slice(0, 60)) if (v && isNum(v.current)) m[k] = { current: v.current, goal: isNum(v.goal) ? v.goal : (m[k] && m[k].goal), lv: isNum(v.lv) ? v.lv : undefined };
   }
   a.s.liveAt = now(); dirty = true;
   try { orders.trackGoal(name, a.s); } catch (e) {}

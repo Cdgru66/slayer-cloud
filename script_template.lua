@@ -356,6 +356,18 @@ local function nearestBoss()
     return best
 end
 
+-- เลเวล Mastery จากแถบด้านล่างจอ (ถ้าแสดงอยู่) เช่น "Lv 79" · ถ้าไม่มี เว็บคำนวณจาก Goal / 30
+local function masteryLvFromUI(name)
+    local ok, lv = pcall(function()
+        local pg = player:FindFirstChild("PlayerGui")
+        local mh = pg and pg:FindFirstChild("MasteryHolder", true)
+        local box = mh and mh:FindFirstChild(name, true)
+        local cv = box and box:FindFirstChild("CurrentValue", true)
+        return cv and tonumber(tostring(cv.Text):match("(%d+)"))
+    end)
+    return ok and lv or nil
+end
+
 -- ===== รวบรวมข้อมูลทั้งหมดเป็น snapshot (ใช้ได้ทั้ง Discord และเว็บ) =====
 local prevItems = {}
 local itemCat = nil
@@ -420,7 +432,7 @@ local function collect()
     if mlist then
         for _, m in ipairs(mlist:GetChildren()) do
             local cur, goal = val(m, "Current"), val(m, "Goal")
-            if cur and goal then s.mastery[m.Name] = { current = cur, goal = goal } end
+            if cur and goal then s.mastery[m.Name] = { current = cur, goal = goal, lv = masteryLvFromUI(m.Name) } end
         end
     end
 
@@ -933,7 +945,7 @@ task.spawn(function()
                 p.mastery = {}
                 for _, m in ipairs(ml:GetChildren()) do
                     local cur, goal = val(m, "Current"), val(m, "Goal")
-                    if cur then p.mastery[m.Name] = { current = cur, goal = goal } end
+                    if cur then p.mastery[m.Name] = { current = cur, goal = goal, lv = masteryLvFromUI(m.Name) } end
                 end
             end
             local extra = {}

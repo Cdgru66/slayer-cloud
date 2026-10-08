@@ -101,7 +101,7 @@ module.exports = function createAdmin(ctx) {
       const seen = Object.keys(pool).sort().map((n) => {
         const a = pool[n], o = owners.get(n.toLowerCase()), r = ctx.rejoinState(n);
         return { name: n, display: a.s && a.s.display, level: a.s && a.s.level, last: a.s ? Math.round(t - a.s.time) : null,
-          interval: a.s && a.s.interval, mastery: a.s && a.s.mastery ? Object.fromEntries(Object.entries(a.s.mastery).slice(0, 40).map(([k, v]) => [k, v && v.current])) : {}, goal: ctx.orders.goalOf(n), owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
+          interval: a.s && a.s.interval, mastery: a.s && a.s.mastery ? Object.fromEntries(Object.entries(a.s.mastery).slice(0, 40).map(([k, v]) => [k, v ? Math.round(((Number.isFinite(v.lv) ? v.lv : Math.round((Number(v.goal) || 0) / 30)) + (v.goal > 0 ? Math.min(1, v.current / v.goal) : 0)) * 10) / 10 : 0])) : {}, goal: ctx.orders.goalOf(n), owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
       });
       const st = readJson(SETTINGS_FILE, {});
       send(res, 200, {

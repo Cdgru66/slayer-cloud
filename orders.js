@@ -326,7 +326,9 @@ module.exports = function createOrders(ctx) {
     // บันทึกประวัติความคืบหน้า (ใช้คำนวณความเร็วและวันที่คาดว่าเสร็จ) ทุกครั้งที่ค่าเปลี่ยน อย่างน้อยห่างกัน 60 วิ เก็บ 1500 จุด
     trackGoal: (name, s) => {
       const g = goals[gkey(name)]; if (!g || !s) return;
-      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? Number(m[it.key] && m[it.key].current) || 0 : it.k === 'level' ? Number(s.level) || 0 : it.done ? 1 : 0));
+      if (!g.lvMode) { g.lvMode = 1; g.hist = []; } // ประวัติเดิมเก็บเป็น EXP ล้างครั้งเดียว
+      const mlv = (x) => { if (!x) return 0; const lv = Number.isFinite(x.lv) ? x.lv : Math.round((Number(x.goal) || 0) / 30); const fr = x.goal > 0 ? Math.min(1, Math.max(0, x.current / x.goal)) : 0; return Math.min(400, Math.round((lv + (lv >= 400 ? 0 : fr)) * 100) / 100); };
+      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? mlv(m[it.key]) : it.k === 'level' ? Number(s.level) || 0 : it.done ? 1 : 0));
       const h = g.hist || (g.hist = []), last = h[h.length - 1], t = Math.floor(ctx.now());
       const same = last && last.v.length === v.length && last.v.every((x, i) => x === v[i]);
       if (last && (t - last.t < 60 || (same && t - last.t < 1800))) return;
