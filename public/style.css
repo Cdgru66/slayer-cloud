@@ -508,3 +508,6 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .og-row[hidden]{display:none!important}
 @media (max-width:560px){#row-top,#row-bot{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}#row-top .dd,#row-bot .dd{grid-column:1/-1}}
 @media (max-width:560px){.dd-why.soft{display:none}}
+.varinfo{margin:2px 0 0;display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;font-size:13px;color:var(--gold-hi);background:rgba(226,182,92,.08);box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
+.varinfo svg.elem{width:18px;height:18px;flex:none}
+.varinfo[hidden]{display:none}

@@ -85,7 +85,7 @@ $('#send').onclick = async () => {
 
 // ===== ตัวเลือกแบบการ์ดมีรูปไอเทมจากในเกม =====
 const ICON_OF = {
-  Katana: 'Nightfall Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', Tanto: 'Tanto', 'Bladed Wagasa': 'Bladed Wagasa', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
+  Katana: 'Regular Katana', Sickles: 'Sickles', Scythe: 'Scythe', Spear: 'Spear', 'War Fans': 'War Fans', Cutlass: 'Cutlass', Tanto: 'Tanto', 'Bladed Wagasa': 'Bladed Wagasa', 'Axe and Mace': 'Nightfall Axe and Mace Schematic',
   Water: 'Water Katana', Flame: 'Flame Katana', Thunder: 'Thunder Katana', Wind: 'Wind Katana', Insect: 'Insect Katana', Stone: 'Stone Haori', Sound: 'Sound Katanas', Mist: 'Mist Kumo Sodenashi', Serpent: 'Serpent Katana', Beast: 'Beast Core',
   'Blood Manipulation': 'Blood Manipulation Orb', Cryokinesis: 'Cryokinesis Orb', Pyrokinesis: 'Pyrokenesis Orb', Shockwave: 'Shockwave Orb', Reaper: 'Reaper Orb',
   Dream: 'Dream Orb', Tamari: 'Tamari Orb', 'Obi Manipulation': 'Obi Manipulation Orb',
@@ -179,8 +179,7 @@ function buildPickers() {
   const at = (sel) => (box) => { const l = $(sel).closest('label'); l.parentNode.insertBefore(box, l); };
   picker($('#w-type'), ['', ...WEAPONS], (v) => ICON_OF[v], 'ประเภท', at('#w-type'));
   // ไอคอนสายอาวุธตามประเภทที่เลือก: ใช้ตัวอาวุธจริงก่อน ไม่มีค่อยใช้แบบพิมพ์เขียว ไม่ใช้รูปแร่
-  const wLineIcon = (v) => { if (!v) return null; const t = $('#w-type').value || 'Katana';
-    for (const k of [v + ' ' + t, v + ' ' + t + ' Schematic', v + ' Katana', v + ' Katana Schematic']) if (ICONS[k]) return k; return null; };
+  const wLineIcon = (v) => (v ? v + ' Forged Ingot' : null); // สาย = แร่ที่ใช้ตีอาวุธ
   picker($('#w-line'), ['', ...LINES], wLineIcon, 'สาย', at('#w-line'));
   hideLabel('#w-type'); hideLabel('#w-line');
   picker($('#clan'), CLANS, () => null, 'ตระกูล', before($('#clan')), true);
@@ -307,32 +306,31 @@ function buildVariant() {
   $('#w-type').closest('label').after(lab);
   const syncOpts = () => { const list = VARIANTS[$('#w-type').value] || []; const cur = sel.value; sel.replaceChildren(...list.map((x) => new Option(x.label, x.v))); sel.value = list.some((x) => x.v === cur) ? cur : ''; };
   syncOpts();
-  const at = (box) => { lab.parentNode.insertBefore(box, lab); boxRef = box; };
-  let boxRef = null;
-  picker(sel, () => (VARIANTS[$('#w-type').value] || []).map((x) => x.v), (v) => (v ? v + ' Katana' : $('#w-type').value ? (ICON_OF[$('#w-type').value] || null) : null), 'ร่างอาวุธ', at, false,
-    (v) => { if (kind !== 'breath') return null; const va = (VARIANTS[$('#w-type').value] || []).find((x) => x.v === v), b = $('#p-name').value.trim(); return va && va.breath && b && !va.breath.includes(b) ? { soft: true, text: '→ ' + va.breath.join('/') } : null; });
-  // ป้ายชื่อร่างในปุ่ม: แสดงชื่อเต็มแทนค่าว่าง
-  const hide = () => { const has = (VARIANTS[$('#w-type').value] || []).length > 0; if (boxRef) boxRef.hidden = !has; };
+  // ร่างดาบไม่ต้องเลือกเอง: ระบบตั้งตามปราณ แล้วโชว์เป็นป้ายให้รู้
+  const info = document.createElement('p'); info.id = 'w-varinfo'; info.className = 'varinfo'; info.hidden = true;
+  $('#w-mas').before(info);
+  const hide = () => {};
   $('#w-type').addEventListener('change', () => { syncOpts(); hide(); autoPair('type'); redrawAll(); });
   sel.addEventListener('change', () => autoPair('variant'));
   $('#p-name').addEventListener('change', () => autoPair('breath')); $('#p-name').addEventListener('input', () => { showCompat(); });
   document.querySelectorAll('.seg.big button').forEach((b) => b.addEventListener('click', () => { showCompat(); }));
   $('#w-line').addEventListener('change', () => autoPair('line'));
-  hide(); redrawAll(); showCompat();
+  autoPair('init');
 }
 // จับคู่ให้อัตโนมัติ: เลือกปราณ -> ตั้งร่างดาบที่คู่กัน / เลือกร่าง -> ตั้งปราณที่คู่กัน
 function autoPair(src) {
-  const t = $('#w-type').value, list = VARIANTS[t] || [], sel = varEl();
-  if (sel && list.length && kind === 'breath') {
-    const b = $('#p-name').value.trim(), va = variantOf();
-    if (src === 'breath' && b) {
-      const match = list.find((x) => x.breath && x.breath.includes(b));
-      if (match && sel.value !== match.v) { sel.value = match.v; toast('จับคู่ ' + match.label + ' กับปราณ ' + b + ' ให้แล้ว'); }
-      else if (!match && va && va.breath) { sel.value = ''; toast('ปราณ ' + b + ' ใช้ร่างปกติ'); }
-    }
-    if (src === 'variant' && va && va.breath && !va.breath.includes(b)) { $('#p-name').value = va.breath[0]; toast('ตั้งปราณเป็น ' + va.breath[0] + ' ให้เข้าคู่กับ ' + va.label); }
-    const v2 = variantOf();
-    if (v2 && v2.line && !v2.line.includes($('#w-line').value)) { $('#w-line').value = v2.line[0]; }
+  const t = $('#w-type').value, list = VARIANTS[t] || [], sel = varEl(), b = $('#p-name').value.trim();
+  let match = null;
+  if (sel) {
+    match = kind === 'breath' && b ? list.find((x) => x.breath && x.breath.includes(b)) : null;
+    const before = sel.value; sel.value = match ? match.v : '';
+    if (match && match.line && !match.line.includes($('#w-line').value)) $('#w-line').value = match.line[0];
+    if (src === 'breath' && match && before !== match.v) toast('ปราณ ' + b + ' ใช้ ' + match.label + ' ให้อัตโนมัติ');
+  }
+  const info = $('#w-varinfo');
+  if (info) {
+    info.hidden = !match; info.replaceChildren();
+    if (match) { const ic = elemIcon(match.v); if (ic) info.append(ic); const t2 = document.createElement('span'); t2.textContent = 'ร่างดาบ: ' + match.label + ' (คู่กับปราณ ' + b + ')' + (match.line ? ' · สาย ' + match.line.join('/') : ''); info.append(t2); }
   }
   redrawAll(); showCompat(); update();
 }
