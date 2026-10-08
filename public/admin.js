@@ -207,7 +207,7 @@ if (TOKEN) start();
 // ===== แท็บ เซท: ตั้งเซทสำเร็จรูปที่ลูกค้าเห็นในหน้าสั่งทำ =====
 const S_WEAPONS = ['Katana', 'Gauntlet', 'Sickles', 'Scythe', 'Spear', 'War Fans', 'Bladed Wagasa', 'Axe and Mace', 'Cutlass', 'Tanto'];
 const S_LINES = ['Nightfall', 'Firstlight'];
-const S_BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Mist', 'Serpent', 'Beast', 'Moon', 'Sun'];
+const S_BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Serpent'];
 const S_DEMONS = ['Blood Manipulation', 'Cryokinesis', 'Pyrokinesis', 'Shockwave', 'Reaper', 'Dream', 'Tamari', 'Obi Manipulation'];
 let setsDraft = null, setsDirty = false, iconKeys = null;
 function renderSets() {

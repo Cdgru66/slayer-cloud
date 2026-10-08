@@ -5,7 +5,7 @@ const $ = (s) => document.querySelector(s);
 const CLANS = ['Kamado', 'Tomioka', 'Agatsuma', 'Hashibira', 'Rengoku', 'Tokito', 'Uzui', 'Kocho', 'Himejima', 'Shinazugawa', 'Iguro', 'Kanroji'];
 const WEAPONS = ['Katana', 'Sickles', 'Scythe', 'Spear', 'War Fans', 'Bladed Wagasa', 'Axe and Mace', 'Cutlass', 'Tanto', 'Gauntlet'];
 const LINES = ['Nightfall', 'Firstlight'];
-const BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Mist', 'Serpent', 'Beast', 'Moon', 'Sun'];
+const BREATHS = ['Water', 'Flame', 'Thunder', 'Wind', 'Insect', 'Stone', 'Sound', 'Serpent']; // ปราณที่มีในเกมตอนนี้
 const DEMONS = ['Blood Manipulation', 'Cryokinesis', 'Pyrokinesis', 'Shockwave', 'Reaper', 'Dream', 'Tamari', 'Obi Manipulation'];
 let kind = 'breath', sent = false;
 
@@ -462,8 +462,9 @@ function applySet(st) {
   $('#p-name').value = pw.name || '';
   $('#same').checked = true; $('#t-line').value = a.line || w.line || ''; $('#t-tier').value = a.tier != null ? String(a.tier) : ''; $('#t-plus').value = a.plus != null ? String(a.plus) : '';
   armorSync(); drawChips(); if (varEl()) { const list = VARIANTS[$('#w-type').value] || []; varEl().replaceChildren(...list.map((x) => new Option(x.label, x.v))); }
-  autoPair('set'); drawSets(); update();
-  toast('เลือกเซท ' + st.name + ' แล้ว');
+  document.body.classList.remove('show-adv'); autoPair('set'); drawSets(); update();
+  clanHint(true);
+  toast($('#clan').value ? 'เลือกเซท ' + st.name + ' แล้ว' : 'เลือกเซท ' + st.name + ' แล้ว · อย่าลืมเลือกตระกูลด้วยนะ');
 }
 function clearSet() {
   chosenSet = null; for (const id of ['#w-type', '#w-line', '#w-tier', '#w-plus', '#p-name', '#t-line', '#t-tier', '#t-plus']) $(id).value = '';
@@ -493,9 +494,21 @@ function drawSets() {
     b.append(top, ul, foot); b.onclick = () => applySet(st); return b;
   });
   const own = document.createElement('button'); own.type = 'button'; own.className = 'setc own'; own.setAttribute('aria-pressed', String(!chosenSet && document.body.classList.contains('show-adv')));
-  own.innerHTML = '<span class="set-ic">✎</span><b class="setc-n">ไม่มีเซทที่ใช่?</b><small class="setc-note">เลือกเองหรือเขียนบรีฟ ร้านประเมินราคาให้</small><span class="setc-go">สั่งแบบอื่น</span>';
+  own.innerHTML = '<span class="set-ic">✎</span><b class="setc-n">ออกแบบเอง</b><small class="setc-note">เลือกอาวุธ ปราณ ชุดเองทั้งหมด หรือเขียนบรีฟ ร้านประเมินราคาให้</small><span class="setc-go">ออกแบบเอง</span>';
   own.onclick = clearSet;
   setsGrid.replaceChildren(...cards, own);
+  // ปุ่มปรับแต่งเซทที่เลือก (เปิดช่องปรับละเอียด โดยเริ่มจากค่าของเซทนั้น)
+  let cz = document.getElementById('setcustom');
+  if (!cz) { cz = document.createElement('div'); cz.id = 'setcustom'; cz.className = 'setcustom'; setsGrid.after(cz); }
+  cz.replaceChildren();
+  if (chosenSet) {
+    const open = document.body.classList.contains('show-adv');
+    const t = document.createElement('span'); t.textContent = open ? 'กำลังปรับแต่งเซท ' + chosenSet.name.replace(' (ปรับเอง)', '') + ' · แก้ช่องด้านล่างได้เลย' : 'อยากเปลี่ยนบางอย่างในเซท ' + chosenSet.name + ' ?';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn' + (open ? '' : ' primary'); b.textContent = open ? 'ซ่อนการปรับแต่ง' : '✎ ปรับแต่งเซทนี้เอง';
+    b.onclick = () => { document.body.classList.toggle('show-adv'); drawSets(); if (document.body.classList.contains('show-adv')) document.querySelector('.og.adv').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+    cz.append(t, b);
+    if (!$('#clan').value) clanHint(true);
+  }
 }
 async function buildSets() {
   try { const r = await fetch('/api/v1/sets'); SETS = r.ok ? await r.json() : []; } catch (e) { SETS = []; }
@@ -503,6 +516,7 @@ async function buildSets() {
   const lg = document.createElement('legend'); lg.innerHTML = '<span class="on">1</span>เลือกเซท';
   const sub = document.createElement('p'); sub.className = 'packs-sub'; sub.textContent = 'กดเซทเดียวจบ ร้านจัดให้ครบตามเซท อยากเพิ่มอะไรเขียนในบรีฟได้';
   setsGrid = document.createElement('div'); setsGrid.className = 'sets';
+  if (!chipDraws.length) for (const x of ['#w-tier', '#t-tier', '#b-tier', '#h-tier']) chips(x);
   setsSeg = document.createElement('div'); setsSeg.className = 'seg big setsseg';
   for (const [f, l] of [['all', 'ทั้งหมด'], ['breath', 'สายปราณ'], ['demon', 'สายอสูร']]) { const x = document.createElement('button'); x.type = 'button'; x.dataset.f = f; x.textContent = l; x.onclick = () => { setsFilter = f; drawSets(); }; setsSeg.append(x); }
   fs.append(lg, sub, setsSeg, setsGrid);
@@ -510,5 +524,20 @@ async function buildSets() {
   for (const id of ['#w-type', '#w-line', '#w-tier', '#w-plus', '#p-name', '#t-line', '#t-tier', '#t-plus']) $(id).value = '';
   armorSync(); drawChips(); autoPair('init'); drawSets(); update();
   // แก้ค่าเองในส่วนปรับละเอียด = ไม่ใช่เซทเดิมแล้ว
-  $('#of').addEventListener('change', (e) => { if (chosenSet && e.target && e.target.closest('.og.adv') && e.isTrusted) { chosenSet = Object.assign({}, chosenSet, { name: chosenSet.name + ' (ปรับเอง)' }); update(); } });
+  $('#of').addEventListener('change', (e) => { if (chosenSet && !chosenSet.name.endsWith('(ปรับเอง)') && e.target && e.target.closest('.og.adv')) { chosenSet = Object.assign({}, chosenSet, { name: chosenSet.name + ' (ปรับเอง)' }); update(); } });
 }
+
+// เตือนให้เลือกตระกูลหลังเลือกเซท
+function clanHint(fromSet) {
+  const fs = $('#clan').closest('fieldset'); if (!fs) return;
+  let tip = document.getElementById('clan-tip');
+  if (!tip) { tip = document.createElement('p'); tip.id = 'clan-tip'; tip.className = 'clan-tip'; tip.textContent = '⚑ อย่าลืมเลือกตระกูลด้วยนะ'; fs.querySelector('legend').after(tip); }
+  const need = !$('#clan').value && (fromSet || chosenSet);
+  fs.classList.toggle('needs', !!need); tip.hidden = !need;
+  let jump = document.getElementById('clan-jump');
+  if (need && fromSet) {
+    if (!jump) { jump = document.createElement('button'); jump.type = 'button'; jump.id = 'clan-jump'; jump.className = 'btn primary clanjump'; jump.textContent = 'ต่อไป: เลือกตระกูล ↓'; jump.onclick = () => { fs.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => { const b = fs.querySelector('.dd-btn'); if (b) b.click(); }, 450); }; }
+    const cz = document.getElementById('setcustom'); if (cz && !cz.contains(jump)) cz.prepend(jump);
+  } else if (jump) jump.remove();
+}
+$('#clan').addEventListener('change', () => clanHint(false));
