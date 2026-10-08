@@ -43,10 +43,12 @@ try {
     if (Test-Path $curl) {
       Say 'ลองดาวน์โหลดอีกวิธี (curl)...'
       $cargs = @('-sS', '-L', '-f', '--ssl-no-revoke', '-o', $zip, '-H', 'User-Agent: slayer-updater', '-H', 'Accept: application/vnd.github+json')
-      if ($headers['Authorization']) { $cargs += @('-H', ('Authorization: ' + $headers['Authorization'])) }
+      # token ใส่ผ่านไฟล์ชั่วคราว ไม่ให้โผล่ในรายการโปรแกรมที่กำลังทำงาน
+      $hf = $null
+      if ($headers['Authorization']) { $hf = Join-Path $env:TEMP ('sf-h-' + [guid]::NewGuid().ToString('N') + '.txt'); [IO.File]::WriteAllText($hf, 'Authorization: ' + $headers['Authorization']); $cargs += @('-H', ('@' + $hf)) }
       $cargs += $url
       $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-      $o = & $curl @cargs 2>&1
+      try { $o = & $curl @cargs 2>&1 } finally { if ($hf) { Remove-Item $hf -Force -ErrorAction SilentlyContinue } }
       $ErrorActionPreference = $prevEap
       if ($LASTEXITCODE -eq 0 -and (Test-Path $zip) -and (Get-Item $zip).Length -gt 1000) { $got = $true }
       else { $why = 'curl: ' + ($o | Out-String).Trim(); if ($o -match '40[14]') { $why = 'token (curl)' } }
@@ -110,7 +112,15 @@ Say 'กำลังเปิดเซิร์ฟเวอร์ใหม่...
 try {
   Get-NetTCPConnection -LocalPort 8800 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
 } catch {}
-Start-Sleep -Seconds 1
-Start-Process -FilePath (Join-Path $App 'start-cloud.bat') -WorkingDirectory $App
-Say 'เสร็จแล้ว เปิดหน้าต่างเซิร์ฟเวอร์ใหม่ให้แล้ว (หน้าต่างเซิร์ฟเวอร์อันเก่าปิดทิ้งได้)' 'Green'
+# หน้าต่างเซิร์ฟเวอร์รุ่นใหม่จะเปิดตัวเองใหม่ใน 3 วินาที ถ้าไม่กลับมาค่อยเปิดหน้าต่างใหม่
+$back = $false
+for ($i = 0; $i -lt 8 -and -not $back; $i++) {
+  Start-Sleep -Seconds 1
+  try { if (Get-NetTCPConnection -LocalPort 8800 -State Listen -ErrorAction SilentlyContinue) { $back = $true } } catch {}
+}
+if ($back) { Say 'เสร็จแล้ว เซิร์ฟเวอร์เปิดใหม่ในหน้าต่างเดิมแล้ว' 'Green' }
+else {
+  Start-Process -FilePath (Join-Path $App 'start-cloud.bat') -WorkingDirectory $App
+  Say 'เสร็จแล้ว เปิดหน้าต่างเซิร์ฟเวอร์ใหม่ให้แล้ว (หน้าต่างเซิร์ฟเวอร์อันเก่าปิดทิ้งได้)' 'Green'
+}
 try { Stop-Transcript | Out-Null } catch {}

@@ -16,7 +16,7 @@ const G={
  'Coin Pile':'<svg viewBox="0 0 32 32"><defs><radialGradient id="sfg-gl" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fbe7b0"/><stop offset=".6" stop-color="#e2b65c"/><stop offset="1" stop-color="#8f6c2c"/></radialGradient></defs><g fill="url(#sfg-gl)" stroke="#6b4d1c" stroke-width=".7"><ellipse cx="9" cy="24" rx="6" ry="2.6"/><ellipse cx="22" cy="25" rx="6" ry="2.6"/><ellipse cx="16" cy="21" rx="6" ry="2.6"/><ellipse cx="11" cy="17" rx="5.5" ry="2.4"/><ellipse cx="20" cy="16" rx="5.5" ry="2.4"/><ellipse cx="16" cy="11" rx="5" ry="2.2"/></g></svg>'};
 function glyph(n,z){const sp=h('span',{class:'ic gl',style:`width:${z}px;height:${z}px`});sp.innerHTML=G[n];return sp}
 function ico(n,u,z=20){if((!u||!/^https:/.test(u))&&G[n])return glyph(n,z);const hue=[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%360,f=()=>h('span',{class:'ic',style:`width:${z}px;height:${z}px;background:hsl(${hue} 35% 24%);font-size:${Math.round(z*.45)}px;border-radius:${Math.round(z*.25)}px`},n[0]||'?');if(!u||!/^https:/.test(u))return f();const i=h('img',{class:'ic',src:u,alt:'',width:z,height:z,referrerpolicy:'no-referrer',style:`border-radius:${Math.round(z*.25)}px`});i.onerror=()=>i.replaceWith(f());return i}
-function upsert(s){let a=A.get(s.name);if(!a){a={hist:[]};A.set(s.name,a)}a.s=s;const l=a.hist[a.hist.length-1];if(!l||l.t!==s.time){a.hist.push({t:s.time,w:s.wen||0,k:(s.progress&&s.progress.kills)||0,b:(s.progress&&s.progress.boss_kills)||0});if(a.hist.length>400)a.hist.shift()}}
+function upsert(s){let a=A.get(s.name);if(!a){a={hist:[]};A.set(s.name,a)}a.s=s;if(s.days)a.days=s.days;const l=a.hist[a.hist.length-1];if(!l||l.t!==s.time){a.hist.push({t:s.time,w:s.wen||0,k:(s.progress&&s.progress.kills)||0,b:(s.progress&&s.progress.boss_kills)||0});if(a.hist.length>400)a.hist.shift()}}
 function lim(a){const i=a.s.interval;return i?Math.max(90,i*2.5):THRESH}
 function stat(a){if(now()-a.s.time>lim(a))return'off';const i=a.s.interval||300,W=Math.max(1200,i*6),p=a.hist.filter(x=>x.t>=now()-W);return p.length>=3&&p[p.length-1].t-p[0].t>=Math.max(600,i*3)&&p.every(x=>x.w===p[0].w&&x.k===p[0].k)?'stuck':'on'}
 function rate(a){const p=a.hist.filter(x=>x.t>=now()-3600);if(p.length<2)return null;const f=p[0],l=p[p.length-1],d=l.t-f.t;return d<120?null:(l.w-f.w)/(d/3600)}
@@ -42,7 +42,7 @@ function bar(r){return h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Ma
 const NAMES=['Cullipoper22535','Mincepaetz7297','Blopcoco22','Bryanzen884','Covertail51','Cubmoon3320','Cuyrox191','Dashiel7788','Emberkit42','Frostgale906','Gyoreiii77','Hanabi2201','Inosukex14','Zenitsuv88'];
 function mk(i){const r=Math.random,n=x=>Math.round(r()*x),it=(a,b)=>({name:a,amount:b,delta:0});
 return{name:NAMES[i],display:NAMES[i].replace(/\d+$/,''),userId:1e9+i,time:now(),interval:120,boss:i%3?{name:['Akazo','Gyorei','Zuko','Enru','Rengu'][i%5],hp:20+n(80),dist:30}:undefined,level:[225,225,225,225,225,225,191,59,225,225,191,225,200,225][i],slayerRank:'Mizunoto',demonRank:'Thrall',clan:['Tomioka','Kamado','Agatsuma'][i%3],race:i%4===1?'Demon':'Human',breathing:i%4===1?undefined:['Water','Flame','Thunder'][i%3],demonArt:i%4===1?['Blood Whip','Frost Lotus','Thread Weaver'][i%3]:undefined,fightingStyle:i%2?'Gauntlet':undefined,wen:200000+n(600000),expCurrent:n(13500),expGoal:13500,skillPoints:n(30),reputation:-n(9000),stamina:700,hp:1801,maxHp:1801,progress:{kills:n(4000),boss_kills:n(1200),deaths:n(900),chests:n(800),quests:n(460),tower_floor:n(60)},mastery:{Water:{current:3940,goal:5220},Sword:{current:1931,goal:6990},Fist:{current:90,goal:270},Spear:{current:1033,goal:1980}},items:[it('Ore',n(30)),it('Refinement Ore',n(8000)),it('Coin',n(40)),it('Coin Stack',n(8)),it('Coin Pile',n(6)),it('Coin Pouch',n(4)),it('Metal Scraps',n(5000)),it('Silk Thread',n(5000)),it('Beast Core',n(60)),it('Demon Horns',n(50)),it('Health Potion',n(250)),{...it('Water Katana',1),equipped:i%2===0},it('Cutlass',1),{...it('Masquerade Mask',1),equipped:true},it('Kasumi Yukata',2),{...it('Prayer of wind Necklace',1),equipped:true},it('Nightfall Scythe Schematic',1),it('Demonic Lantern',n(3))]}}
-function seed(){A.clear();DS=NAMES.map((_,i)=>mk(i));DS.forEach((s,i)=>{s._m=i<8?'on':i===10?'stuck':'off';const b=s.wen;const ph=Math.random()*110;for(let k=30;k>=0;k--)upsert({...s,time:now()-ph-k*120-(s._m==='off'?3600:0),wen:s._m==='on'?b-k*180:b,progress:{...s.progress,boss_kills:s.progress.boss_kills-(s._m==='on'?k:0)}});s.time=now()-ph})}
+function seed(){A.clear();DS=NAMES.map((_,i)=>mk(i));DS.forEach((s,i)=>{s.days={};for(let k=13;k>=0;k--){const g=40000+Math.random()*90000*(i%3+1)|0;s.days[dkey(now()-k*86400)]={w0:0,w1:k===0?g*.4|0:g,b0:0,b1:(Math.random()*60|0),k0:0,k1:(Math.random()*900|0),l0:0,l1:k%5===0?1:0}}});DS.forEach((s,i)=>{s._m=i<8?'on':i===10?'stuck':'off';const b=s.wen;const ph=Math.random()*110;for(let k=30;k>=0;k--)upsert({...s,days:s.days,time:now()-ph-k*120-(s._m==='off'?3600:0),wen:s._m==='on'?b-k*180:b,progress:{...s.progress,boss_kills:s.progress.boss_kills-(s._m==='on'?k:0)}});s.time=now()-ph})}
 function tick(){DS.forEach(s=>{if(s._m==='off'||now()-s.time<s.interval)return;s.progress.boss_kills++;if(s._m==='on'){s.wen+=5+Math.random()*5|0;const d=Math.random()*30|0;s.items[1].amount+=d;s.items[1].delta=d}s.time=now();upsert({...s})});render()}
 function startDemo(){demo=true;clearInterval(poll);seed();clearInterval(timer);timer=setInterval(tick,5000);$('#mode').textContent='โหมดตัวอย่าง: ข้อมูลสุ่มเพื่อดูหน้าตา';render()}
 
@@ -69,6 +69,7 @@ function render(){
  $('#t-on').textContent=(c.on+c.stuck)+' / '+c.all;
  const tw=sum(a=>a.s.wen);$('#t-wen').textContent=cm(tw);$('#t-wen').title=full(tw)+' Wen';
  const tr=L.reduce((t,x)=>t+(x.st==='on'?rate(x.a)||0:0),0);$('#t-rate').textContent=(tr>0?'+':'')+cm(tr);
+ const tk=dkey(now()),tdy=L.reduce((t,x)=>{const d=x.a.days&&x.a.days[tk];return t+(d?(d.w1||0)-(d.w0||0):0)},0);$('#t-today').textContent=(tdy>=0?'+':'')+cm(tdy);
  $('#t-ore').replaceChildren(...ORE.map(n=>resRow(n,n==='Ore'?'Ore':'Refinement Ore',sum(a=>amt(a,n)),firstIcon(n),40)));
  $('#t-coin').replaceChildren(...COINS.map(n=>resRow(n,COIN_TH[n],sum(a=>amt(a,n)),firstIcon(n),30,'sm')));
  const o={on:0,stuck:1,off:2};L.sort((x,y)=>o[x.st]-o[y.st]||(y.a.s.wen||0)-(x.a.s.wen||0)||x.a.s.name.localeCompare(y.a.s.name));
@@ -107,6 +108,61 @@ function bag(s){const its=(s.items||[]).filter(i=>i.amount>0);if(!its.length)ret
  for(const c of g){if(!c.l.length)continue;c.l.sort((a,b)=>(b.equipped?1:0)-(a.equipped?1:0)||b.amount-a.amount||a.name.localeCompare(b.name));
   out.push(h('div',{class:'bagc'},h('p',{class:'bagt'},c.t,h('span',{},c.l.length)),h('div',{class:'ig'},c.l.map(it=>h('div',{class:'it'+(it.equipped?' eq':'')},ico(it.name,iconOf(it),30),h('span',{class:'itn',title:it.name},it.name,it.equipped?h('em',{},'ใส่อยู่'):null),h('b',{title:full(it.amount)},(it.amount>1||!it.equipped?'x'+cm(it.amount):'')),it.delta?h('i',{class:'dl '+(it.delta>0?'up':'dn')},(it.delta>0?'+':'')+it.delta):null)))))}
  return out}
+/* ---------- สถิติ + กราฟ (ซีรีส์เดียว: ทองเข้ม #b8893a ผ่านเกณฑ์บนพื้นมืด) ---------- */
+const SVGNS='http://www.w3.org/2000/svg',CH='#b8893a';
+const sv=(t,a={})=>{const e=document.createElementNS(SVGNS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+const dkey=t=>{const d=new Date(t*1000),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate())};
+const dshort=k=>{const[y,m,d]=k.split('-');return Number(d)+'/'+Number(m)};
+function nice(max){if(max<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(max))),f=max/p;return([1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(x=>x>=f*1.05)||10)*p}
+function tipBox(){const t=h('div',{class:'ctip',role:'status'});t.hidden=true;return t}
+function lineChart(pts,W){ // pts: [{t,v}]
+ const H=150,L=44,R=10,T=10,B=24,w=W-L-R,hh=H-T-B,wrap=h('div',{class:'chart'}),svg=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'กราฟ Wen ตามเวลา'}),tip=tipBox();
+ if(pts.length<2){wrap.append(h('p',{class:'mu cempty'},'ยังมีข้อมูลไม่พอวาดกราฟ (ต้องมีอย่างน้อย 2 รอบ)'));return wrap}
+ const t0=pts[0].t,t1=pts[pts.length-1].t,vs=pts.map(p=>p.v),lo=Math.min(...vs),hi=Math.max(...vs),pad=(hi-lo)*.1||Math.max(1,hi*.01),y0=lo-pad,y1=hi+pad;
+ const X=t=>L+(t1===t0?0:(t-t0)/(t1-t0)*w),Y=v=>T+hh-(v-y0)/(y1-y0)*hh;
+ for(let i=0;i<=3;i++){const v=y0+(y1-y0)*i/3,y=Y(v);svg.append(sv('line',{x1:L,x2:W-R,y1:y,y2:y,class:'cgrid'}));const tx=sv('text',{x:L-6,y:y+4,'text-anchor':'end',class:'cax'});tx.textContent=cm(v);svg.append(tx)}
+ const span=t1-t0;for(let i=0;i<=3;i++){const t=t0+span*i/3,tx=sv('text',{x:X(t),y:H-6,'text-anchor':i===0?'start':i===3?'end':'middle',class:'cax'});const d=new Date(t*1000);tx.textContent=span>86400*1.5?d.getDate()+'/'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':00':String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');svg.append(tx)}
+ const dl=pts.map((p,i)=>(i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+ svg.append(sv('path',{d:dl+` L${X(t1)} ${T+hh} L${X(t0)} ${T+hh} Z`,fill:CH,'fill-opacity':.12}));
+ svg.append(sv('path',{d:dl,fill:'none',stroke:CH,'stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+ const last=pts[pts.length-1];svg.append(sv('circle',{cx:X(last.t),cy:Y(last.v),r:4,fill:CH,stroke:'#1a1114','stroke-width':2}));
+ const hx=sv('line',{y1:T,y2:T+hh,class:'cx'}),hd=sv('circle',{r:4,fill:CH,stroke:'#1a1114','stroke-width':2});hx.style.display=hd.style.display='none';svg.append(hx,hd);
+ const hit=sv('rect',{x:L,y:T,width:w,height:hh,fill:'transparent',tabindex:0,'aria-label':'เลื่อนเพื่อดูค่า (ปุ่มลูกศรซ้ายขวา)'});svg.append(hit);
+ let cur=pts.length-1;
+ const show=i=>{cur=Math.max(0,Math.min(pts.length-1,i));const p=pts[cur],x=X(p.t),y=Y(p.v);hx.setAttribute('x1',x);hx.setAttribute('x2',x);hd.setAttribute('cx',x);hd.setAttribute('cy',y);hx.style.display=hd.style.display='';
+  tip.replaceChildren(h('b',{},full(p.v)+' Wen'),h('span',{},new Date(p.t*1000).toLocaleString('th-TH',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})));tip.hidden=false;tip.style.left=(x>W/2?Math.max(0,x-158):x+12)+'px';tip.style.top='8px'};
+ const hide=()=>{hx.style.display=hd.style.display='none';tip.hidden=true};
+ hit.onpointermove=e=>{const r=svg.getBoundingClientRect(),t=t0+(e.clientX-r.left-L)/w*(t1-t0);let b=0;for(let i=1;i<pts.length;i++)if(Math.abs(pts[i].t-t)<Math.abs(pts[b].t-t))b=i;show(b)};
+ hit.onpointerleave=hide;hit.onfocus=()=>show(cur);hit.onblur=hide;
+ hit.onkeydown=e=>{if(e.key==='ArrowLeft'){show(cur-1);e.preventDefault()}if(e.key==='ArrowRight'){show(cur+1);e.preventDefault()}};
+ wrap.append(svg,tip);return wrap}
+function barChart(rows,W){ // rows: [{k,v}]
+ const H=150,L=44,R=6,T=16,B=24,w=W-L-R,hh=H-T-B,wrap=h('div',{class:'chart'}),svg=sv('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'กราฟ Wen ที่ได้ต่อวัน'}),tip=tipBox();
+ if(!rows.length){wrap.append(h('p',{class:'mu cempty'},'ยังไม่มีข้อมูลรายวัน'));return wrap}
+ const mx=nice(Math.max(1,...rows.map(r=>r.v))),bw=w/rows.length,Y=v=>T+hh-Math.max(0,v)/mx*hh;
+ for(let i=0;i<=2;i++){const v=mx*i/2,y=Y(v);svg.append(sv('line',{x1:L,x2:W-R,y1:y,y2:y,class:'cgrid'}));const tx=sv('text',{x:L-6,y:y+4,'text-anchor':'end',class:'cax'});tx.textContent=cm(v);svg.append(tx)}
+ rows.forEach((r,i)=>{const x=L+i*bw+1,bwi=Math.max(2,bw-2),y=Y(r.v),hgt=T+hh-y,rad=Math.min(4,bwi/2,hgt);
+  const g=sv('g',{class:'cbar',tabindex:0,'aria-label':dshort(r.k)+': '+full(r.v)+' Wen'});
+  if(hgt>0)g.append(sv('path',{d:`M${x} ${T+hh} V${y+rad} Q${x} ${y} ${x+rad} ${y} H${x+bwi-rad} Q${x+bwi} ${y} ${x+bwi} ${y+rad} V${T+hh} Z`,fill:CH,'fill-opacity':i===rows.length-1?1:.75}));
+  g.append(sv('rect',{x:x-1,y:T,width:bw,height:hh,fill:'transparent'}));
+  if(rows.length<=14||i%2===rows.length%2){const tx=sv('text',{x:x+bwi/2,y:H-6,'text-anchor':'middle',class:'cax'});tx.textContent=dshort(r.k);g.append(tx)}
+  if(i===rows.length-1&&r.v>0){const tv=sv('text',{x:x+bwi/2,y:Math.max(10,y-4),'text-anchor':'middle',class:'cval'});tv.textContent=cm(r.v);g.append(tv)}
+  const sh=()=>{tip.replaceChildren(h('b',{},(r.v>=0?'+':'')+full(r.v)+' Wen'),h('span',{},'วันที่ '+dshort(r.k)+(r.b?` · บอส ${r.b}`:''))); tip.hidden=false;tip.style.left=(x>W/2?Math.max(0,x-150):x+bwi+6)+'px';tip.style.top='4px';g.classList.add('on')};
+  const hd=()=>{tip.hidden=true;g.classList.remove('on')};
+  g.onpointerenter=sh;g.onpointerleave=hd;g.onfocus=sh;g.onblur=hd;svg.append(g)});
+ wrap.append(svg,tip);return wrap}
+let chartRange=86400,showTable=false;
+function statsSection(a){
+ const s=a.s,W=Math.max(260,Math.min(420,($('#dr').clientWidth||420)-48)),days=a.days||{},keys=Object.keys(days).sort(),today=dkey(now()),td=days[today];
+ const g=d=>d?{w:(d.w1||0)-(d.w0||0),b:(d.b1||0)-(d.b0||0),k:(d.k1||0)-(d.k0||0),l:(d.l1||0)-(d.l0||0)}:null,tg=g(td);
+ const tile=(l,v,c)=>h('div',{class:'st'},h('span',{},l),h('b',{class:c||''},v));
+ const pts=(a.hist||[]).filter(x=>x.t>=now()-chartRange).map(x=>({t:x.t,v:x.w}));
+ const rows=keys.slice(-14).map(k=>{const x=g(days[k]);return{k,v:x.w,b:x.b,l:x.l,kk:x.k}});
+ const seg=h('div',{class:'seg',role:'group','aria-label':'ช่วงเวลา'},[[86400,'24 ชม.'],[3*86400,'3 วัน']].map(([v,l])=>h('button',{'aria-pressed':chartRange===v,onclick:()=>{chartRange=v;drawer()}},l)));
+ return[h('h3',{},'วันนี้'),h('div',{class:'sts'},tile('Wen',tg?(tg.w>=0?'+':'')+cm(tg.w):'–','gold'),tile('บอส',tg?'+'+tg.b:'–'),tile('ฆ่า',tg?'+'+cm(tg.k):'–'),tile('เลเวล',tg&&tg.l?'+'+tg.l:'–')),
+  h('div',{class:'chh'},h('h3',{},'Wen ตามเวลา'),seg),lineChart(pts,W),
+  h('div',{class:'chh'},h('h3',{},'Wen ที่ได้ต่อวัน'),h('button',{class:'lnk',onclick:()=>{showTable=!showTable;drawer()}},showTable?'ซ่อนตาราง':'ดูเป็นตาราง')),
+  showTable?h('table',{class:'dtab'},h('thead',{},h('tr',{},h('th',{},'วันที่'),h('th',{},'Wen'),h('th',{},'บอส'),h('th',{},'ฆ่า'),h('th',{},'เลเวล'))),h('tbody',{},rows.slice().reverse().map(r=>h('tr',{},h('td',{},dshort(r.k)),h('td',{},(r.v>=0?'+':'')+full(r.v)),h('td',{},String(r.b)),h('td',{},full(r.kk)),h('td',{},r.l?'+'+r.l:'–'))))):barChart(rows,W)]}
 function show(n){open=n;drawer();$('#dr').classList.add('open');$('#scrim').classList.add('on')}
 function hide(){open=null;$('#dr').classList.remove('open');if(!$('#cl').classList.contains('open'))$('#scrim').classList.remove('on')}
 addEventListener('keydown',e=>{if(e.key==='Escape')hide()});
@@ -123,6 +179,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
    h('div',{class:'dpair'},
     h('div',{class:'ore'},h('p',{class:'lbl'},'Ore'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(ORE,n=>n==='Ore'?'Ore':'Refinement',30,'sm'))),
     h('div',{class:'coins'},h('p',{class:'lbl'},'ถุงเงิน'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(COINS,n=>COIN_TH[n],26,'sm'))))),
+  ...statsSection(a),
   h('h3',{},'เลเวล '+(s.level??'–')+' · EXP '+full(s.expCurrent)+' / '+full(s.expGoal)),h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`})),
   h('h3',{},'ตัวละคร'),h('div',{class:'kv'},kv('Race',s.race||'–'),kv('Clan',s.clan||'–'),kv('Demon Art',s.demonArt||'–'),kv('Breathing',s.breathing||'–'),kv('Fighting Style',s.fightingStyle||'–'),kv('Slayer / Demon',(s.slayerRank||'–')+' / '+(s.demonRank||'–')),kv('Skill Points',s.skillPoints??'–'),kv('Kills',cm(p.kills)),kv('Boss kills',cm(p.boss_kills)),kv('Deaths',cm(p.deaths)),kv('Tower',p.tower_floor!=null?'ชั้น '+p.tower_floor:'–')),
   ...(Object.keys(s.mastery||{}).length?[h('h3',{},'Mastery'),h('div',{class:'mg'},Object.entries(s.mastery).sort((x,y)=>(y[1].goal?y[1].current/y[1].goal:0)-(x[1].goal?x[1].current/x[1].goal:0)).map(([k,m])=>{const r=m.goal?Math.max(0,Math.min(1,m.current/m.goal)):0,mx=m.goal&&m.current>=m.goal;return h('div',{class:'mc'+(mx?' max':''),title:Math.round(r*100)+'%'},h('div',{class:'mh'},h('span',{class:'mn'},k),mx?h('span',{class:'mx'},'MAX'):h('span',{class:'mp'},Math.round(r*100)+'%')),h('div',{class:'mv'},h('b',{},full(m.current)),h('span',{},' / '+full(m.goal))),h('div',{class:'mb'},h('i',{style:`width:${r*100}%`})))}))]:[]),
@@ -132,12 +189,14 @@ $('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
 setInterval(()=>{if(!demo)render()},10000);
 /* ---------- โหมดเซิร์ฟเวอร์ ---------- */
 const VIEW=location.pathname==='/v';let VTOKEN=null;
+let ADMINV=false;
 if(VIEW){const hs=location.hash.slice(1);if(/^sfv_[0-9a-f]{48}$/.test(hs))VTOKEN=hs;
- try{if(VTOKEN)localStorage.setItem('sf_vt',VTOKEN);else{const t=localStorage.getItem('sf_vt');if(/^sfv_[0-9a-f]{48}$/.test(t||''))VTOKEN=t}}catch(e){}
- if(hs)history.replaceState(null,'','/v');
+ if(hs==='admin'){try{const t=localStorage.getItem('sf_at');if(/^sfa_[0-9a-f]{64}$/.test(t||'')){VTOKEN=t;ADMINV=true}}catch(e){}if(!ADMINV)location.replace('/admin')}
+ try{if(ADMINV){}else if(VTOKEN)localStorage.setItem('sf_vt',VTOKEN);else{const t=localStorage.getItem('sf_vt');if(/^sfv_[0-9a-f]{48}$/.test(t||''))VTOKEN=t}}catch(e){}
+ if(hs&&!ADMINV)history.replaceState(null,'','/v');
  document.querySelectorAll('.src>.btn').forEach(b=>b.style.display='none')}
 async function pull(){try{const r=await fetch(VIEW?'/api/v1/state':'/api/state',{cache:'no-store',headers:VIEW?{Authorization:'Bearer '+VTOKEN}:{}});
- if(!r.ok){if(VIEW&&(r.status===401||r.status===403)){let m='';try{m=(await r.json()).error}catch(e){}A.clear();render();gate(r.status===401?'เซสชันหมดอายุหรือร้านออกคีย์ใหม่ กรุณาเข้าสู่ระบบอีกครั้ง':m==='license expired'?'หมดอายุแล้ว ติดต่อร้านเพื่อต่ออายุ':m==='access revoked'?'บัญชีนี้ถูกระงับ ติดต่อร้าน':'ใช้งานไม่ได้: '+m);return}throw 0}const d=await r.json();
+ if(!r.ok){if(ADMINV&&r.status===401){location.replace('/admin');return}if(VIEW&&(r.status===401||r.status===403)){let m='';try{m=(await r.json()).error}catch(e){}A.clear();render();gate(r.status===401?'เซสชันหมดอายุหรือร้านออกคีย์ใหม่ กรุณาเข้าสู่ระบบอีกครั้ง':m==='license expired'?'หมดอายุแล้ว ติดต่อร้านเพื่อต่ออายุ':m==='access revoked'?'บัญชีนี้ถูกระงับ ติดต่อร้าน':'ใช้งานไม่ได้: '+m);return}throw 0}const d=await r.json();
  if(VIEW&&d.expires){const l=$('#lic');l.hidden=false;l.textContent='ใช้งานได้ถึง '+new Date(d.expires*1000).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})}
  const off=d.serverTime-now();A.clear();for(const a of d.accounts){if(a&&a.s){a.s.time-=off;a.hist.forEach(x=>x.t-=off);if(a.rejoin)a.rejoin.at-=off;A.set(a.s.name,a)}}
  a_ok();render()}catch(e){$('#mode').textContent='ต่อเซิร์ฟเวอร์ไม่ได้ (ปิดอยู่หรือเปล่า)'}}
@@ -150,7 +209,7 @@ $('#login-form').onsubmit=async e=>{e.preventDefault();const b=$('#login-go');b.
   VTOKEN=j.token;try{localStorage.setItem('sf_vt',VTOKEN)}catch(x){}$('#login-pass').value='';$('#gate').hidden=true;$('#lo').hidden=false;goLive()}
  catch(x){$('#login-err').textContent='ต่อเซิร์ฟเวอร์ไม่ได้ ลองใหม่อีกครั้ง'}finally{b.disabled=false}};
 $('#lo').onclick=()=>{A.clear();render();$('#lic').hidden=true;$('#lo').hidden=true;gate('')};
-async function goLive(){if(VIEW){if(!VTOKEN){demo=false;clearInterval(timer);A.clear();render();gate('');return true}$('#lo').hidden=false;live=true;demo=false;clearInterval(timer);A.clear();clearInterval(poll);await pull();poll=setInterval(pull,3000);return true}
+async function goLive(){if(VIEW){if(!VTOKEN){demo=false;clearInterval(timer);A.clear();render();gate('');return true}$('#lo').hidden=ADMINV;if(ADMINV)$('h1').textContent='แดชบอร์ดรวม (แอดมิน)';live=true;demo=false;clearInterval(timer);A.clear();clearInterval(poll);await pull();poll=setInterval(pull,3000);return true}
  try{const r=await fetch('/api/state',{cache:'no-store'});if(!r.ok)return false}catch(e){return false}
  live=true;demo=false;clearInterval(timer);A.clear();await pull();poll=setInterval(pull,3000);return true}
 $('#bc').onclick=async()=>{if(!live){alert('ปุ่มนี้ใช้ได้เมื่อเปิดแดชบอร์ดผ่านเซิร์ฟเวอร์ (node server.js) แล้วเข้า http://127.0.0.1:8787');return}

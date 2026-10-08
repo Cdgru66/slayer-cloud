@@ -31,11 +31,15 @@ const STATIC = {
   '/v': ['index.html', 'text/html; charset=utf-8'],
   '/style.css': ['style.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
+  '/admin': ['admin.html', 'text/html; charset=utf-8'],
+  '/admin.js': ['admin.js', 'application/javascript; charset=utf-8'],
+  '/order': ['order.html', 'text/html; charset=utf-8'],
+  '/order.js': ['order.js', 'application/javascript; charset=utf-8'],
 };
 const CSP = [
   "default-src 'none'", "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com", "img-src 'self' https: data:",
+  "font-src https://fonts.gstatic.com", "img-src 'self' https://*.rbxcdn.com data:",
   "connect-src 'self'", "base-uri 'none'", "form-action 'none'", "frame-ancestors 'none'",
 ].join('; ');
 
@@ -49,6 +53,9 @@ let cust = { all: {}, byDevice: new Map(), byView: new Map(), mtime: 0, checked:
 let settings = { mode: 'owner', ownerHash: null, mtime: 0 };
 let accounts = {}; // customerId -> { accountName -> { s, hist } }
 try { accounts = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) {}
+// เก็บแบบไม่มี prototype: ชื่ออย่าง __proto__ / constructor จะเป็นแค่คีย์ธรรมดา
+const bare = (o) => Object.assign(Object.create(null), o && typeof o === 'object' ? o : {});
+accounts = bare(accounts); for (const k of Object.keys(accounts)) accounts[k] = bare(accounts[k]);
 let dirty = false;
 // ไอคอนของไอเทมที่เคยเห็นจากทุกไอดี (ชื่อ -> ลิงก์รูป) ไอดีที่ไม่มีรูปจะได้ใช้รูปจากไอดีอื่น
 const ICONS_FILE = path.join(DATA_DIR, 'icons.json');
@@ -56,7 +63,7 @@ let icons = {};
 try { icons = JSON.parse(fs.readFileSync(path.join(__dirname, 'icons-seed.json'), 'utf8')); } catch (e) {} // ไอคอนตั้งต้นที่มากับโปรแกรม
 try { Object.assign(icons, JSON.parse(fs.readFileSync(ICONS_FILE, 'utf8'))); } catch (e) {}
 let iconsDirty = false;
-const ICON_RE = /^https:\/\/[a-z0-9.-]*rbxcdn\.com\/[^\s"'<>]{1,400}$/i;
+const ICON_RE = /^https:\/\/([a-z0-9-]+\.)*rbxcdn\.com\/[^\s"'<>]{1,400}$/i;
 
 function loadCustomers(force) {
   const t = Date.now();
@@ -100,20 +107,31 @@ const BACKUP_DIR = path.join(DATA_DIR, '..', 'backups');
 function copyDir(src, dst) {
   fs.mkdirSync(dst, { recursive: true });
   for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+    if (/token/i.test(e.name)) continue; // ไม่เก็บ token GitHub ไว้ในไฟล์สำรอง
     const a = path.join(src, e.name), b = path.join(dst, e.name);
     if (e.isDirectory()) copyDir(a, b); else if (e.isFile()) fs.copyFileSync(a, b);
   }
 }
-function autoBackup() {
+function backupNow(prefix) {
   try {
     flush();
     const d = new Date(), z = (n) => String(n).padStart(2, '0');
-    const name = `auto-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}`;
+    const name = `${prefix}-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${prefix === 'auto' ? '' : z(d.getSeconds())}`;
     copyDir(DATA_DIR, path.join(BACKUP_DIR, name));
+    return name;
+  } catch (e) { console.error('สำรองข้อมูลไม่สำเร็จ:', e.message); return null; }
+}
+function listBackups() {
+  try { return fs.readdirSync(BACKUP_DIR, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name).sort().reverse(); } catch (e) { return []; }
+}
+function autoBackup() {
+  const name = backupNow('auto');
+  if (!name) return;
+  try {
     const autos = fs.readdirSync(BACKUP_DIR).filter((n) => n.startsWith('auto-')).sort();
     for (const old of autos.slice(0, Math.max(0, autos.length - 28))) fs.rmSync(path.join(BACKUP_DIR, old), { recursive: true, force: true });
-    console.log('สำรองข้อมูลอัตโนมัติ: backups/' + name);
-  } catch (e) { console.error('สำรองข้อมูลไม่สำเร็จ:', e.message); }
+  } catch (e) {}
+  console.log('สำรองข้อมูลอัตโนมัติ: backups/' + name);
 }
 setTimeout(autoBackup, Number(process.env.BACKUP_FIRST_MS) || 60000).unref();
 setInterval(autoBackup, 6 * 3600 * 1000).unref();
@@ -181,6 +199,24 @@ async function rejoinTick() {
     await new Promise((r) => setTimeout(r, Math.max(5, Number(cfg.gapSec) || 20) * 1000)); // เว้นระยะ ไม่เปิดหลายไอดีพร้อมกัน
   }
 }
+const DISCORD_RE = /^https:\/\/(discord\.com|discordapp\.com|ptb\.discord\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/;
+function rejoinPublic() {
+  const c = rejoinCfg();
+  let log = []; try { log = fs.readFileSync(REJOIN_LOG, 'utf8').trim().split('\n').filter(Boolean).slice(-25).reverse(); } catch (e) {}
+  return { enabled: !!c.enabled, port: c.port || 7963, hasPassword: !!c.password, afterMin: c.afterMin || 5,
+    discord: !!c.discordWebhook, exclude: c.exclude || [], log };
+}
+function setRejoin(j) {
+  let c = {}; try { c = JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')); } catch (e) {}
+  if ('enabled' in j) c.enabled = !!j.enabled;
+  if ('port' in j) { const n = Number(j.port); if (!(n >= 1 && n <= 65535)) throw new Error('พอร์ตไม่ถูกต้อง'); c.port = n; }
+  if (typeof j.password === 'string' && j.password !== '') { if (!/^[A-Za-z0-9]{6,}$/.test(j.password)) throw new Error('รหัส RAM ต้องเป็นตัวอักษร/ตัวเลข 6 ตัวขึ้นไป'); c.password = j.password; }
+  if (j.clearPassword) delete c.password;
+  if ('afterMin' in j) { const n = Number(j.afterMin); if (!(n >= 2 && n <= 120)) throw new Error('นาทีต้องอยู่ระหว่าง 2-120'); c.afterMin = n; }
+  if (typeof j.discord === 'string') { const w = j.discord.trim(); if (w && !DISCORD_RE.test(w)) throw new Error('ลิงก์ Discord webhook ไม่ถูกต้อง'); if (w) c.discordWebhook = w; else delete c.discordWebhook; }
+  if (Array.isArray(j.exclude)) c.exclude = j.exclude.map(String).filter((x) => /^[A-Za-z0-9_]{3,20}$/.test(x));
+  const t = REJOIN_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(c, null, 2)); fs.renameSync(t, REJOIN_FILE);
+}
 let rjBusy = false;
 setInterval(() => { if (rjBusy) return; rjBusy = true; rejoinTick().catch((e) => console.error(e)).finally(() => { rjBusy = false; }); },
   Number(process.env.REJOIN_TICK_MS) || 30000).unref();
@@ -206,6 +242,13 @@ const clientIp = (req) => TRUST_PROXY
   ? ((req.headers['x-forwarded-for'] || '').split(',').pop().trim() || req.socket.remoteAddress)
   : req.socket.remoteAddress;
 
+// ---------- แจ้งเตือน + สถิติ (notify.js) และหน้าแอดมิน (admin-api.js) ----------
+const notify = require('./notify.js')({
+  DATA_DIR, now, pool: () => accounts[OWNER] || {}, customers: () => { loadCustomers(); return cust.all; },
+  ownerWebhook: () => rejoinCfg().discordWebhook, mode: () => settings.mode,
+});
+const withRejoin = (n, a) => { const r = rjState.get(n); return r && r.n ? Object.assign({}, a, { rejoin: { at: r.at, n: r.n } }) : a; };
+
 // ---------- ตอบกลับ ----------
 function send(res, code, body, type = 'application/json; charset=utf-8', extra = {}) {
   res.writeHead(code, Object.assign({
@@ -223,7 +266,13 @@ function readBody(req, res, cb) {
     if (size > MAX_BODY) { dead = true; res.writeHead(413, { Connection: 'close' }); res.end('{"error":"too large"}'); req.destroy(); return; }
     chunks.push(c);
   });
-  req.on('end', () => { if (!dead) cb(Buffer.concat(chunks).toString('utf8')); });
+  req.on('end', () => {
+    if (dead) return;
+    try { cb(Buffer.concat(chunks).toString('utf8')); } catch (e) {
+      console.error('คำขอผิดพลาด:', e && e.stack || e);
+      try { if (!res.headersSent) send(res, 500, { error: 'server error' }); else res.destroy(); } catch (_) {}
+    }
+  });
 }
 
 // ---------- ตรวจสิทธิ์ ----------
@@ -253,33 +302,70 @@ function authFail(res, ip, a) {
 }
 
 // ---------- รับข้อมูล ----------
+// ทำความสะอาดข้อมูลจากเกม: จำกัดความลึก/จำนวน/ความยาว ตัดคีย์อันตราย (กันเซิร์ฟเวอร์ล่มจากข้อมูลซ้อนลึกหรือใหญ่ผิดปกติ)
+const MAX_SNAP = 96 * 1024;
+function tidy(v, d) {
+  if (v == null || typeof v === 'boolean') return v;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (typeof v === 'string') return v.slice(0, 400);
+  if (d >= 6 || typeof v !== 'object') return null;
+  if (Array.isArray(v)) return v.slice(0, 300).map((x) => tidy(x, d + 1));
+  const o = {}; let n = 0;
+  for (const k of Object.keys(v)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype' || k.length > 60) continue;
+    if (++n > 120) break;
+    o[k] = tidy(v[k], d + 1);
+  }
+  return o;
+}
 function ingest(id, c, snap) {
   if (!snap || typeof snap !== 'object') return 'bad json';
   const name = snap.name;
-  if (typeof name !== 'string' || !/^[A-Za-z0-9_.\- ]{1,40}$/.test(name)) return 'bad name';
-  const mine = accounts[id] || (accounts[id] = {});
-  if (!mine[name] && Object.keys(mine).length >= (c.maxAccounts || DEFAULT_MAX_ACCOUNTS)) return 'account limit';
+  if (typeof name !== 'string' || !/^[A-Za-z0-9_]{3,20}$/.test(name) || name in Object.prototype || name === '__proto__') return 'bad name'; // ชื่อผู้ใช้ Roblox
+  snap = tidy(snap, 0);
+  if (JSON.stringify(snap).length > MAX_SNAP) return 'too big';
+  const mine = accounts[id] || (accounts[id] = Object.create(null));
+  if (!Object.hasOwn(mine, name) && Object.keys(mine).length >= (c.maxAccounts || DEFAULT_MAX_ACCOUNTS)) return 'account limit';
   if (!Array.isArray(snap.items)) snap.items = [];
   snap.items = snap.items.slice(0, 200).filter((i) => i && typeof i.name === 'string' && i.name.length <= 60 && isNum(i.amount));
   for (const i of snap.items) {
     if (typeof i.iconUrl === 'string' && ICON_RE.test(i.iconUrl)) {
-      if (icons[i.name] !== i.iconUrl && Object.keys(icons).length < 3000) { icons[i.name] = i.iconUrl; iconsDirty = true; }
+      // ไอคอนกลางที่ทุกคนเห็น: ไอดีของร้านเขียนทับได้ ลูกค้า (โหมดคีย์) เพิ่มได้แค่ชื่อที่ยังไม่มีรูป
+      if (icons[i.name] !== i.iconUrl && (id === OWNER || !Object.hasOwn(icons, i.name)) && Object.keys(icons).length < 3000) { icons[i.name] = i.iconUrl; iconsDirty = true; }
     } else delete i.iconUrl;
   }
   if (!(isNum(snap.interval) && snap.interval >= 5 && snap.interval <= 3600)) delete snap.interval;
   if (snap.boss && !(typeof snap.boss.name === 'string' && snap.boss.name.length <= 40)) delete snap.boss;
   snap.time = now(); // ใช้เวลาของเซิร์ฟเวอร์เสมอ
-  const a = mine[name] || (mine[name] = { s: null, hist: [] });
+  const a = Object.hasOwn(mine, name) ? mine[name] : (mine[name] = { s: null, hist: [] });
   a.s = snap;
   a.hist.push({ t: snap.time, w: isNum(snap.wen) ? snap.wen : 0, k: isNum(snap.progress && snap.progress.kills) ? snap.progress.kills : 0, b: isNum(snap.progress && snap.progress.boss_kills) ? snap.progress.boss_kills : 0 });
   if (a.hist.length > MAX_HIST) a.hist.splice(0, a.hist.length - MAX_HIST);
+  try { notify.onSnapshot(id === OWNER, name, a); } catch (e) { console.error('notify:', e.message); }
   dirty = true;
   return null;
 }
 
+let scryptBusy = 0;
+const orders = require('./orders.js')({ DATA_DIR, rate, send, readBody, now, notifyOwner: notify.postOwner });
+
+const admin = require('./admin-api.js')({
+  DATA_DIR, send, readBody, rate, failBlocked, recordFail, sha, now, version: VERSION,
+  reloadCustomers: () => loadCustomers(true), pool: () => accounts[OWNER] || {}, rejoinState: (n) => rjState.get(n), withRejoin,
+  rejoinPublic, setRejoin, notifyPublic: notify.publicCfg, setNotify: notify.setCfg, notifyTest: notify.test,
+  listBackups, backupNow, orders,
+});
+
 const server = http.createServer((req, res) => {
+  try { handleReq(req, res); } catch (e) {
+    console.error('คำขอผิดพลาด:', e && e.stack || e);
+    try { if (!res.headersSent) send(res, 500, { error: 'server error' }); else res.destroy(); } catch (_) {}
+  }
+});
+function handleReq(req, res) {
   loadCustomers();
-  const url = new URL(req.url, 'http://x');
+  let url;
+  try { url = new URL(String(req.url || '/').replace(/^\/+/, '/'), 'http://x'); } catch (e) { return send(res, 400, { error: 'bad url' }); }
   const ip = clientIp(req);
   const hsts = TRUST_PROXY && req.headers['x-forwarded-proto'] === 'https' ? { 'Strict-Transport-Security': 'max-age=31536000' } : {};
 
@@ -303,17 +389,20 @@ const server = http.createServer((req, res) => {
 
   // เข้าสู่ระบบด้วยชื่อผู้ใช้ Roblox (ที่เจ้าของกำหนดให้) + รหัสผ่านที่ร้านออกให้ -> ได้คีย์ดูข้อมูลของตัวเอง
   if (req.method === 'POST' && url.pathname === '/api/v1/login') {
-    if (failBlocked(ip)) return send(res, 429, { error: 'ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่' });
+    // นับทุกครั้งก่อนคำนวณรหัส (กันยิงพร้อมกันจำนวนมาก) และจำกัดงานคำนวณรหัสที่ทำพร้อมกัน
+    if (failBlocked(ip) || !rate('loginip:' + ip, 20)) return send(res, 429, { error: 'ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่' });
+    if (scryptBusy >= 6) return send(res, 503, { error: 'ระบบยุ่งอยู่ ลองใหม่อีกครั้ง' });
     return readBody(req, res, (body) => {
       let j; try { j = JSON.parse(body); } catch (e) { return send(res, 400, { error: 'bad json' }); }
       const user = String((j && j.user) || '').trim().toLowerCase(), pass = String((j && j.pass) || '');
       const bad = () => { recordFail(ip); send(res, 401, { error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }); };
       if (!/^[a-z0-9_]{3,20}$/.test(user) || !pass || pass.length > 100) return bad();
-      if (!rate('login:' + user, 10)) return send(res, 429, { error: 'ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่' });
+      if (!rate('login:' + user + ':' + ip, 10)) return send(res, 429, { error: 'ลองผิดหลายครั้งเกินไป รอ 1 นาทีแล้วลองใหม่' });
       loadCustomers(true);
       const hit = Object.values(cust.all).find((c) => c._set && c._set.has(user) && c.pass);
       const [salt, hash] = hit ? String(hit.pass).split(':') : ['00', '00'.repeat(32)];
-      crypto.scrypt(pass, Buffer.from(salt, 'hex'), 32, (err, key) => { // คำนวณเสมอ ไม่ให้เดาได้จากเวลาตอบว่าชื่อนี้มีอยู่
+      scryptBusy++;
+      crypto.scrypt(pass, Buffer.from(salt, 'hex'), 32, (err, key) => { scryptBusy--; // คำนวณเสมอ ไม่ให้เดาได้จากเวลาตอบว่าชื่อนี้มีอยู่
         if (err || !hit) return bad();
         const want = Buffer.from(hash, 'hex');
         if (want.length !== key.length || !crypto.timingSafeEqual(want, key)) return bad();
@@ -330,6 +419,14 @@ const server = http.createServer((req, res) => {
     return send(res, 200, icons, 'application/json; charset=utf-8', { 'Cache-Control': 'public, max-age=300' });
   }
 
+  if (orders.handle(req, res, url, ip)) return;
+  if (admin.handle(req, res, url, ip)) return;
+
+  if (req.method === 'GET' && url.pathname === '/api/v1/state' && admin.isAdmin(req)) { // แอดมินดูแดชบอร์ดรวมทุกไอดี
+    const pool = accounts[OWNER] || {};
+    return send(res, 200, { serverTime: now(), expires: null, mode: settings.mode, admin: true, accounts: Object.keys(pool).map((n) => withRejoin(n, pool[n])) });
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/v1/state') {
     const a = authenticate(req, 'sfv_');
     if (a.error) return authFail(res, ip, a);
@@ -337,10 +434,7 @@ const server = http.createServer((req, res) => {
     let list;
     if (settings.mode === 'owner') { // เห็นเฉพาะไอดีที่เจ้าของกำหนดให้ลูกค้าคนนี้
       const pool = accounts[OWNER] || {};
-      list = Object.keys(pool).filter((n) => a.c._set && a.c._set.has(n.toLowerCase())).map((n) => {
-        const r = rjState.get(n);
-        return r && r.n ? Object.assign({}, pool[n], { rejoin: { at: r.at, n: r.n } }) : pool[n];
-      });
+      list = Object.keys(pool).filter((n) => a.c._set && a.c._set.has(n.toLowerCase())).map((n) => withRejoin(n, pool[n]));
     } else list = Object.values(accounts[a.id] || {});
     return send(res, 200, { serverTime: now(), expires: a.c.expires || null, mode: settings.mode, accounts: list });
   }
@@ -349,7 +443,7 @@ const server = http.createServer((req, res) => {
     const [file, type] = STATIC[url.pathname];
     return fs.readFile(path.join(PUBLIC_DIR, file), (e, d) => {
       if (e) return send(res, 500, { error: file + ' not found' });
-      send(res, 200, d, type, Object.assign({}, hsts, file === 'index.html' ? { 'Content-Security-Policy': CSP } : {}));
+      send(res, 200, d, type, Object.assign({}, hsts, /\.html$/.test(file) ? { 'Content-Security-Policy': CSP } : {}));
     });
   }
 
@@ -370,8 +464,10 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && url.pathname === '/') { res.writeHead(302, { Location: '/v', 'Cache-Control': 'no-store' }); return res.end(); }
   send(res, 404, { error: 'not found' });
-});
+}
 
 server.listen(PORT, HOST, () => console.log(`Slayer Fleet Cloud v${VERSION} ฟังที่ http://${HOST}:${PORT}\nโฟลเดอร์: ${__dirname}\nข้อมูล: ${DATA_DIR}`));
-server.on('error', (e) => { console.error(e.message); process.exit(1); });
+server.on('error', (e) => { console.error(e.message); process.exit(e.code === 'EADDRINUSE' ? 2 : 1); }); // 2 = มีเซิร์ฟเวอร์เปิดอยู่แล้ว (start-cloud.bat จะไม่เปิดซ้ำ)
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { flush(); process.exit(0); });
+// ถ้ามีข้อผิดพลาดที่ไม่คาดคิด: บันทึกข้อมูลแล้วปิด (start-cloud.bat จะเปิดใหม่ให้เองใน 3 วินาที)
+process.on('uncaughtException', (e) => { console.error('ข้อผิดพลาดร้ายแรง:', e && e.stack || e); try { flush(); } catch (_) {} process.exit(1); });

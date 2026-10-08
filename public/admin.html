@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#140c0e">
+<meta name="robots" content="noindex">
+<title>แอดมิน · Slayer Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="adm">
+<section class="gate" id="gate">
+  <form class="gate-card" id="login-form" autocomplete="on">
+    <span class="seal-mark big" aria-hidden="true">鬼</span>
+    <h1>แอดมิน</h1>
+    <p class="gate-sub">จัดการร้าน Slayer Fleet</p>
+    <input type="text" name="username" value="admin" autocomplete="username" hidden>
+    <label class="fld"><span>รหัสแอดมิน</span><input id="login-pass" type="password" autocomplete="current-password" required maxlength="200"></label>
+    <p class="gate-err" id="login-err" role="alert"></p>
+    <button class="btn primary gate-go" id="login-go" type="submit">เข้าสู่ระบบ</button>
+    <p class="gate-note">ยังไม่มีรหัส: เปิด admin.bat บนคอมเซิร์ฟเวอร์ เมนู 14</p>
+  </form>
+</section>
+
+<div class="adm-wrap" id="app" hidden>
+  <header class="adm-top">
+    <div class="brand"><span class="seal-mark" aria-hidden="true">鬼</span><span>Slayer Fleet</span><em id="ver"></em></div>
+    <div class="adm-actions">
+      <a class="btn" href="/order" target="_blank" rel="noopener">หน้าสั่งทำ</a>
+      <a class="btn" href="/v#admin" target="_blank" rel="noopener">แดชบอร์ดรวม</a>
+      <button class="btn" id="logout">ออกจากระบบ</button>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="เมนูแอดมิน">
+    <button role="tab" data-tab="cust" aria-selected="true">ลูกค้า <span id="c-cust"></span></button>
+    <button role="tab" data-tab="ord" aria-selected="false">ออเดอร์ <span id="c-ord"></span></button>
+    <button role="tab" data-tab="acc" aria-selected="false">ไอดี <span id="c-acc"></span></button>
+    <button role="tab" data-tab="ops" aria-selected="false">แจ้งเตือน</button>
+    <button role="tab" data-tab="bak" aria-selected="false">สำรองข้อมูล</button>
+  </nav>
+  <main class="adm-main">
+    <section id="tab-cust" class="tabp"></section>
+    <section id="tab-ord" class="tabp" hidden></section>
+    <section id="tab-acc" class="tabp" hidden></section>
+    <section id="tab-ops" class="tabp" hidden></section>
+    <section id="tab-bak" class="tabp" hidden></section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="admin.js"></script>
+</body>
+</html>

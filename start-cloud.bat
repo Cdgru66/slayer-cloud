@@ -11,7 +11,17 @@ set TRUST_PROXY=1
 echo ===== Slayer Fleet Cloud =====
 echo Server: http://127.0.0.1:8800
 echo Closing this window stops the server.
-echo This is for local testing. Use a VPS for real use - see README.txt
+echo Keep this window open. If the server stops it restarts by itself.
 echo.
+:run
 node server.js
-pause
+if errorlevel 2 if not errorlevel 3 (
+  echo.
+  echo Port 8800 is already in use - another server window is already running.
+  pause
+  exit /b
+)
+echo.
+echo Server stopped. Restarting in 3 seconds... (close this window to stop)
+timeout /t 3 /nobreak >nul
+goto run

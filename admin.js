@@ -8,6 +8,7 @@
 //   node admin.js links --url URL          แสดงลิงก์ลูกค้าทุกคน (ใช้ตอนลิงก์เซิร์ฟเวอร์เปลี่ยน)
 //   node admin.js rejoin show | set key=value ... | test | log   ตั้งค่ารีจอยอัตโนมัติผ่าน Roblox Account Manager
 //   node admin.js backup now | list | restore <ชื่อ>   สำรอง/กู้ข้อมูล (กู้ต้องปิดเซิร์ฟเวอร์ก่อน)
+//   node admin.js adminpass [--pass รหัส]   ตั้งรหัสเข้าหน้าแอดมินบนเว็บ (/admin) ไม่ใส่ = สุ่มให้
 //   node admin.js seen                     ไอดีที่ส่งข้อมูลเข้ามา และเป็นของใคร
 //   node admin.js list | renew <id> --days 30 | revoke <id> | unrevoke <id> | rotate <id> --url URL | remove <id>
 const fs = require('fs');
@@ -155,7 +156,7 @@ if (cmd === 'mode') {
   const c = need(j, pos[0]);
   const pw = opt('pass') || genPass();
   if (pw.length < 4) die('รหัสผ่านต้องยาวอย่างน้อย 4 ตัว');
-  c.pass = hashPass(pw); save();
+  c.pass = hashPass(pw); const v = newKey('sfv_'); c.view = v; c.viewHash = sha(v); save(); // เครื่องที่เคยล็อกอินไว้หลุดหมด
   console.log(`\nรหัสผ่านใหม่ของ ${c.name}: ${pw}`);
   console.log('ล็อกอินด้วยชื่อผู้ใช้ Roblox: ' + ((c.accounts || []).join(', ') || '(ยังไม่ได้กำหนดไอดี ใช้เมนูกำหนดไอดีก่อน)') + '\n');
 } else if (cmd === 'rejoin') {
@@ -211,7 +212,8 @@ if (cmd === 'mode') {
   const copyDir = (src, dst) => {
     fs.mkdirSync(dst, { recursive: true });
     for (const e of fs.readdirSync(src, { withFileTypes: true })) {
-      const a = path.join(src, e.name), b = path.join(dst, e.name);
+      if (/token/i.test(e.name)) continue; // ไม่เก็บ token GitHub ไว้ในไฟล์สำรอง
+    const a = path.join(src, e.name), b = path.join(dst, e.name);
       if (e.isDirectory()) copyDir(a, b); else if (e.isFile()) fs.copyFileSync(a, b);
     }
   };
@@ -245,6 +247,15 @@ if (cmd === 'mode') {
       console.log(`กู้ข้อมูลจาก ${name} แล้ว\nข้อมูลก่อนกู้ถูกเก็บไว้ที่ backups\\${safety} (เผื่ออยากย้อนกลับ)\nเปิด start-cloud.bat ได้เลย`);
     });
   }
+} else if (cmd === 'adminpass') {
+  let pw = opt('pass');
+  if (!pw) { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'; pw = ''; for (const b of crypto.randomBytes(16)) pw += a[b % a.length]; }
+  if (pw.length < 10) die('รหัสแอดมินต้องยาวอย่างน้อย 10 ตัว (หน้าแอดมินเปิดให้คนทั้งเน็ตเข้าถึงได้ ต้องรหัสแข็งแรง)');
+  settings.adminHash = hashPass(pw); saveSettings();
+  let base = ''; try { base = fs.readFileSync(path.join(DATA_DIR, 'public_url.txt'), 'utf8').trim(); } catch (e) {}
+  console.log('\nตั้งรหัสแอดมินแล้ว: ' + pw);
+  console.log('เข้าหน้าแอดมินที่: ' + (base || 'https://ลิงก์ของคุณ') + '/admin');
+  console.log('จดรหัสไว้ (ระบบเก็บแบบแฮช แสดงซ้ำไม่ได้) ห้ามบอกใคร ใครได้รหัสนี้จัดการร้านได้ทั้งหมด\n');
 } else if (cmd === 'links') {
   const base = baseUrl();
   const rows = Object.entries(j);
