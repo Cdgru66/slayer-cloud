@@ -282,6 +282,19 @@ for id, e in pairs(byId) do
 end
 for _ in pairs(bosses) do nBoss = nBoss + 1 end
 -- สะสมผลจากรอบก่อน ๆ (รันหลายรอบ เปิดคนละหน้า ได้รวมกันในไฟล์เดียว)
+-- + จับ "ค่าที่เปลี่ยน" ระหว่างรอบ (เช่น Speed ที่ขึ้นตอนยืนลู่วิ่ง) ไว้หาว่าเกมเก็บค่าไหนตรงไหน
+local function valsOf(lines)
+    local m = {}
+    for _, l in ipairs(lines) do
+        if type(l) == "string" then
+            local k, v = l:match("^%s+(.-) = (.*)$")
+            if not k then k, v = l:match("^%s+(.-)  %->  (.*)$") end
+            if k and #k < 220 then m[k] = v end
+        end
+    end
+    return m
+end
+local curVals, vals, changes, runs, lastAt, newCh = valsOf(SF_REPORT), {}, {}, 1, nil, {}
 local prevN = 0
 if isfile and readfile and isfile("slayer_scan_all.json") then
     local ok, old = pcall(function() return HttpService:JSONDecode(readfile("slayer_scan_all.json")) end)
@@ -292,6 +305,15 @@ if isfile and readfile and isfile("slayer_scan_all.json") then
             if type(e) == "table" and e.id and not have[e.id] then table.insert(all, e); have[e.id] = true; prevN = prevN + 1 end
         end
         for name, list in pairs(type(old.bosses) == "table" and old.bosses or {}) do if not bosses[name] then bosses[name] = list end end
+        if type(old.vals) == "table" then
+            for k, v in pairs(old.vals) do vals[k] = v end
+            for k, v in pairs(curVals) do
+                if old.vals[k] ~= nil and old.vals[k] ~= v then table.insert(newCh, { k = k, from = old.vals[k], to = v, run = (tonumber(old.runs) or 0) + 1 }) end
+            end
+        end
+        if type(old.changes) == "table" then for _, c in ipairs(old.changes) do if #changes < 3000 then table.insert(changes, c) end end end
+        runs = (tonumber(old.runs) or 0) + 1
+        lastAt = tonumber(old.at)
         if type(old.report) == "table" then -- รวมข้อมูลจากรอบก่อน (ไม่ซ้ำ)
             local have = {}
             for _, l in ipairs(SF_REPORT) do have[l] = true end
@@ -299,10 +321,17 @@ if isfile and readfile and isfile("slayer_scan_all.json") then
         end
     end
 end
-local json = HttpService:JSONEncode({ version = 3, place = game.PlaceId, report = SF_REPORT, bossNames = bossList, bosses = bosses, all = all })
+for k, v in pairs(curVals) do vals[k] = v end
+for _, c in ipairs(newCh) do if #changes < 3000 then table.insert(changes, c) end end
+local json = HttpService:JSONEncode({ version = 4, place = game.PlaceId, runs = runs, at = os.time(), report = SF_REPORT, vals = vals, changes = changes, bossNames = bossList, bosses = bosses, all = all })
 if writefile then pcall(writefile, "slayer_scan_all.json", json) end
 print(("== เสร็จ: รูปไม่ซ้ำ %d รูป (ได้ลิงก์ %d) | จับคู่กับบอสได้ %d ตัว"):format(nIds, nUrl, nBoss))
 for name, list in pairs(bosses) do print("   บอส " .. name .. ": " .. #list .. " รูป") end
 print((">> รวมกับรอบก่อน ๆ อีก %d รูป · ทั้งไฟล์ตอนนี้ %d รูป"):format(prevN, #all))
 print(">> บันทึกเป็น slayer_scan_all.json แล้ว (สะสมทุกรอบ) เปิดหน้าอื่นแล้วรันต่อได้ ครบแล้วค่อยส่งไฟล์ให้ผู้ดูแล")
+print(("== รอบที่ %d%s · ค่าที่เปลี่ยนจากรอบก่อน %d ค่า (สะสมทั้งหมด %d)"):format(runs, lastAt and (" (ห่างจากรอบก่อน " .. (os.time() - lastAt) .. " วิ)") or "", #newCh, #changes))
+for i, c in ipairs(newCh) do
+    if i > 15 then print("   ... และอีก " .. (#newCh - 15) .. " ค่า (อยู่ในไฟล์)") break end
+    print("   " .. c.k .. ":  " .. tostring(c.from) .. "  →  " .. tostring(c.to))
+end
 print(">> อยากเริ่มนับใหม่: ลบไฟล์ slayer_scan_all.json ในโฟลเดอร์ workspace ก่อน")
