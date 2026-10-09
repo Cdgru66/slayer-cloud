@@ -393,6 +393,20 @@ const server = http.createServer((req, res) => {
     try { if (!res.headersSent) send(res, 500, { error: 'server error' }); else res.destroy(); } catch (_) {}
   }
 });
+// ลายนิ้วมือของสคริปต์ในเกม: เปลี่ยนเมื่อ script_template.lua เปลี่ยน → สคริปต์ที่รันค้างอยู่เห็นแล้วโหลดตัวใหม่เอง (ไม่ต้องรันตัวโหลดใหม่)
+const scriptCache = { mtime: 0, text: '', ver: '' };
+function scriptTemplate() {
+  const f = path.join(__dirname, 'script_template.lua');
+  try {
+    const st = fs.statSync(f);
+    if (st.mtimeMs !== scriptCache.mtime) {
+      const text = fs.readFileSync(f, 'utf8');
+      Object.assign(scriptCache, { mtime: st.mtimeMs, text, ver: crypto.createHash('sha256').update(text).digest('hex').slice(0, 12) });
+    }
+  } catch (e) { return null; }
+  return scriptCache;
+}
+
 function handleReq(req, res) {
   loadCustomers();
   let url;
@@ -414,7 +428,8 @@ function handleReq(req, res) {
       if (list.length > MAX_BATCH) return send(res, 400, { error: 'batch too large' });
       let accepted = 0, rejected = 0; const why = [];
       for (const s of list) { const e = ingest(a.id, a.c, s); if (e) { rejected++; if (why.length < 5) why.push(e); } else accepted++; }
-      send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null });
+      const sc = scriptTemplate();
+      send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null, sv: sc ? sc.ver : undefined });
     });
   }
 
@@ -480,17 +495,19 @@ function handleReq(req, res) {
 
   // สคริปต์ล่าสุดสำหรับตัวโหลดอัตโนมัติ (ไม่มีคีย์ในไฟล์ คีย์อยู่ในตัวโหลดของเจ้าของ) เติมที่อยู่เซิร์ฟเวอร์จากลิงก์ที่เปิดเข้ามา
   if (req.method === 'GET' && url.pathname === '/script.lua') {
-    if (!rate('script:' + ip, 30)) return send(res, 429, '-- rate limited', 'text/plain; charset=utf-8');
+    if (!rate('script:' + ip, 120)) return send(res, 429, '-- rate limited', 'text/plain; charset=utf-8');
     const host = String(req.headers.host || '');
     if (!/^[a-z0-9.-]+(:\d+)?$/i.test(host)) return send(res, 400, '-- bad host', 'text/plain; charset=utf-8');
     const proto = TRUST_PROXY && req.headers['x-forwarded-proto'] === 'https' ? 'https' : (/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) ? 'http' : 'https');
-    return fs.readFile(path.join(__dirname, 'script_template.lua'), 'utf8', (e, t) => {
-      if (e) return send(res, 500, '-- script_template.lua not found', 'text/plain; charset=utf-8');
-      t = t.replace(/local WEB_API_URL = "[^"]*"/, `local WEB_API_URL = "${proto}://${host}/api/v1/ingest"`)
+    const sc = scriptTemplate();
+    if (!sc) return send(res, 500, '-- script_template.lua not found', 'text/plain; charset=utf-8');
+    {
+      let t = sc.text;
+      t = t.replace(/local SCRIPT_VER = "[^"]*"/, `local SCRIPT_VER = "${sc.ver}"`).replace(/local WEB_API_URL = "[^"]*"/, `local WEB_API_URL = "${proto}://${host}/api/v1/ingest"`)
            .replace(/local INTERVAL = \d+/, 'local INTERVAL = 120')
            .replace(/local WEBHOOK_URL = "[^"]*"/, 'local WEBHOOK_URL = ""');
-      send(res, 200, t, 'text/plain; charset=utf-8');
-    });
+      return send(res, 200, t, 'text/plain; charset=utf-8');
+    }
   }
 
   if (req.method === 'GET' && url.pathname === '/') { res.writeHead(302, { Location: '/v', 'Cache-Control': 'no-store' }); return res.end(); }

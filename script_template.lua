@@ -10,6 +10,8 @@ local USE_ANSI = true        -- true = แถบสี/ตัวอักษร�
 local LIVE_INTERVAL = 20        -- ส่งข้อมูลสด (บอสที่กำลังสู้ / Wen / แร่) ทุกกี่วินาที ให้เว็บดูเรียลไทม์ (0 = ปิด)
 local AUTO_REJOIN = true        -- true = หลุด/โดนเตะ (หน้าต่างเกมยังอยู่) แล้วพากลับเข้าเกมเอง
 local DEBUG_ICONS = false       -- true = พิมพ์รายการรูปที่เจอใน UI ลง console + คลิปบอร์ด (ไว้ส่งให้ผมแก้)
+local AUTO_UPDATE = true        -- true = เซิร์ฟเวอร์มีสคริปต์ใหม่ โหลดตัวใหม่เองระหว่างรัน (ไม่ต้องรันตัวโหลดซ้ำ)
+local SCRIPT_VER = "dev"        -- เซิร์ฟเวอร์ใส่ให้เองตอนโหลดผ่าน /script.lua (ห้ามแก้)
 
 -- สำหรับต่อกับเว็บของคุณ (ไม่บังคับ)
 local EXPORT_JSON = true        -- เซฟ slayer_export.json ไว้ในโฟลเดอร์ workspace ของ executor
@@ -28,10 +30,16 @@ local WATCH_ITEMS = {
 -- ===== ส่วนหลัก =====
 if not game:IsLoaded() then game.Loaded:Wait() end
 -- กันรันซ้ำ (เช่น auto-execute กับ queue_on_teleport ทำงานพร้อมกัน)
+-- MY_RUN: เลขรอบของสคริปต์ตัวนี้ ถ้ามีตัวใหม่โหลดทับ (อัปเดตอัตโนมัติ) ลูปของตัวเก่าจะหยุดเอง
+local MY_RUN = 0
 if getgenv then
-    if getgenv().SLAYER_FLEET_RUNNING then return end
+    if getgenv().SLAYER_FLEET_RUNNING and not getgenv().FLEET_RELOADING then return end
+    getgenv().FLEET_RELOADING = nil
     getgenv().SLAYER_FLEET_RUNNING = true
+    getgenv().FLEET_RUN = (getgenv().FLEET_RUN or 0) + 1
+    MY_RUN = getgenv().FLEET_RUN
 end
+local function alive() return not getgenv or getgenv().FLEET_RUN == MY_RUN end
 
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
@@ -743,6 +751,42 @@ local function post(url, body, extraHeaders)
     return pcall(req, { Url = url, Method = "POST", Headers = headers, Body = body })
 end
 
+-- อัปเดตตัวเอง: เซิร์ฟเวอร์ตอบ sv (ลายนิ้วมือสคริปต์ล่าสุด) มากับทุกครั้งที่ส่งข้อมูล ถ้าไม่ตรงกับตัวที่รันอยู่ → โหลดตัวใหม่ทับ
+local updating = false
+local function checkUpdate(res)
+    if updating or not AUTO_UPDATE or SCRIPT_VER == "dev" or not getgenv or not alive() or WEB_API_URL == "" then return end
+    if type(res) ~= "table" or not res.Body then return end
+    local r
+    pcall(function() r = HttpService:JSONDecode(res.Body) end)
+    if type(r) ~= "table" or type(r.sv) ~= "string" or r.sv == "" or r.sv == SCRIPT_VER then return end
+    if getgenv().FLEET_BAD_VER == r.sv then return end
+    local base = WEB_API_URL:match("^(https?://[^/]+)")
+    if not base then return end
+    updating = true
+    task.spawn(function()
+        task.wait(math.random(0, 45)) -- หลายไอดีบนคอมเดียวกัน ไม่โหลดพร้อมกันทีเดียว
+        if not alive() then return end
+        local okG, code = pcall(function() return game:HttpGet(base .. "/script.lua") end)
+        local fn = okG and type(code) == "string" and code:find("SCRIPT_VER", 1, true) and loadstring(code)
+        if not fn then
+            warn(">> โหลดสคริปต์ใหม่ไม่สำเร็จ ใช้ตัวเดิมต่อ (จะลองใหม่รอบหน้า)")
+            updating = false
+            return
+        end
+        print(">> มีสคริปต์เวอร์ชันใหม่ " .. r.sv .. " กำลังอัปเดตตัวเอง...")
+        getgenv().SLAYER_KEY = WEB_API_KEY
+        getgenv().FLEET_RELOADING = true
+        local okR, err = pcall(fn)
+        if getgenv().FLEET_RUN == MY_RUN then -- ตัวใหม่ไม่ได้เริ่มทำงาน: ใช้ตัวเดิมต่อ
+            getgenv().FLEET_RELOADING = nil
+            if not okR then getgenv().FLEET_BAD_VER = r.sv; warn(">> สคริปต์ใหม่ผิดพลาด ใช้ตัวเดิมต่อ: " .. tostring(err)) end
+            updating = false
+        else
+            print(">> อัปเดตเป็นเวอร์ชัน " .. r.sv .. " แล้ว")
+        end
+    end)
+end
+
 -- LIVE_EDIT: แก้ข้อความเดิมแทนการส่งใหม่ทุกรอบ ห้องไม่รก เหมือนแดชบอร์ดที่อัปเดตสด
 local function sendMessage(m, idx)
     local headers = { ["Content-Type"] = "application/json" }
@@ -805,6 +849,7 @@ local function exportSnapshot(s)
         local code = ok2 and type(res) == "table" and res.StatusCode or nil
         local r = nil
         if ok2 and type(res) == "table" and res.Body then pcall(function() r = HttpService:JSONDecode(res.Body) end) end
+        if ok2 then checkUpdate(res) end
         if ok2 and statusOk(res) and type(r) == "table" and (r.rejected or 0) > 0 then
             local why = type(r.why) == "table" and table.concat(r.why, ", ") or "?"
             local th = { ["bad name"] = "ชื่อไอดีไม่ถูกต้อง", ["too big"] = "ข้อมูลใหญ่เกินไป", ["account limit"] = "ไอดีเกินจำนวนที่กำหนด" }
@@ -908,12 +953,14 @@ local function setupRejoin()
 
     pcall(function()
         GuiService.ErrorMessageChanged:Connect(function(msg)
+            if not alive() then return end -- ตัวใหม่รับช่วงแล้ว
             if msg and msg ~= "" then rejoin(msg) end
         end)
     end)
     pcall(function()
         local overlay = game:GetService("CoreGui"):WaitForChild("RobloxPromptGui", 10):WaitForChild("promptOverlay", 10)
         overlay.ChildAdded:Connect(function(c)
+            if not alive() then return end
             if c.Name == "ErrorPrompt" then
                 task.wait(1)
                 local msg = ""
@@ -925,6 +972,7 @@ local function setupRejoin()
     -- teleport ล้มเหลว (เช่นเน็ตยังไม่กลับ) ให้ลองต่อ
     pcall(function()
         TeleportService.TeleportInitFailed:Connect(function(p, result, err)
+            if not alive() then return end
             if p == player then print(">> เข้าเกมใหม่ไม่สำเร็จ (" .. tostring(err) .. ") จะลองอีกครั้ง") end
         end)
     end)
@@ -934,7 +982,7 @@ pcall(setupRejoin)
 loadCache()
 loadIds()
 task.spawn(function()
-    while true do
+    while alive() do
         cycle()
         task.wait(INTERVAL)
     end
@@ -944,7 +992,7 @@ end)
 task.spawn(function()
     if LIVE_INTERVAL <= 0 or WEB_API_URL == "" or not req then return end
     task.wait(LIVE_INTERVAL)
-    while true do
+    while alive() do
         pcall(function()
             local data = getData()
             local slot = getSlot(data)
@@ -971,7 +1019,8 @@ task.spawn(function()
             end
             local extra = {}
             if WEB_API_KEY ~= "" then extra["Authorization"] = "Bearer " .. WEB_API_KEY end
-            post(WEB_API_URL, HttpService:JSONEncode(p), extra)
+            local okP, resP = post(WEB_API_URL, HttpService:JSONEncode(p), extra)
+            if okP then checkUpdate(resP) end
         end)
         task.wait(LIVE_INTERVAL)
     end

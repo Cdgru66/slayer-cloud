@@ -23,7 +23,7 @@
 
 ## การทำงานกับเจ้าของร้าน
 - ส่งงาน: แก้โค้ด → bump `version.txt` (รูปแบบ `YYYY.MM.DD-N`) → commit/push → ทำ zip ส่งในแชท
-- เจ้าของอัปเดต: บันทึก zip ลง Downloads → `update.bat` → `y` → Ctrl+F5 · ถ้าแก้สคริปต์ในเกม ต้องรัน OWNER-LOADER ใหม่
+- เจ้าของอัปเดต: บันทึก zip ลง Downloads → `update.bat` → `y` → Ctrl+F5 · สคริปต์ในเกมอัปเดตตัวเอง: เซิร์ฟเวอร์ตอบ `sv` (sha256 12 ตัวของ script_template.lua) กับทุก ingest ถ้าไม่ตรง `SCRIPT_VER` สคริปต์โหลด /script.lua ทับเอง (สุ่มรอ 0-45 วิ, ตัวเก่าหยุดด้วย `FLEET_RUN`) · ห้ามกดเมนู 5 ซ้ำ (คีย์เปลี่ยน)
 - เช็คเวอร์ชัน: `http://127.0.0.1:8800/healthz`
 - ลิงก์สาธารณะ: Tailscale Funnel (`tailscale funnel --bg 8800`) → `https://<เครื่อง>.<tailnet>.ts.net`
 - ห้ามรับรหัส Roblox/cookie ผ่านเว็บ, ห้ามปิดการตรวจ TLS, token GitHub ห้ามวางในแชท

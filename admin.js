@@ -57,7 +57,8 @@ const hashPass = (pw) => { const salt = crypto.randomBytes(16); return salt.toSt
 function writeScript(fileName, base, deviceKey, interval) {
   let t;
   try { t = fs.readFileSync(path.join(__dirname, 'script_template.lua'), 'utf8'); } catch (e) { return null; }
-  t = t.replace(/local WEB_API_URL = "[^"]*"/, `local WEB_API_URL = "${base}/api/v1/ingest"`)
+  const ver = crypto.createHash('sha256').update(t).digest('hex').slice(0, 12); // ตรงกับที่เซิร์ฟเวอร์คำนวณ → อัปเดตตัวเองได้
+  t = t.replace(/local SCRIPT_VER = "[^"]*"/, `local SCRIPT_VER = "${ver}"`).replace(/local WEB_API_URL = "[^"]*"/, `local WEB_API_URL = "${base}/api/v1/ingest"`)
        .replace(/local WEB_API_KEY = "[^"]*"/, `local WEB_API_KEY = "${deviceKey}"`)
        .replace(/local INTERVAL = \d+/, `local INTERVAL = ${interval}`)
        .replace(/local WEBHOOK_URL = "[^"]*"/, 'local WEBHOOK_URL = "" -- (ไม่บังคับ) ใส่ลิงก์ Discord webhook ถ้าอยากได้แจ้งเตือนในดิสคอร์ดด้วย');
@@ -115,7 +116,8 @@ if (cmd === 'mode') {
   fs.writeFileSync(loader, `-- Fleet: ตัวโหลดอัตโนมัติ (ดึงสคริปต์เวอร์ชันล่าสุดจากเซิร์ฟเวอร์ทุกครั้งที่รัน) ห้ามส่งให้ใคร\ngetgenv().SLAYER_KEY = "${key}"\nloadstring(game:HttpGet("${base}/script.lua"))()\n`);
   console.log('\nสร้างสคริปต์ของคุณแล้ว (ถ้าเคยสร้างไว้ ตัวเก่าใช้ไม่ได้แล้ว)');
   console.log('แนะนำ: ' + loader);
-  console.log('   ตัวโหลดสั้น 3 บรรทัด ดึงสคริปต์ล่าสุดจากเซิร์ฟเวอร์เองทุกครั้ง อัปเดตแล้วไม่ต้องก๊อปใหม่');
+  console.log('   ตัวโหลดสั้น 3 บรรทัด ดึงสคริปต์ล่าสุดเอง + อัปเดตตัวเองระหว่างรัน (อัปเดตร้านแล้วไม่ต้องรันใหม่ ไม่ต้องสร้างใหม่)');
+  console.log('   ⚠ สร้างครั้งเดียวพอ: ถ้ากดเมนูนี้อีก คีย์เก่าจะใช้ไม่ได้ ต้องเปลี่ยนตัวโหลดในทุกเครื่อง');
   console.log('แบบเต็ม: ' + file);
   console.log('ใช้ตัวเดียวกับทุกไอดี (ใส่ใน auto-execute ได้) ห้ามส่งให้ลูกค้า');
   console.log(`ส่งข้อมูลทุก ${every / 60} นาที\n`);
