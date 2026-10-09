@@ -340,7 +340,7 @@ module.exports = function createOrders(ctx) {
     },
     allGoals: () => goals,
     setGoal: (name, j) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); const old = goals[gkey(name)]; goals[gkey(name)] = cleanGoal(j); if (old && old.hist && old.items.length === goals[gkey(name)].items.length) goals[gkey(name)].hist = old.hist; if (old && old.order && !goals[gkey(name)].order) goals[gkey(name)].order = old.order; if (old && old.created) goals[gkey(name)].created = old.created; saveGoals(); return goals[gkey(name)]; },
-    delGoal: (name) => { delete goals[gkey(name)]; saveGoals(); },
+    delGoal: (name) => { delete goals[gkey(name)]; saveGoals(); let ch = false; for (const o of orders) if (o.account && gkey(o.account) === gkey(name)) { delete o.account; ch = true; } if (ch) save(); },
     linkOrder: (id, name, masteryKeys) => { if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) throw new Error('ชื่อไอดีไม่ถูกต้อง'); const o = orders.find((x) => x.id === id); if (!o) throw new Error('ไม่พบออเดอร์'); goals[gkey(name)] = goalFromOrder(o, masteryKeys || []); o.account = name; save(); saveGoals(); return goals[gkey(name)]; },
     getSets: () => sets, defaultSets: () => DEFAULT_SETS,
     saveSets: (arr) => { if (!Array.isArray(arr) || arr.length > 40) throw new Error('จำนวนเซทไม่ถูกต้อง (สูงสุด 40)'); const next = arr.map(cleanSet); const t = SETS_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(next, null, 1)); fs.renameSync(t, SETS_FILE); sets = next; return sets; },

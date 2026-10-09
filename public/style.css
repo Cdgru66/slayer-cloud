@@ -649,3 +649,6 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .goall .tag{margin-left:8px;font-size:10.5px;padding:1px 7px;border-radius:999px;color:var(--mu);background:rgba(241,233,221,.07);white-space:nowrap}
 .goall .tag.on{color:var(--ok);background:rgba(95,208,160,.12)}
 .goall li.missline{order:99}.goall li.missline .gn{color:var(--dim);font-size:12px;white-space:normal}.goall{display:flex;flex-direction:column}
+.agoal{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}.btn.sm{padding:4px 10px;font-size:12px}
+.arow{grid-template-columns:12px minmax(0,1.2fr) minmax(0,.8fr) auto minmax(150px,1fr)}
+@media (max-width:640px){.arow{grid-template-columns:12px 1fr}.arow .agoal{grid-column:2}}

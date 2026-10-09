@@ -167,6 +167,8 @@ function renderAcc() {
       h('i', { class: 'dot', style: '--c:' + (on ? 'var(--ok)' : 'var(--dim)') }),
       h('div', { class: 'an' }, h('b', {}, s.display || s.name), h('small', {}, '@' + s.name + (s.level ? ' · Lv ' + s.level : ''))),
       h('span', { class: 'mu al' }, on ? 'ออนไลน์' : 'ล่าสุด ' + ago(s.last) + (s.rejoin ? ' · รีจอย ' + s.rejoin.n + ' ครั้ง' : '')),
+      s.goal ? h('span', { class: 'agoal' }, h('span', { class: 'gpill' }, (s.goal.title || 'เป้าหมาย') + ' · ' + (goalPct(s.goal, s) ?? 0) + '%'),
+        h('button', { class: 'btn bad sm', onclick: (e) => { e.stopPropagation(); if (confirm('เลิกติดตามความคืบหน้าของ ' + s.name + '? ลูกค้าจะไม่เห็นการ์ดเป้าหมายแล้ว')) act(() => api('goal', { method: 'POST', body: { account: s.name, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม')) : h('span'),
       sel);
   });
   p.replaceChildren(h('p', { class: 'note' }, 'เลือกเจ้าของจากช่องเลือกได้เลย ไอดีหนึ่งมีเจ้าของได้คนเดียว (ไอดีที่ยังไม่มีเจ้าของอยู่บนสุด)'), h('div', { class: 'card alist' }, rows));
@@ -259,10 +261,13 @@ function goalPct(goal, seenAcc) {
 const goalDraft = {};
 function goalSec(o) {
   const acc = o.account && D.seen.find((x) => x.name.toLowerCase() === o.account.toLowerCase());
+  const byOrder = !o.account && D.seen.find((x) => x.goal && x.goal.order === o.id);
+  if (byOrder) return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + byOrder.name),
+    h('div', { class: 'rowb' }, h('span', { class: 'note' }, 'ออเดอร์นี้กำลังติดตามไอดี ' + byOrder.name), h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + byOrder.name + '?')) act(() => api('goal', { method: 'POST', body: { account: byOrder.name, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม')));
   if (!o.account) {
     const sel = h('select', { class: 'f' }, h('option', { value: '' }, '— เลือกไอดีที่ทำออเดอร์นี้ —'), D.seen.map((x) => h('option', { value: x.name, selected: o.roblox && x.name.toLowerCase() === o.roblox.toLowerCase() }, x.name + (x.goal ? ' (มีเป้าหมายอยู่แล้ว)' : ''))));
     return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'ผูกออเดอร์กับไอดีที่กำลังทำ ระบบจะคำนวณ % ความคืบหน้าให้ลูกค้าเห็นแบบเรียลไทม์'),
-      h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
+      h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); const ex = D.seen.find((x) => x.name === sel.value && x.goal); if (ex && !confirm(sel.value + ' มีเป้าหมายอยู่แล้ว (' + (ex.goal.title || '') + ') จะแทนที่ด้วยออเดอร์นี้?')) return; act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
   }
   const g = goalDraft[o.id] || (goalDraft[o.id] = JSON.parse(JSON.stringify((acc && acc.goal) || { title: '', items: [] })));
   const keys = Object.keys((acc && acc.mastery) || {});
