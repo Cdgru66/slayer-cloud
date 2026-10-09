@@ -3,15 +3,17 @@
 -- วิธีใช้: เข้าเกม เปิดหน้ากระเป๋า/พจนานุกรม/มินิแมพค้างไว้ยิ่งดี แล้วรัน · รันหลายรอบ (เปิดคนละหน้า) ผลจะสะสมรวมกัน
 -- ผลลัพธ์: ไฟล์เดียว slayer_scan_all.json ในโฟลเดอร์ workspace ส่งไฟล์นี้ให้ผู้ดูแล
 -- อ่านอย่างเดียว ไม่แตะอะไรในเกม ไม่ส่งข้อมูลไปไหน นอกจากขอลิงก์รูปจาก thumbnails.roblox.com
+print(">> Fleet scan_all เริ่มทำงาน... (รอจนขึ้นคำว่า 'เสร็จ' ประมาณ 10-60 วิ)")
 local SF_REPORT = {}
-do
+local okData, errData = pcall(function()
     local Players = game:GetService("Players")
     local RS = game:GetService("ReplicatedStorage")
     local player = Players.LocalPlayer
-    local lines, seen = {}, {}
+    local lines, seen = SF_REPORT, {} -- เขียนลง SF_REPORT ตรงๆ พังกลางทางก็ยังได้ข้อมูลครึ่งแรก
     local function add(s) if #lines < 4000 then table.insert(lines, s) end end
     local function val(o) local ok, x = pcall(function() return o.Value end) return ok and tostring(x) or "?" end
-    add("place=" .. game.PlaceId .. "  game=" .. tostring(pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end) and game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "?"))
+    local okN, gname = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name end)
+    add("place=" .. game.PlaceId .. "  game=" .. (okN and tostring(gname) or "?") .. "  time=" .. os.time())
     -- โฟลเดอร์ข้อมูลผู้เล่น: ทุกที่ที่ชื่อเท่ากับชื่อผู้เล่น/UserId หรือชื่อมีคำว่า data/profile/save
     local roots = {}
     local function consider(o)
@@ -19,7 +21,7 @@ do
         if (n == player.Name or n == tostring(player.UserId)) and #o:GetChildren() > 0 then table.insert(roots, o) end
     end
     for _, svc in ipairs({ RS, player, game:GetService("Workspace") }) do
-        pcall(function() for _, o in ipairs(svc:GetDescendants()) do consider(o) end end)
+        pcall(function() for i, o in ipairs(svc:GetDescendants()) do consider(o); if i % 4000 == 0 then task.wait() end end end)
     end
     table.insert(roots, player)
     for _, root in ipairs(roots) do
@@ -116,7 +118,12 @@ do
     end)
     SF_REPORT = lines
     print((">> ส่วนข้อมูล: %d บรรทัด"):format(#lines))
-end
+end)
+if not okData then print("!! ส่วนข้อมูลผิดพลาด: " .. tostring(errData)); table.insert(SF_REPORT, "!! error: " .. tostring(errData)) end
+if writefile then
+    local okW, errW = pcall(writefile, "slayer_scan_all.txt", table.concat(SF_REPORT, "\n"))
+    print(okW and ">> บันทึก slayer_scan_all.txt แล้ว (ข้อมูลหลัก)" or ("!! บันทึกไฟล์ไม่ได้: " .. tostring(errW)))
+else print("!! executor นี้ไม่มี writefile") end
 
 -- Fleet: สแกนไอคอนแบบละเอียด (บอส / มินิแมพ / ทุก UI รวมที่ซ่อนอยู่ / แม่แบบใน ReplicatedStorage)
 -- วิธีใช้: เข้าเกม ยืนใกล้บอสหรือให้บอสขึ้นในมินิแมพ แล้วรัน (เปิดพจนานุกรมค้างไว้ด้วยยิ่งดี)
@@ -241,7 +248,8 @@ do
     print(("  สแกนป้ายในแมพ (Billboard/Surface): %d รูป"):format(n))
 end
 -- ชื่อโมเดลที่มี Humanoid (ใช้จับคู่ชื่อบอสเพิ่ม)
-for _, d in ipairs(workspace:GetDescendants()) do
+for i, d in ipairs(workspace:GetDescendants()) do
+    if i % 4000 == 0 then task.wait() end
     if d:IsA("Humanoid") and d.Parent and not Players:GetPlayerFromCharacter(d.Parent) then
         local b = bossIn(d.Parent.Name); if b then addBoss(b) end
     end
@@ -323,8 +331,9 @@ if isfile and readfile and isfile("slayer_scan_all.json") then
 end
 for k, v in pairs(curVals) do vals[k] = v end
 for _, c in ipairs(newCh) do if #changes < 3000 then table.insert(changes, c) end end
-local json = HttpService:JSONEncode({ version = 4, place = game.PlaceId, runs = runs, at = os.time(), report = SF_REPORT, vals = vals, changes = changes, bossNames = bossList, bosses = bosses, all = all })
-if writefile then pcall(writefile, "slayer_scan_all.json", json) end
+local okJ, json = pcall(HttpService.JSONEncode, HttpService, { version = 4, place = game.PlaceId, runs = runs, at = os.time(), report = SF_REPORT, vals = vals, changes = changes, bossNames = bossList, bosses = bosses, all = all })
+if not okJ then print("!! แปลงเป็น JSON ไม่ได้: " .. tostring(json) .. " (ยังมีไฟล์ slayer_scan_all.txt ส่งอันนั้นแทนได้)")
+elseif writefile then local okW, errW = pcall(writefile, "slayer_scan_all.json", json); if not okW then print("!! บันทึก json ไม่ได้: " .. tostring(errW)) end end
 print(("== เสร็จ: รูปไม่ซ้ำ %d รูป (ได้ลิงก์ %d) | จับคู่กับบอสได้ %d ตัว"):format(nIds, nUrl, nBoss))
 for name, list in pairs(bosses) do print("   บอส " .. name .. ": " .. #list .. " รูป") end
 print((">> รวมกับรอบก่อน ๆ อีก %d รูป · ทั้งไฟล์ตอนนี้ %d รูป"):format(prevN, #all))
