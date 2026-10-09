@@ -14,7 +14,7 @@ if errorlevel 1 (
     exit /b
   )
 )
-echo ===== Slayer Fleet: permanent link (Tailscale Funnel) =====
+echo ===== Fleet: permanent link (Tailscale Funnel) =====
 echo If a browser page asks you to enable Funnel / HTTPS, click Enable / Approve.
 echo.
 "%TS%" funnel --bg 8800

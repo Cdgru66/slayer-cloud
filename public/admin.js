@@ -1,4 +1,4 @@
-/* Slayer Fleet — หน้าแอดมิน */
+/* Fleet — หน้าแอดมิน */
 'use strict';
 const $ = (s) => document.querySelector(s);
 const h = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [x, v] of Object.entries(a)) { if (x.startsWith('aria-') && typeof v === 'boolean') { e.setAttribute(x, String(v)); continue; } if (v == null || v === false) continue; if (x === 'class') e.className = v; else if (x.startsWith('on')) e[x] = v; else e.setAttribute(x, v === true ? '' : v); } for (const c of k.flat()) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(c)); } return e; };
@@ -74,7 +74,7 @@ function statusOf(c) {
 const seenNames = () => D.seen.map((s) => s.name);
 function accList(id) { const l = h('datalist', { id }); for (const s of D.seen) l.append(h('option', { value: s.name }, s.owner ? 'ของ ' + s.owner.name : 'ยังไม่มีเจ้าของ')); return l; }
 function shareText(c, pw) {
-  return `ลิงก์ดูไอดี: ${D.base}\nชื่อผู้ใช้: ${c.accounts[0] || '(ชื่อไอดี Roblox ของคุณ)'}\n` + (pw ? `รหัสผ่าน: ${pw}\n` : '') + `ใช้ได้ถึง: ${fmtDate(c.expires)}`;
+  return `ลิงก์ดูไอดี: ${D.base}/v\nชื่อผู้ใช้: ${c.accounts[0] || '(ชื่อไอดี Roblox ของคุณ)'}\n` + (pw ? `รหัสผ่าน: ${pw}\n` : '') + `ใช้ได้ถึง: ${fmtDate(c.expires)}`;
 }
 
 function renderCust() {
@@ -146,6 +146,7 @@ function renderOrd() {
       h('div', { class: 'sec' }, h('h4', {}, 'ติดต่อกลับ'), h('div', { class: 'rowb' }, h('span', { class: 'chip2 on' }, (VIA[o.contact.via] || '') + ': ' + o.contact.handle), h('button', { class: 'btn', onclick: () => copy(o.contact.handle, 'ช่องทางติดต่อ') }, 'ก๊อป'), h('button', { class: 'btn', onclick: () => copy(o.id + '\n' + (o.summary || ''), 'รายละเอียดออเดอร์') }, 'ก๊อปรายละเอียด'))),
       h('form', { class: 'sec ofrm', onsubmit: (e) => { e.preventDefault(); act(() => api('order/' + o.id, { method: 'POST', body: { status: st.value, quote: q.value, note: note.value } }), 'บันทึกออเดอร์แล้ว'); } },
         h('label', {}, 'สถานะ', st), h('label', {}, 'ราคา (บาท)', q), h('label', { class: 'wide' }, 'โน้ต', note), h('button', { class: 'btn primary', type: 'submit' }, 'บันทึก')),
+      acctSec(o),
       goalSec(o),
       h('div', { class: 'sec danger' }, h('button', { class: 'btn bad', onclick: () => { if (confirm('ลบออเดอร์ ' + o.id + '?')) { open.delete(o.id); act(() => api('order/' + o.id, { method: 'DELETE' }), 'ลบแล้ว'); } } }, 'ลบออเดอร์')));
   });
@@ -259,6 +260,33 @@ function goalPct(goal, seenAcc) {
   return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length * 100);
 }
 const goalDraft = {};
+// บัญชีลูกค้าจากออเดอร์: กดทีเดียวได้ชื่อผู้ใช้ + รหัส + ข้อความพร้อมส่ง (ไม่ต้องไปพิมพ์ซ้ำในแท็บลูกค้า)
+function ownerOfAcc(n) { n = String(n || '').toLowerCase(); return n ? D.customers.find((c) => c.accounts.some((a) => a.toLowerCase() === n)) : null; }
+function acctSec(o) {
+  const pw = justPw['o:' + o.id];
+  const accIn = h('input', { class: 'f', placeholder: 'ชื่อไอดี Roblox ที่ทำให้ลูกค้า', list: 'dl-o-' + o.id, value: o.account || '', maxlength: '20' });
+  const dy = h('input', { class: 'f', type: 'number', min: '1', max: '3650', value: '30', 'aria-label': 'ใช้งานได้กี่วัน' });
+  const own = ownerOfAcc(accIn.value);
+  const out = pw ? h('div', { class: 'newpw' }, h('p', {}, 'บัญชีพร้อมแล้ว (รหัสแสดงครั้งเดียว ก๊อปส่งลูกค้าเลย):'), h('b', {}, pw.pass),
+    h('div', { class: 'rowb' }, h('button', { class: 'btn primary', onclick: () => copy(pw.text, 'ข้อความส่งลูกค้า') }, 'ก๊อปข้อความส่งลูกค้า'), h('button', { class: 'btn', onclick: () => { delete justPw['o:' + o.id]; render(); } }, 'ส่งแล้ว ซ่อนรหัส'))) : null;
+  const done = (r, name) => { if (r) { justPw['o:' + o.id] = { pass: r.password, text: shareText(Object.assign({}, r, { accounts: [name] }), r.password) }; render(); } };
+  const go = async (e) => {
+    e.preventDefault();
+    const name = accIn.value.trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) return toast('ใส่ชื่อไอดี Roblox ให้ถูก (ตัวอังกฤษ/ตัวเลข/_ 3-20 ตัว)', true);
+    const ex = ownerOfAcc(name);
+    if (ex) {
+      if (!confirm('ไอดี ' + name + ' เป็นของลูกค้า "' + ex.name + '" อยู่แล้ว ตั้งรหัสใหม่ให้เลยไหม? (เครื่องที่ล็อกอินไว้จะต้องเข้าใหม่)')) return;
+      done(await act(() => api('customer/' + ex.id + '/password', { method: 'POST', body: {} }), 'ตั้งรหัสใหม่แล้ว'), name);
+    } else done(await act(() => api('customer', { method: 'POST', body: { name: ((VIA[o.contact.via] || '') + ' ' + o.contact.handle).trim() || o.id, days: Number(dy.value), accounts: [name] } }), 'สร้างบัญชีลูกค้าแล้ว'), name);
+  };
+  return h('div', { class: 'sec' }, h('h4', {}, 'บัญชีให้ลูกค้าดูไอดี'),
+    out || h('form', { class: 'rowb acct', onsubmit: go }, accIn, accList('dl-o-' + o.id),
+      own ? null : h('label', { class: 'mu dys' }, 'ใช้ได้', dy, 'วัน'),
+      h('button', { class: 'btn primary', type: 'submit' }, own ? 'ตั้งรหัสใหม่ให้ ' + own.name : 'สร้างบัญชี + รหัส')),
+    out ? null : h('p', { class: 'mu small' }, own ? 'ไอดีนี้มีเจ้าของแล้ว: ' + own.name : 'กดครั้งเดียว ระบบสร้างรหัสและข้อความส่งลูกค้าให้ ลูกค้าล็อกอินด้วยชื่อไอดีนี้'));
+}
+
 function goalSec(o) {
   const acc = o.account && D.seen.find((x) => x.name.toLowerCase() === o.account.toLowerCase());
   const byOrder = !o.account && D.seen.find((x) => x.goal && x.goal.order === o.id);

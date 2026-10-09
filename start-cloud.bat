@@ -8,7 +8,7 @@ if errorlevel 1 (
 )
 chcp 65001 >nul
 set TRUST_PROXY=1
-echo ===== Slayer Fleet Cloud =====
+echo ===== Fleet Cloud =====
 echo Server: http://127.0.0.1:8800
 echo Closing this window stops the server.
 echo Keep this window open. If the server stops it restarts by itself.

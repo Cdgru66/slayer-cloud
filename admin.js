@@ -112,7 +112,7 @@ if (cmd === 'mode') {
   const file = writeScript('OWNER-SCRIPT.lua', base, key, every);
   fs.mkdirSync(SCRIPTS, { recursive: true });
   const loader = path.join(SCRIPTS, 'OWNER-LOADER.lua');
-  fs.writeFileSync(loader, `-- Slayer Fleet: ตัวโหลดอัตโนมัติ (ดึงสคริปต์เวอร์ชันล่าสุดจากเซิร์ฟเวอร์ทุกครั้งที่รัน) ห้ามส่งให้ใคร\ngetgenv().SLAYER_KEY = "${key}"\nloadstring(game:HttpGet("${base}/script.lua"))()\n`);
+  fs.writeFileSync(loader, `-- Fleet: ตัวโหลดอัตโนมัติ (ดึงสคริปต์เวอร์ชันล่าสุดจากเซิร์ฟเวอร์ทุกครั้งที่รัน) ห้ามส่งให้ใคร\ngetgenv().SLAYER_KEY = "${key}"\nloadstring(game:HttpGet("${base}/script.lua"))()\n`);
   console.log('\nสร้างสคริปต์ของคุณแล้ว (ถ้าเคยสร้างไว้ ตัวเก่าใช้ไม่ได้แล้ว)');
   console.log('แนะนำ: ' + loader);
   console.log('   ตัวโหลดสั้น 3 บรรทัด ดึงสคริปต์ล่าสุดจากเซิร์ฟเวอร์เองทุกครั้ง อัปเดตแล้วไม่ต้องก๊อปใหม่');

@@ -9,7 +9,7 @@ if /i "%~1"=="remove" (
   exit /b
 )
 > "%F%" echo @echo off
->> "%F%" echo start "Slayer Fleet Cloud" /min "%~dp0start-cloud.bat"
+>> "%F%" echo start "Fleet Cloud" /min "%~dp0start-cloud.bat"
 echo Done. The server will start by itself when you log in to Windows.
 echo To undo: run  install-autostart.bat remove
 pause

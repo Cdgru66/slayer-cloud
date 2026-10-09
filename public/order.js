@@ -1,4 +1,4 @@
-/* Slayer Fleet — ฟอร์มสั่งทำไอดี End Game */
+/* Fleet — ฟอร์มสั่งทำไอดี End Game */
 'use strict';
 const $ = (s) => document.querySelector(s);
 // ตัวเลือก (แก้รายชื่อได้ตรงนี้)

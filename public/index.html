@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#140c0e">
-<title>Slayer Fleet</title>
+<title>Fleet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -12,7 +12,7 @@
 <body>
 <div class="app">
 <aside class="sb">
-  <div class="brand"><span class="seal-mark" aria-hidden="true">鬼</span><span>Slayer Fleet</span></div>
+  <div class="brand"><span class="seal-mark" aria-hidden="true">艦</span><span>Fleet</span></div>
   <nav class="filters" aria-label="กรองตามสถานะ">
     <button class="fl" data-f="all" aria-pressed="true"><span class="dot"></span>ทั้งหมด<span class="n" id="n-all">0</span></button>
     <button class="fl" data-f="on" aria-pressed="false" style="--c:var(--ok)"><span class="dot"></span>ออนไลน์<span class="n" id="n-on">0</span></button>
@@ -62,14 +62,19 @@
 </div>
 <section class="gate" id="gate" hidden>
   <form class="gate-card" id="login-form" autocomplete="on">
-    <span class="seal-mark big" aria-hidden="true">鬼</span>
-    <h1>Slayer Fleet</h1>
-    <p class="gate-sub">เข้าสู่ระบบเพื่อดูไอดีของคุณ</p>
-    <label class="fld"><span>ชื่อผู้ใช้ Roblox</span><input id="login-user" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required maxlength="20" placeholder="เช่น Blopcoco22"></label>
+    <span class="seal-mark big" aria-hidden="true">艦</span>
+    <h1>Fleet</h1>
+    <p class="gate-sub">ร้านรับฟาร์ม &amp; ทำไอดีเกม Roblox · ดูความคืบหน้าสดแบบเรียลไทม์</p>
+    <a class="gate-cta" href="/order">
+      <span class="cta-ic" aria-hidden="true">✦</span>
+      <span class="cta-tx"><b>สั่งทำไอดี End Game</b><small>เลือกเซทตัวละครได้เลย · ติดตามงานสดทุก 20 วินาที</small></span>
+      <span class="cta-ar" aria-hidden="true">→</span>
+    </a>
+    <div class="gate-or"><span>มีบัญชีแล้ว · เข้าสู่ระบบ</span></div>
+    <label class="fld"><span>ชื่อไอดี Roblox ที่ร้านทำให้</span><input id="login-user" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required maxlength="20" placeholder="เช่น Blopcoco22"></label>
     <label class="fld"><span>รหัสผ่านจากร้าน</span><input id="login-pass" name="password" type="password" autocomplete="current-password" required maxlength="100"></label>
     <p class="gate-err" id="login-err" role="alert"></p>
     <button class="btn primary gate-go" id="login-go" type="submit">เข้าสู่ระบบ</button>
-    <a class="gate-order" href="/order">ยังไม่มีไอดี? สั่งทำไอดี End Game →</a>
     <p class="gate-note">ใช้รหัสที่ร้านส่งให้เท่านั้น ห้ามใส่รหัสผ่าน Roblox ของคุณที่นี่ ร้านจะไม่ขอรหัส Roblox จากคุณ</p>
   </form>
 </section>

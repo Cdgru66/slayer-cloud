@@ -1,4 +1,4 @@
-﻿# Slayer Fleet Cloud: ตัวอัปเดต ดึงไฟล์ล่าสุดจาก GitHub (ถ้าไม่ได้ ใช้ Downloads\slayer-cloud*.zip แทน)
+﻿# Fleet Cloud: ตัวอัปเดต ดึงไฟล์ล่าสุดจาก GitHub (ถ้าไม่ได้ ใช้ Downloads\slayer-cloud*.zip แทน)
 # โฟลเดอร์ data จะถูกสำรองก่อนเสมอ และไม่ถูกเขียนทับ
 param([string]$App = (Split-Path -Parent $MyInvocation.MyCommand.Path))
 $ErrorActionPreference = 'Stop'
@@ -12,7 +12,7 @@ function Say($t, $c = 'Gray') { Write-Host $t -ForegroundColor $c }
 try { New-Item -ItemType Directory -Force -Path (Join-Path $App 'data') | Out-Null; Start-Transcript -Path (Join-Path $App 'data\update.log') -Force | Out-Null } catch {}
 Say ('โฟลเดอร์ที่จะอัปเดต: ' + $App)
 
-Say '===== Slayer Fleet Cloud: อัปเดต =====' 'Cyan'
+Say '===== Fleet Cloud: อัปเดต =====' 'Cyan'
 $verFile = Join-Path $App 'version.txt'
 $oldVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { '(ไม่ทราบ)' }
 Say "เวอร์ชันในเครื่องตอนนี้: $oldVer"

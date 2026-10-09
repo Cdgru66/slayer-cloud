@@ -45,14 +45,14 @@ module.exports = function createNotify(ctx) {
     while (queue.length) {
       const { url, payload } = queue.shift();
       try {
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ username: 'Slayer Fleet' }, payload)), signal: AbortSignal.timeout(10000) });
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ username: 'Fleet' }, payload)), signal: AbortSignal.timeout(10000) });
         if (r.status === 429) { const j = await r.json().catch(() => ({})); await new Promise((res) => setTimeout(res, Math.min(30000, (j.retry_after || 2) * 1000))); queue.unshift({ url, payload }); continue; }
       } catch (e) {}
       await new Promise((res) => setTimeout(res, 1200));
     }
     sending = false;
   }
-  const embed = (title, desc, color, fields) => ({ embeds: [{ title, description: desc, color, fields, timestamp: new Date().toISOString(), footer: { text: 'Slayer Fleet' } }] });
+  const embed = (title, desc, color, fields) => ({ embeds: [{ title, description: desc, color, fields, timestamp: new Date().toISOString(), footer: { text: 'Fleet' } }] });
   // ส่งให้เจ้าของ และลูกค้าเจ้าของไอดี (ถ้ามี webhook และเปิดให้ลูกค้าได้รับ)
   function emit(accountName, payload, toCustomer = true) {
     post(ctx.ownerWebhook(), payload);
@@ -163,7 +163,7 @@ module.exports = function createNotify(ctx) {
       const url = ctx.ownerWebhook();
       if (!DISCORD_RE.test(url || '')) return { ok: false, error: 'ยังไม่ได้ตั้ง Discord webhook ของร้าน' };
       try {
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ username: 'Slayer Fleet' }, embed('✅ ทดสอบแจ้งเตือน', 'Slayer Fleet ส่งแจ้งเตือนเข้าห้องนี้ได้แล้ว', 0x5fd0a0))), signal: AbortSignal.timeout(10000) });
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ username: 'Fleet' }, embed('✅ ทดสอบแจ้งเตือน', 'Fleet ส่งแจ้งเตือนเข้าห้องนี้ได้แล้ว', 0x5fd0a0))), signal: AbortSignal.timeout(10000) });
         return r.ok ? { ok: true } : { ok: false, error: 'Discord ตอบกลับ ' + r.status };
       } catch (e) { return { ok: false, error: 'ส่งไม่ได้: ' + e.message }; }
     },

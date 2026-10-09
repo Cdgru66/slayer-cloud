@@ -1,5 +1,5 @@
 'use strict';
-// Slayer Fleet Cloud - เซิร์ฟเวอร์กลางหลายลูกค้า (ไม่มี dependency ใช้ Node 18+)
+// Fleet Cloud - เซิร์ฟเวอร์กลางหลายลูกค้า (ไม่มี dependency ใช้ Node 18+)
 // รันหลัง reverse proxy ที่ทำ HTTPS (เช่น Caddy) ดู README.txt
 const http = require('http');
 const fs = require('fs');
@@ -159,7 +159,7 @@ async function discord(cfg, text) {
   if (!/^https:\/\/(discord\.com|discordapp\.com|ptb\.discord\.com|canary\.discord\.com)\/api\/webhooks\/\d+\/[\w-]+$/.test(cfg.discordWebhook || '')) return;
   try {
     await fetch(cfg.discordWebhook, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: 'Slayer Fleet', content: text }), signal: AbortSignal.timeout(8000) });
+      body: JSON.stringify({ username: 'Fleet', content: text }), signal: AbortSignal.timeout(8000) });
   } catch (e) {}
 }
 async function rejoinTick() {
@@ -497,7 +497,7 @@ function handleReq(req, res) {
   send(res, 404, { error: 'not found' });
 }
 
-server.listen(PORT, HOST, () => console.log(`Slayer Fleet Cloud v${VERSION} ฟังที่ http://${HOST}:${PORT}\nโฟลเดอร์: ${__dirname}\nข้อมูล: ${DATA_DIR}`));
+server.listen(PORT, HOST, () => console.log(`Fleet Cloud v${VERSION} ฟังที่ http://${HOST}:${PORT}\nโฟลเดอร์: ${__dirname}\nข้อมูล: ${DATA_DIR}`));
 server.on('error', (e) => { console.error(e.message); process.exit(e.code === 'EADDRINUSE' ? 2 : 1); }); // 2 = มีเซิร์ฟเวอร์เปิดอยู่แล้ว (start-cloud.bat จะไม่เปิดซ้ำ)
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { flush(); process.exit(0); });
 // ถ้ามีข้อผิดพลาดที่ไม่คาดคิด: บันทึกข้อมูลแล้วปิด (start-cloud.bat จะเปิดใหม่ให้เองใน 3 วินาที)
