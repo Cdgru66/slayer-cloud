@@ -37,6 +37,68 @@ do
             end
         end
     end
+    -- ฐาน/สวน/พล็อตของเราในแมพ (เกมแนว Steal a ...: เพน ไข่ที่กำลังฟัก สัตว์ ลู่วิ่ง) = ของที่มี Owner เป็นเรา
+    local function mine(o)
+        local ok, yes = pcall(function()
+            for k, a in pairs(o:GetAttributes()) do
+                local kl = k:lower()
+                if (kl:find("owner") or kl:find("player") or kl == "user" or kl == "userid") and (tostring(a) == player.Name or tostring(a) == tostring(player.UserId) or tostring(a) == player.DisplayName) then return true end
+            end
+            for _, c in ipairs(o:GetChildren()) do
+                if c:IsA("ValueBase") and (c.Name:lower():find("owner") or c.Name:lower():find("player")) then
+                    local v = c.Value
+                    if v == player or tostring(v) == player.Name or tostring(v) == tostring(player.UserId) then return true end
+                end
+            end
+            return false
+        end)
+        return ok and yes
+    end
+    local bases, nb = {}, 0
+    pcall(function()
+        for i, o in ipairs(workspace:GetDescendants()) do
+            if (o:IsA("Model") or o:IsA("Folder")) and nb < 4 and mine(o) then
+                local dup = false
+                for _, b in ipairs(bases) do if o:IsDescendantOf(b) then dup = true end end
+                if not dup then table.insert(bases, o); nb = nb + 1 end
+            end
+            if i % 5000 == 0 then task.wait() end
+        end
+    end)
+    -- ป้ายบนหัวสัตว์/ไข่ (รายได้ต่อวิ เวลาฟัก) มักเป็น BillboardGui: ดึงเฉพาะที่อยู่ในฐานเรา
+    for _, base in ipairs(bases) do
+        add("\n== ฐานของเรา: " .. base:GetFullName() .. " (" .. #base:GetDescendants() .. " ชิ้น) ==")
+        local n, perParent = 0, {}
+        for _, o in ipairs(base:GetDescendants()) do
+            if n >= 1200 then break end
+            local p = o.Parent and o.Parent:GetFullName() or ""
+            perParent[p] = (perParent[p] or 0) + 1
+            if perParent[p] <= 40 then
+                local rel = o:GetFullName():sub(#base:GetFullName() + 2)
+                if o:IsA("ValueBase") then add("  " .. rel .. " = " .. val(o)); n = n + 1
+                elseif (o:IsA("TextLabel") or o:IsA("TextButton")) and o.Text ~= "" then add("  [ป้าย] " .. rel .. "  ->  " .. o.Text:gsub("<[^>]->", "")); n = n + 1
+                elseif o:IsA("Model") and perParent[p] <= 40 then add("  [โมเดล] " .. rel); n = n + 1 end
+                for k, a in pairs(o:GetAttributes()) do add("  @" .. rel .. "." .. k .. " = " .. tostring(a)); n = n + 1 end
+            end
+        end
+    end
+    if #bases == 0 then
+        -- ไม่เจอ Owner: เก็บรายชื่อโฟลเดอร์ชั้นบนของแมพ + attribute ไว้ให้ดูว่าฐานอยู่ตรงไหน
+        add("\n== ไม่เจอฐานที่มี Owner = เรา · โครงแมพชั้นบน ==")
+        for _, o in ipairs(workspace:GetChildren()) do
+            local at = {}
+            for k, a in pairs(o:GetAttributes()) do table.insert(at, k .. "=" .. tostring(a)) end
+            add("  " .. o.Name .. " [" .. o.ClassName .. ", " .. #o:GetChildren() .. "]" .. (#at > 0 and ("  @" .. table.concat(at, " "):sub(1, 200)) or ""))
+            if #o:GetChildren() <= 30 and (o.Name:lower():find("plot") or o.Name:lower():find("base") or o.Name:lower():find("garden") or o.Name:lower():find("pen")) then
+                for _, c in ipairs(o:GetChildren()) do
+                    local at2 = {}
+                    for k, a in pairs(c:GetAttributes()) do table.insert(at2, k .. "=" .. tostring(a)) end
+                    for _, v in ipairs(c:GetChildren()) do if v:IsA("ValueBase") then table.insert(at2, v.Name .. "=" .. val(v)) end end
+                    add("    " .. c.Name .. "  " .. table.concat(at2, " "):sub(1, 200))
+                end
+            end
+        end
+    end
     -- leaderstats + ของในมือ/Backpack
     add("\n== อาวุธ/ของในมือและ Backpack ==")
     pcall(function() for _, t in ipairs(player.Backpack:GetChildren()) do add("  Backpack: " .. t.Name) end end)
