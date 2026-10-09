@@ -53,3 +53,9 @@
 - บอท AFK: ยืนบนลู่วิ่ง (treadmill) ในฐานเพื่อเพิ่ม Speed + ให้สัตว์ผลิตเงิน · เซิร์ฟ 7 คน คนอื่นตีด้วยไม้ให้ไข่หล่นได้
 - อีเวนต์ทุก ~30 นาที (Rift/Mech boss/Dr. Scramble) · Admin Abuse วันเสาร์ที่อัปเดต
 - ข้อมูลฐานน่าจะอยู่ใน Workspace (มี Owner) → `tools/scan_all.lua` มีส่วน "ฐานของเรา" แล้ว ยังต้องรอผลสแกนจริง
+- ผลสแกนรอบ 1 (Cdgru09, uid 619643186): ไม่มี leaderstats / ไม่มีโฟลเดอร์ข้อมูลใน ReplicatedStorage
+  - สัตว์ที่วางอยู่: `PlayerGui.ActivePets.Frame.ScrollingFrame.Pet_<guid>.Spacer.TextLabel` = "Oni Tiger ($9.6B/s)", หัว "19/19 Active"
+  - โมเดลสัตว์ในฐาน: `Workspace.ClientRenderedAssets.<uid>_<guid>` มีป้าย Data.DisplayName / Data.PerSecond / Data.Odds(ความหายาก)
+  - กระเป๋า: Tool ใน Backpack ชื่อ = Mutation + ชื่อสัตว์ (เช่น "Silver + Scrambled Mutation Centaur"), ไข่ = "Volcano Egg (9,872Kg)"
+  - บูสต์/อีเวนต์: `PlayerGui.BottomUI.BottomFrame.Holder.List.<ชื่อ>.Timer/Value` · ป้ายชี้ไข่: `PlayerGui.AssetEggData...RemainingHatchTime`
+  - ยังไม่เจอ Speed / เงิน → ใช้ `tools/scan_egg.lua` (สแกนเจาะจง + เทียบค่าระหว่างรอบ)
