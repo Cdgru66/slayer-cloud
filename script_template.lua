@@ -399,6 +399,33 @@ end
 local prevItems = {}
 local itemCat = nil
 
+-- เควส: Quests.Holder.<ชื่อ>.Tasks.<งาน>.{Value,Max} + QuestString "Ill put out the blaze(Lv 115)" · Completed.<QuestString>.At
+local function questsOf(slot, prog)
+    local qf = slot and slot:FindFirstChild("Quests")
+    if not qf then return nil end
+    local out = { active = {}, done = {}, total = val(prog, "quests"), crow = val(prog, "crow_quests") }
+    local holder = qf:FindFirstChild("Holder")
+    for _, q in ipairs(holder and holder:GetChildren() or {}) do
+        if #out.active >= 6 then break end
+        local qs = tostring(val(q, "QuestString") or "")
+        local e = { name = q.Name, lv = tonumber(qs:match("%(Lv%s*(%d+)%)")), tasks = {} }
+        local tf = q:FindFirstChild("Tasks")
+        for _, t in ipairs(tf and tf:GetChildren() or {}) do
+            if #e.tasks >= 6 then break end
+            table.insert(e.tasks, { name = t.Name, v = tonumber(val(t, "Value")) or 0, max = tonumber(val(t, "Max")) or 0 })
+        end
+        table.insert(out.active, e)
+    end
+    local comp = qf:FindFirstChild("Completed")
+    for _, q in ipairs(comp and comp:GetChildren() or {}) do
+        local nm = q.Name:gsub("%(Lv%s*%d+%)", ""):gsub("^Ill ", "I'll "):gsub("%s+$", "")
+        table.insert(out.done, { name = nm, lv = tonumber(q.Name:match("%(Lv%s*(%d+)%)")), at = tonumber(val(q, "At")) })
+    end
+    table.sort(out.done, function(a, b) return (a.at or 0) > (b.at or 0) end)
+    while #out.done > 40 do table.remove(out.done) end
+    return out
+end
+
 local function collect()
     local data = getData()
     local slot = getSlot(data)
@@ -454,6 +481,7 @@ local function collect()
     local okB, boss = pcall(nearestBoss)
     if okB and boss then s.boss = boss end
     s.holding, s.activeMastery = nowUsing()
+    pcall(function() s.quests = questsOf(slot, prog) end)
 
     s.mastery = {}
     local mlist = slot:FindFirstChild("MasteryProgressionList")
@@ -1009,6 +1037,10 @@ task.spawn(function()
                 boss = (okB and boss) and { name = boss.name, hp = boss.hp } or nil,
             }
             p.holding, p.activeMastery = nowUsing()
+            pcall(function()
+                local qq = questsOf(slot, pt and pt:FindFirstChild("Progress"))
+                if qq then p.quests = { active = qq.active, total = qq.total } end
+            end)
             local ml = slot:FindFirstChild("MasteryProgressionList")
             if ml then
                 p.mastery = {}

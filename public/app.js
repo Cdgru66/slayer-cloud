@@ -145,6 +145,7 @@ function usingNow(s){const parts=[];const act=(s.activeMastery||[]).filter(Boole
  else{const w=(s.items||[]).filter(i=>i.equipped&&(WEAPON_RE.test(i.name)||/weapon/i.test(i.cat||''))).map(i=>i.name);if(w.length)parts.push(h('span',{},'🗡 ',h('b',{},w.slice(0,2).join(', '))))}
  for(const k of act){const m=(s.mastery||{})[k];parts.push(h('span',{class:'u-m'},'กำลังฟาร์ม ',h('b',{},k+' Mastery'),m?' Lv '+mLv(m):''))}
  if(s.demonArt)parts.push(h('span',{},'มนต์อสูร ',h('b',{},s.demonArt)));else if(s.breathing)parts.push(h('span',{},'ปราณ ',h('b',{},s.breathing)));
+ const qa=((s.quests||{}).active||[])[0];if(qa){const t=(qa.tasks||[])[0];parts.push(h('span',{class:'u-q'},'📜 เควส ',h('b',{},qa.name),t&&t.max?' '+t.v+'/'+t.max:''))}
  return parts.length?h('div',{class:'using'},h('span',{class:'u-live'},isLive(s)?'● ตอนนี้':'ล่าสุด'),parts):null}
 function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=>x.a.goal&&x.a.goal.items&&x.a.goal.items.length);box.hidden=!G.length;if(!G.length){box.replaceChildren();return}
  box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
@@ -257,6 +258,14 @@ function statsSection(a){
 function show(n){open=n;drawer();$('#dr').classList.add('open');$('#scrim').classList.add('on')}
 function hide(){open=null;$('#dr').classList.remove('open');if(!$('#cl').classList.contains('open'))$('#scrim').classList.remove('on')}
 addEventListener('keydown',e=>{if(e.key==='Escape')hide()});
+// เควส: ที่รับอยู่ (แถบความคืบหน้าทีละงาน) + ที่ทำจบล่าสุด + ตัวนับรวม
+function questSection(s){const q=s.quests;if(!q||(!(q.active||[]).length&&!(q.done||[]).length&&q.total==null))return[];
+ const act=(q.active||[]).map(x=>h('div',{class:'qc'},h('div',{class:'qh'},h('b',{},x.name),x.lv?h('span',{class:'mu'},'Lv '+x.lv):null),
+  (x.tasks||[]).map(t=>{const r=t.max>0?Math.max(0,Math.min(1,t.v/t.max)):0;return h('div',{class:'qt'},h('span',{class:'qn'},t.name),h('span',{class:'qv'+(r>=1?' ok':'')},t.v+' / '+t.max),h('div',{class:'bar sm'},h('i',{style:'width:'+r*100+'%'})))})));
+ const done=(q.done||[]).slice(0,8).map(x=>h('li',{},h('span',{class:'qok'},'✓'),h('span',{class:'qdn'},x.name+(x.lv?' (Lv '+x.lv+')':'')),h('span',{class:'mu'},x.at?agoT(now()-x.at):'')));
+ return[h('h3',{},'เควส'+(q.total!=null?' · ทำไปแล้ว '+cm(q.total)+' ครั้ง':'')+(q.crow!=null?' · เควสอีกา '+cm(q.crow):'')),
+  act.length?h('div',{class:'qg'},act):h('p',{class:'mu'},'ตอนนี้ไม่ได้รับเควสอยู่'),
+  done.length?h('ul',{class:'qdone'},done):null]}
 function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
  const s=a.s,st=stat(a),p=s.progress||{},r=rate(a),kv=(l,v)=>h('div',{},l,h('b',{},v));
  const res=(list,lab,z,cls)=>list.map(n=>{const it=itm(a,n);return h('div',{class:'ri'+(cls?' '+cls:'')},ico(n,iconOf(it),z),h('span',{class:'nm'},lab(n)),h('span',{class:'v',title:full(it&&it.amount)},cm(it?it.amount:0)))});
@@ -272,6 +281,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
     h('div',{class:'ore'},h('p',{class:'lbl'},'Ore'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(ORE,n=>n==='Ore'?'Ore':'Refinement',30,'sm'))),
     h('div',{class:'coins'},h('p',{class:'lbl'},'ถุงเงิน'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(COINS,n=>COIN_TH[n],26,'sm'))))),
   ...statsSection(a),
+  ...questSection(s),
   h('h3',{},'เลเวล '+(s.level??'–')+' · EXP '+full(s.expCurrent)+' / '+full(s.expGoal)),h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`})),
   h('h3',{},'ตัวละคร'),h('div',{class:'kv'},kv('Race',s.race||'–'),kv('Clan',s.clan||'–'),kv('Demon Art',s.demonArt||'–'),kv('Breathing',s.breathing||'–'),kv('Fighting Style',s.fightingStyle||'–'),kv('Slayer / Demon',(s.slayerRank||'–')+' / '+(s.demonRank||'–')),kv('Skill Points',s.skillPoints??'–'),kv('Kills',cm(p.kills)),kv('Boss kills',cm(p.boss_kills)),kv('Deaths',cm(p.deaths)),kv('Tower',p.tower_floor!=null?'ชั้น '+p.tower_floor:'–')),
   ...(Object.keys(s.mastery||{}).length?[h('h3',{},'Mastery'),h('div',{class:'mg'},Object.entries(s.mastery).sort((x,y)=>mPrec(y[1])-mPrec(x[1])).map(([k,m])=>{const lv=mLv(m),mx=lv>=400,r=mx?1:(m.goal>0?Math.max(0,Math.min(1,m.current/m.goal)):0);return h('div',{class:'mc'+(mx?' max':''),title:'EXP '+full(m.current)+' / '+full(m.goal)},h('div',{class:'mh'},h('span',{class:'mn'},k),mx?h('span',{class:'mx'},'MAX'):h('span',{class:'mp'},Math.round(lv/4)+'% ของ 400')),h('div',{class:'mv'},h('b',{},'Lv '+lv),h('span',{},' / 400')),h('div',{class:'mb'},h('i',{style:`width:${(mx?100:r*100).toFixed(1)}%`})),mx?null:h('small',{class:'mu'},'EXP '+full(m.current)+' / '+full(m.goal)+' → Lv '+(lv+1)))}))]:[]),

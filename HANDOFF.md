@@ -39,6 +39,7 @@
 - ปราณที่มีในเกมตอนนี้: Water, Flame, Thunder, Wind, Insect, Stone, Sound, Serpent (ยังไม่มี Mist/Beast/Moon/Sun)
 - มนต์อสูร (Orb): Blood Manipulation, Cryokinesis, Pyrokinesis(ไอคอน "Pyrokenesis Orb"), Shockwave, Reaper, Dream, Tamari, Obi Manipulation
 - ไอคอนบอส: มินิแมพ `PinsHolder.Bosses.<ชื่อ>.Plate.Icon` (เก็บเป็น `boss:<ชื่อ>`) · ไอคอนไอเทมในกระเป๋า: `ActualHolder.<ชื่อ>.Img`
+- เควส: `slots.SlotN.Quests.Holder.<ชื่อเควส>.Tasks.<งาน>.{Value,Max,Code}` + `QuestString` ("Ill put out the blaze(Lv 115)") · ที่จบแล้ว `Quests.Completed.<QuestString>.At` · ตัวนับ `PlayerTitles.Progress.quests` / `crow_quests` · รายชื่อเควสทั้งเกม `ReplicatedStorage.QuestStates` (23 อัน)
 - เซทเริ่มต้น: Akaza, Douma + เสาหลัก (Giyu, Rengoku, Sanemi, Shinobu, Tengen, Gyomei, Obanai)
 
 ## ถ้าจะทำเกม/แมพใหม่

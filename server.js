@@ -339,6 +339,12 @@ function liveUpdate(id, name, snap) {
     const m = a.s.mastery && typeof a.s.mastery === 'object' ? a.s.mastery : (a.s.mastery = {});
     for (const [k, v] of Object.entries(snap.mastery).slice(0, 60)) if (v && isNum(v.current)) m[k] = { current: v.current, goal: isNum(v.goal) ? v.goal : (m[k] && m[k].goal), lv: isNum(v.lv) ? v.lv : undefined };
   }
+  if (snap.quests && typeof snap.quests === 'object' && Array.isArray(snap.quests.active)) { // เควสที่รับอยู่ (สด)
+    const q = a.s.quests && typeof a.s.quests === 'object' ? a.s.quests : (a.s.quests = {});
+    q.active = snap.quests.active.slice(0, 6).filter((x) => x && typeof x.name === 'string').map((x) => ({ name: x.name.slice(0, 60), lv: isNum(x.lv) ? x.lv : undefined,
+      tasks: Array.isArray(x.tasks) ? x.tasks.slice(0, 6).filter((t) => t && typeof t.name === 'string').map((t) => ({ name: t.name.slice(0, 80), v: isNum(t.v) ? t.v : 0, max: isNum(t.max) ? t.max : 0 })) : [] }));
+    if (isNum(snap.quests.total)) q.total = snap.quests.total;
+  }
   a.s.liveAt = now(); dirty = true;
   try { orders.trackGoal(name, a.s); } catch (e) {}
   return null;
