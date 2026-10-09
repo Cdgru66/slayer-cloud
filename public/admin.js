@@ -110,6 +110,7 @@ function custCard(c) {
     h('div', { class: 'sec' }, h('h4', {}, 'ไอดีในเกม'),
       h('div', { class: 'chips2' }, c.accounts.length ? c.accounts.map((n) => h('span', { class: 'chip2 on' }, n, h('button', { class: 'x2', 'aria-label': 'เอา ' + n + ' ออก', onclick: () => act(() => api('customer/' + c.id + '/assign', { method: 'POST', body: { remove: [n] } }), 'เอา ' + n + ' ออกแล้ว') }, '×'))) : h('span', { class: 'mu' }, 'ยังไม่มี')),
       h('form', { class: 'rowb', onsubmit: (e) => { e.preventDefault(); act(() => api('customer/' + c.id + '/assign', { method: 'POST', body: { add: accIn.value.split(/[\s,]+/) } }), 'เพิ่มไอดีแล้ว'); } }, accIn, accList('dl-' + c.id), h('button', { class: 'btn', type: 'submit' }, 'เพิ่ม'))),
+    custGoals(c),
     h('div', { class: 'sec' }, h('h4', {}, 'อายุการใช้งาน · ถึง ' + fmtDate(c.expires)),
       h('div', { class: 'rowb' }, [7, 30, 90].map((d) => h('button', { class: 'btn', onclick: () => act(() => api('customer/' + c.id + '/renew', { method: 'POST', body: { days: d } }), 'ต่ออายุ ' + d + ' วันแล้ว') }, '+' + d + ' วัน')),
         h('button', { class: 'btn', onclick: () => act(() => api('customer/' + c.id + '/revoke', { method: 'POST', body: { revoked: !c.revoked } }), c.revoked ? 'เปิดใช้งานแล้ว' : 'ระงับแล้ว') }, c.revoked ? 'เปิดใช้งาน' : 'ระงับ'))),
@@ -287,17 +288,28 @@ function acctSec(o) {
     out ? null : h('p', { class: 'mu small' }, own ? 'ไอดีนี้มีเจ้าของแล้ว: ' + own.name : 'กดครั้งเดียว ระบบสร้างรหัสและข้อความส่งลูกค้าให้ ลูกค้าล็อกอินด้วยชื่อไอดีนี้'));
 }
 
-function goalSec(o) {
-  const acc = o.account && D.seen.find((x) => x.name.toLowerCase() === o.account.toLowerCase());
-  const byOrder = !o.account && D.seen.find((x) => x.goal && x.goal.order === o.id);
-  if (byOrder) return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + byOrder.name),
-    h('div', { class: 'rowb' }, h('span', { class: 'note' }, 'ออเดอร์นี้กำลังติดตามไอดี ' + byOrder.name), h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + byOrder.name + '?')) act(() => api('goal', { method: 'POST', body: { account: byOrder.name, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม')));
-  if (!o.account) {
-    const sel = h('select', { class: 'f' }, h('option', { value: '' }, '— เลือกไอดีที่ทำออเดอร์นี้ —'), D.seen.map((x) => h('option', { value: x.name, selected: o.roblox && x.name.toLowerCase() === o.roblox.toLowerCase() }, x.name + (x.goal ? ' (มีเป้าหมายอยู่แล้ว)' : ''))));
-    return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'ผูกออเดอร์กับไอดีที่กำลังทำ ระบบจะคำนวณ % ความคืบหน้าให้ลูกค้าเห็นแบบเรียลไทม์'),
-      h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); const ex = D.seen.find((x) => x.name === sel.value && x.goal); if (ex && !confirm(sel.value + ' มีเป้าหมายอยู่แล้ว (' + (ex.goal.title || '') + ') จะแทนที่ด้วยออเดอร์นี้?')) return; act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
-  }
-  const g = goalDraft[o.id] || (goalDraft[o.id] = JSON.parse(JSON.stringify((acc && acc.goal) || { title: '', items: [] })));
+// การ์ดลูกค้า: ติดตามความคืบหน้าทุกไอดีของลูกค้าคนนี้ (ไม่ต้องมีออเดอร์ในเว็บ)
+function custGoals(c) {
+  if (!c.accounts.length) return null;
+  const blocks = c.accounts.map((n) => {
+    const acc = D.seen.find((x) => x.name.toLowerCase() === n.toLowerCase());
+    const dk = 'c:' + n.toLowerCase();
+    if ((acc && acc.goal) || goalDraft[dk]) return h('div', { class: 'cgoal' }, goalEditor(n, dk));
+    const sets = (D.sets || []).filter((x) => !x.hidden);
+    const sel = h('select', { class: 'f', 'aria-label': 'เซทของ ' + n }, h('option', { value: '' }, '— เลือกเซทที่กำลังทำ —'), sets.map((x) => h('option', { value: x.id }, x.name)));
+    return h('div', { class: 'cgoal' }, h('div', { class: 'rowb' }, h('b', { class: 'cgn' }, n), acc ? null : h('span', { class: 'mu' }, '(ยังไม่ส่งข้อมูลเข้ามา)'),
+      sel,
+      h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกเซทก่อน', true); act(() => api('goal', { method: 'POST', body: { account: n, set: sel.value } }), 'เริ่มติดตาม ' + n + ' แล้ว ลูกค้าเห็นทันที'); } }, 'เริ่มติดตามจากเซท'),
+      h('button', { class: 'btn', onclick: () => { goalDraft[dk] = { title: '', items: [] }; render(); } }, 'ตั้งเป้าเอง')));
+  });
+  const anyNew = c.accounts.some((n) => { const a = D.seen.find((x) => x.name.toLowerCase() === n.toLowerCase()); return !(a && a.goal) && !goalDraft['c:' + n.toLowerCase()]; });
+  return h('div', { class: 'sec' }, anyNew ? [h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'เลือกเซทที่กำลังทำให้ไอดีนี้ ลูกค้าจะเห็น % และวันที่คาดว่าจะเสร็จในหน้าของเขาแบบเรียลไทม์')] : null, blocks);
+}
+
+// ตัวแก้เป้าหมายของไอดี: ใช้ทั้งในการ์ดออเดอร์และการ์ดลูกค้า (dk = คีย์ร่างที่ยังไม่บันทึก)
+function goalEditor(account, dk) {
+  const acc = D.seen.find((x) => x.name.toLowerCase() === String(account).toLowerCase());
+  const g = goalDraft[dk] || (goalDraft[dk] = JSON.parse(JSON.stringify((acc && acc.goal) || { title: '', items: [] })));
   const keys = Object.keys((acc && acc.mastery) || {});
   const pct = goalPct(g, acc);
   const rows = g.items.map((it, i) => {
@@ -312,11 +324,24 @@ function goalSec(o) {
   const addM = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'mastery', label: 'Mastery', key: keys[0] || '', target: 400 }); render(); } }, '+ Mastery');
   const addL = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'level', label: 'เลเวล', target: 225 }); render(); } }, '+ เลเวล');
   const addX = h('button', { class: 'btn', onclick: () => { const t = prompt('รายการที่ต้องทำ (ติ๊กเองเมื่อเสร็จ)'); if (t) { g.items.push({ k: 'manual', label: t.slice(0, 80) }); render(); } } }, '+ รายการติ๊กเอง');
-  const save = h('button', { class: 'btn primary', onclick: () => act(() => api('goal', { method: 'POST', body: { account: o.account, title: g.title, order: undefined, items: g.items } }), 'บันทึกเป้าหมายแล้ว ลูกค้าเห็นทันที').then(() => { delete goalDraft[o.id]; }) }, 'บันทึกเป้าหมาย');
-  const unlink = h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + o.account + '?')) act(() => api('goal', { method: 'POST', body: { account: o.account, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม');
-  return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + o.account + (pct != null ? ' · ' + pct + '%' : '')),
+  const save = h('button', { class: 'btn primary', onclick: () => act(() => api('goal', { method: 'POST', body: { account: account, title: g.title, order: undefined, items: g.items } }), 'บันทึกเป้าหมายแล้ว ลูกค้าเห็นทันที').then(() => { delete goalDraft[dk]; }) }, 'บันทึกเป้าหมาย');
+  const unlink = h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + account + '?')) { delete goalDraft[dk]; act(() => api('goal', { method: 'POST', body: { account: account, remove: true } }), 'เลิกติดตามแล้ว'); } } }, 'เลิกติดตาม');
+  return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + account + (pct != null ? ' · ' + pct + '%' : '')),
     h('div', { class: 'gbar' }, h('i', { style: 'width:' + (pct || 0) + '%' })),
     h('div', { class: 'glist' }, rows.length ? rows : h('p', { class: 'note' }, 'ยังไม่มีเป้าหมาย')),
     h('div', { class: 'rowb' }, addM, addL, addX, save, unlink),
     keys.length ? null : h('p', { class: 'note' }, 'ไอดีนี้ยังไม่ส่งข้อมูล Mastery เข้ามา ชื่อ Mastery จะเลือกได้เมื่อสคริปต์ส่งข้อมูลรอบถัดไป'));
+}
+
+function goalSec(o) {
+  const acc = o.account && D.seen.find((x) => x.name.toLowerCase() === o.account.toLowerCase());
+  const byOrder = !o.account && D.seen.find((x) => x.goal && x.goal.order === o.id);
+  if (byOrder) return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + byOrder.name),
+    h('div', { class: 'rowb' }, h('span', { class: 'note' }, 'ออเดอร์นี้กำลังติดตามไอดี ' + byOrder.name), h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + byOrder.name + '?')) act(() => api('goal', { method: 'POST', body: { account: byOrder.name, remove: true } }), 'เลิกติดตามแล้ว'); } }, 'เลิกติดตาม')));
+  if (!o.account) {
+    const sel = h('select', { class: 'f' }, h('option', { value: '' }, '— เลือกไอดีที่ทำออเดอร์นี้ —'), D.seen.map((x) => h('option', { value: x.name, selected: o.roblox && x.name.toLowerCase() === o.roblox.toLowerCase() }, x.name + (x.goal ? ' (มีเป้าหมายอยู่แล้ว)' : ''))));
+    return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'ผูกออเดอร์กับไอดีที่กำลังทำ ระบบจะคำนวณ % ความคืบหน้าให้ลูกค้าเห็นแบบเรียลไทม์'),
+      h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); const ex = D.seen.find((x) => x.name === sel.value && x.goal); if (ex && !confirm(sel.value + ' มีเป้าหมายอยู่แล้ว (' + (ex.goal.title || '') + ') จะแทนที่ด้วยออเดอร์นี้?')) return; act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
+  }
+  return goalEditor(o.account, o.id);
 }

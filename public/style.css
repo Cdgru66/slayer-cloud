@@ -664,3 +664,4 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 @media (max-width:640px){.arow{grid-template-columns:12px 1fr}.arow .agoal{grid-column:2}}
 
 .acct .f{flex:1 1 180px}.acct .dys{display:flex;align-items:center;gap:6px}.acct .dys .f{width:70px;flex:0 0 70px}
+.cgoal{padding:10px 0;border-top:1px dashed rgba(226,182,92,.14)}.cgoal:first-of-type{border-top:0}.cgoal .sec{padding:0;border:0}.cgn{font-size:14px;margin-right:4px}

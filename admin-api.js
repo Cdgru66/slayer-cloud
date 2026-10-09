@@ -185,7 +185,7 @@ module.exports = function createAdmin(ctx) {
         const name = String(j.account || ''), a = ctx.pool()[name];
         const keys = a && a.s && a.s.mastery ? Object.keys(a.s.mastery) : [];
         if (j.remove) { ctx.orders.delGoal(name); return send(res, 200, { ok: true }); }
-        send(res, 200, j.order ? ctx.orders.linkOrder(String(j.order), name, keys) : ctx.orders.setGoal(name, j));
+        send(res, 200, j.order ? ctx.orders.linkOrder(String(j.order), name, keys) : j.set ? ctx.orders.goalFromSet(String(j.set), name, keys) : ctx.orders.setGoal(name, j));
       });
       return true;
     }
