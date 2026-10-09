@@ -42,7 +42,7 @@
 - เซทเริ่มต้น: Akaza, Douma + เสาหลัก (Giyu, Rengoku, Sanemi, Shinobu, Tengen, Gyomei, Obanai)
 
 ## ถ้าจะทำเกม/แมพใหม่
-1. ใช้ `tools/scan_deep.lua` (สะสมผลหลายรอบ) + `scan_mastery2.lua` + `scan_inventory.lua` ในเกมใหม่ หาว่าข้อมูลอยู่ตรงไหน
+1. รัน `tools/scan_all.lua` ในเกมใหม่ (ไฟล์เดียวครบ: ข้อมูลผู้เล่น ตัวเลขบนจอ อาวุธ ไอคอน บอส · รันหลายรอบเปิดคนละหน้าได้ ผลสะสม) แล้วส่ง slayer_scan_all.json
 2. แก้เฉพาะส่วนอ่านข้อมูลใน `script_template.lua` (getData/getSlot/collect/ส่วนข้อมูลสด) + ชื่อของ/สกุลเงินใน `public/app.js` (ORE, COINS, ข้อความ)
 3. แก้รายการอาวุธ/ปราณ/กฎจับคู่ใน `public/order.js` (WEAPONS, BREATHS, DEMONS, VARIANTS, TYPE_LINES, PLUS_CAP) และ `public/admin.js` (S_*)
 4. ส่วนเซิร์ฟเวอร์/แอดมิน/ออเดอร์/เป้าหมาย/แจ้งเตือน ใช้ได้เลยไม่ต้องแก้
