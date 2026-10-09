@@ -152,10 +152,20 @@ function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=
   return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},
    h('div',{class:'gc-top'},ring(pct,96,'c:'+s.name),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
    usingNow(s),goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
+// หน้าหลัก: เควสที่ทุกไอดีกำลังทำ (อัปเดตสดทุก 20 วิ) แถบเลื่อนนุ่ม ๆ เมื่อเลขขึ้น
+function qPct(qa){const ts=(qa.tasks||[]).filter(t=>t.max>0);if(!ts.length)return null;return Math.round(ts.reduce((t,x)=>t+Math.min(1,x.v/x.max),0)/ts.length*100)}
+function questChip(s){const qa=((s.quests||{}).active||[])[0];if(!qa)return null;const t=(qa.tasks||[])[0];return h('span',{class:'qchip',title:'เควสที่กำลังทำ'},'📜 ',qa.name,t&&t.max?h('b',{},' '+t.v+'/'+t.max):null)}
+function renderQuests(L){const box=$('#questlive');if(!box)return;const Q=L.filter(x=>((x.a.s.quests||{}).active||[]).length);box.hidden=!Q.length;if(!Q.length){box.replaceChildren();return}
+ box.replaceChildren(h('div',{class:'gh'},h('h2',{},'เควสที่กำลังทำ'),h('span',{class:'mu'},h('i',{class:'qlive'}),'สดจากในเกม ทุก 20 วินาที')),
+  h('div',{class:'qrow'},Q.flatMap(({a,st})=>(a.s.quests.active||[]).slice(0,3).map(qa=>{const p=qPct(qa)??0,done=p>=100;
+   return h('div',{class:'qcard'+(done?' done':''),role:'button',tabindex:'0',onclick:()=>show(a.s.name),onkeydown:e=>{if(e.key==='Enter')show(a.s.name)}},
+    h('div',{class:'qtop'},h('span',{class:'qwho'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),a.s.display||a.s.name),h('span',{class:'qpct'},done?'ครบแล้ว ✓':p+'%')),
+    h('b',{class:'qname'},qa.name,qa.lv?h('small',{class:'mu'},'  Lv '+qa.lv):null),
+    (qa.tasks||[]).map(t=>{const r=t.max>0?Math.min(1,t.v/t.max):0;return h('div',{class:'qt'},h('span',{class:'qn'},t.name),h('span',{class:'qv'+(r>=1?' ok':'')},t.v+' / '+t.max),h('div',{class:'bar sm'},h('i',{style:'width:'+r*100+'%'})))}))}))))}
 function render(){
  const L=[...A.values()].map(a=>({a,st:stat(a)})),c={all:L.length,on:0,stuck:0,off:0};L.forEach(x=>c[x.st]++);
  for(const k in c)$('#n-'+k).textContent=c[k];
- renderGoals(L);
+ renderGoals(L);renderQuests(L);
  const sum=f=>L.reduce((t,x)=>t+(f(x.a)||0),0),firstIcon=n=>{for(const x of L){const u=iconOf(itm(x.a,n));if(u)return u}return ICONS[n]};
  $('#t-on').textContent=(c.on+c.stuck)+' / '+c.all;
  const tw=sum(a=>a.s.wen);tween($('#t-wen'),tw);$('#t-wen').title=full(tw)+' Wen';
@@ -173,7 +183,7 @@ function render(){
   const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),coinT=COINS.reduce((t,n)=>t+amt(a,n),0);
   return h('div',{class:'row'+(st==='off'?' off':''),tabindex:'0',role:'button','aria-label':(s.display||s.name)+' เลเวล '+(s.level??'–'),onclick:()=>show(s.name),onkeydown:ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show(s.name)}}},
    lvSeal(s),
-   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp.toFixed(1)+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
+   h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),questChip(s),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp.toFixed(1)+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
    h('div',{class:'c wen-c',title:full(s.wen)+' Wen'},cm(s.wen)),
    h('div',{class:'c ore-c',title:full(oreV)},cm(oreV),(()=>{const q=oreRate(a);return q>0?h('small',{class:'orr'},'+'+cm(q)+'/ชม.'):null})()),
    h('div',{class:'c ore-c ref-c',title:full(refV)},cm(refV)),
