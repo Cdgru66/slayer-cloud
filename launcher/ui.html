@@ -98,7 +98,8 @@ td{padding:9px 8px;border-top:1px solid var(--row);vertical-align:middle}
 tr:hover td{background:rgba(241,233,221,.018)}
 .who{display:flex;align-items:center;gap:10px;min-width:170px}
 .av{width:38px;height:38px;border-radius:50%;flex:none;background:#2a1d20;box-shadow:0 0 0 2px var(--avc,var(--edge));display:grid;place-items:center;overflow:hidden;font-weight:700;color:var(--gold);position:relative}
-.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s;background:#2a1d20}
+.av.has img{opacity:1}.av.has .ini{visibility:hidden}.av .ini{font-size:12px}
 .who b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
 .who span{font-size:11.5px;color:var(--dim)}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent)}
@@ -121,6 +122,8 @@ tr:hover td{background:rgba(241,233,221,.018)}
 .opt b{display:block;font-weight:600}.opt small{display:block;font-size:12px;color:var(--mu)}
 .sel,.num,.txt{height:38px;padding:0 10px;background:var(--lac);border:1px solid var(--edge);border-radius:9px;color:var(--tx)}
 .num{width:76px;font-family:var(--mono)}.txt{font-family:var(--mono);width:100%;max-width:300px}
+.pcol .sel{height:32px;font-size:12.5px;max-width:160px}
+body:not(.per) .pcol{display:none}
 .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:4px 0 14px}
 .game{display:flex;gap:14px;align-items:center;padding:12px;border-radius:12px;background:var(--lac);border:1px solid var(--hair);cursor:pointer;text-align:left;color:var(--tx)}
 .game[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-lo) inset}
@@ -135,6 +138,7 @@ tr:hover td{background:rgba(241,233,221,.018)}
 .logs time{flex:none;width:150px;color:var(--dim);font:12px var(--mono)}
 .logs li.bad{color:#ffb3a8}.logs li.good{color:#a8e3c6}
 .hint{font-size:12px;color:var(--mu)}
+.res{max-height:110px;overflow:auto;font-size:12px;color:#ffb3a8;display:grid;gap:2px;padding:8px 10px;border-radius:8px;background:#2e1715}
 /* ---- หน้าต่างเพิ่มไอดี ---- */
 .modal{position:fixed;inset:0;background:rgba(10,5,6,.74);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px;z-index:20}
 .sheet{width:min(560px,100%);background:var(--lac2);border:1px solid var(--edge);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
@@ -143,7 +147,7 @@ tr:hover td{background:rgba(241,233,221,.018)}
 .sheet .sb{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
 .sheet .sf{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--hair)}
 .steps{padding-left:20px;color:var(--mu2);font-size:13px;display:grid;gap:4px}.steps b{color:var(--tx)}
-textarea{width:100%;height:110px;resize:none;padding:10px 12px;background:var(--lac);border:1px solid var(--edge);border-radius:10px;font:12px var(--mono);color:var(--tx)}
+textarea{width:100%;height:160px;resize:none;padding:10px 12px;background:var(--lac);border:1px solid var(--edge);border-radius:10px;font:12px var(--mono);color:var(--tx)}
 .safe{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:#14271e;color:#a8e3c6;font-size:12px}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:10px 16px;border-radius:11px;background:#1f3a2e;box-shadow:inset 0 0 0 1px rgba(95,208,160,.45);transition:.25s;z-index:30;font-size:13px;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#3a1f1f;box-shadow:inset 0 0 0 1px rgba(239,123,108,.5)}
@@ -196,7 +200,7 @@ textarea{width:100%;height:110px;resize:none;padding:10px 12px;background:var(--
       </div>
       <div class="box tbl">
         <table>
-          <thead><tr><th data-i="cAcc"></th><th data-i="cStatus"></th><th data-i="cNow"></th><th>Lv</th><th>Token · Ore</th><th data-i="cLast"></th><th data-i="cAuto"></th><th style="text-align:right" data-i="cAct"></th></tr></thead>
+          <thead><tr><th data-i="cAcc"></th><th data-i="cStatus"></th><th data-i="cNow"></th><th>Lv</th><th>Token · Ore</th><th data-i="cLast"></th><th data-i="cGame" class="pcol"></th><th data-i="cAuto"></th><th style="text-align:right" data-i="cAct"></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -207,6 +211,8 @@ textarea{width:100%;height:110px;resize:none;padding:10px 12px;background:var(--
       <h1 data-i="hGame"></h1>
       <div class="box card">
         <h2 data-i="gPick"></h2><p class="sub" data-i="gPickSub"></p>
+        <div class="seg" id="gmode" role="group" style="align-self:flex-start;margin-bottom:12px"><button type="button" data-gm="shared" data-i="gmShared"></button><button type="button" data-gm="per" data-i="gmPer"></button></div>
+        <p class="hint" id="gmHint" style="margin:-4px 0 12px"></p>
         <div class="games" id="games"></div>
         <label class="opt" style="justify-content:flex-start;flex-wrap:wrap"><span style="min-width:120px"><b>Place ID</b><small data-i="gCustom"></small></span><input class="txt" id="place" inputmode="numeric" autocomplete="off"><button type="button" class="btn gold sm" id="placeSave" data-i="save"></button></label>
       </div>
@@ -266,6 +272,8 @@ textarea{width:100%;height:110px;resize:none;padding:10px 12px;background:var(--
     <div class="sb">
       <ol class="steps" id="steps"></ol>
       <textarea id="ck" placeholder="_|WARNING:-DO-NOT-SHARE-THIS…" spellcheck="false" autocomplete="off" aria-label="cookie"></textarea>
+      <p class="hint" id="ckn"></p>
+      <div class="res" id="ckres" hidden></div>
       <div class="safe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i="safe"></span></div>
     </div>
     <div class="sf"><button type="button" class="btn" id="cancel" data-i="cancel"></button><button class="btn gold" id="save" data-i="saveAcc"></button></div>
@@ -293,7 +301,7 @@ th:{connecting:'กำลังต่อ…',connOk:'เซิร์ฟเวอ
  confirmRj:'{n} ออนไลน์อยู่ จะปิดแล้วเข้าเกมใหม่?',confirmDel:'ลบ {n} ออกจากตัวเปิดเกม? (ต้องวาง cookie ใหม่ถ้าจะใช้อีก)',
  emptyF:'ไม่มีไอดีในตัวกรองนี้',emptyAll:'ยังไม่มีไอดี กด "+ เพิ่มไอดี" เพื่อเริ่ม',ckOk:'cookie ใช้ได้ทุกไอดี ✓',ckBad:'ใช้ไม่ได้: {l} (เพิ่ม cookie ใหม่)',
  ago:'ที่แล้ว',s:' วิ',m:' นาที',hr:' ชม.',d:' วัน',min:'นาที',sec:'วินาที',save:'บันทึก',
- hGame:'เกม & รีจอย',gPick:'เกมที่จะเปิด',gPickSub:'ใช้ตอนกดรีจอยและตอนเซิร์ฟเวอร์สั่งเปิดเกมใหม่',gCustom:'หรือใส่เลขแมพเอง',
+ hGame:'เกม & รีจอย',gPick:'เกมที่จะเปิด',gPickSub:'ใช้ตอนกดรีจอยและตอนเซิร์ฟเวอร์สั่งเปิดเกมใหม่',gCustom:'หรือใส่เลขแมพเอง',gmShared:'ทุกไอดีเกมเดียวกัน',gmPer:'ตั้งเกมรายไอดี',gmHintS:'ทุกไอดีเข้าเกมที่เลือกด้านล่าง',gmHintP:'ตั้งเกมของแต่ละไอดีได้ที่คอลัมน์ "เกม" ในหน้าไอดี · ไอดีที่ยังไม่ตั้งจะใช้เกมด้านล่าง',cGame:'เกม',gMain:'เกมหลัก',ckLines:'เจอ {n} cookie · วางได้ทีละหลายบรรทัด (cookie หรือ user:pass:cookie)',
  gAuto:'รีจอยอัตโนมัติ',gAutoSub:'เซิร์ฟเวอร์ร้านเห็นว่าไอดีไหนเงียบ จะสั่งตัวเปิดเกมเข้าเกมใหม่ให้เอง',gAutoOn:'เปิดรีจอยอัตโนมัติ',gAutoOnSub:'ปิดเฉพาะไอดีได้ที่ช่อง "รีจอยเอง" ในหน้าไอดี',
  gAfter:'รีจอยเมื่อเงียบเกิน',gAfterSub:'ไม่ส่งข้อมูลเข้าร้านนานเท่านี้ (2–120 นาที)',gGap:'เปิดทีละไอดี เว้น',gGapSub:'กันเครื่องค้างตอนเปิดหลายไอดีพร้อมกัน',
  hPerf:'ประหยัดเครื่อง',minAll:'ย่อทุกหน้าต่าง Roblox',trimNow:'คืน RAM ตอนนี้',pTotal:'RAM ที่ Roblox ใช้อยู่',pAvg:'เฉลี่ยต่อหน้าต่าง',pSaved:'คืน RAM ได้วันนี้',
@@ -305,7 +313,7 @@ th:{connecting:'กำลังต่อ…',connOk:'เซิร์ฟเวอ
  pHint:'"ประหยัดในเกม" ปิดได้รายไอดี เช่น ไอดีที่ใช้สแกนเกมใหม่ · การคืน RAM และย่อหน้าต่างใช้ได้บน Windows',
  hLog:'บันทึกการทำงาน',noLog:'ยังไม่มีบันทึก',
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
- steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
+ steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
 en:{connecting:'Connecting…',connOk:'Shop server v',connBad:'Cannot reach server',stopped:'Launcher stopped',
  rejoinOff:'Rejoin dropped',sGeneral:'General',sPc:'This PC',nAcc:'Accounts',nGame:'Game & rejoin',nPerf:'Performance',nLog:'Logs',
@@ -317,7 +325,7 @@ en:{connecting:'Connecting…',connOk:'Shop server v',connBad:'Cannot reach serv
  confirmRj:'{n} is online. Close it and rejoin?',confirmDel:'Remove {n} from the launcher? (you will need to paste its cookie again)',
  emptyF:'No accounts match this filter',emptyAll:'No accounts yet — press "+ Add account" to start',ckOk:'All cookies work ✓',ckBad:'Not working: {l} (add a new cookie)',
  ago:' ago',s:'s',m:' min',hr:' h',d:' d',min:'min',sec:'sec',save:'Save',
- hGame:'Game & rejoin',gPick:'Game to launch',gPickSub:'Used for manual rejoin and when the server relaunches an account',gCustom:'or enter a place number',
+ hGame:'Game & rejoin',gPick:'Game to launch',gPickSub:'Used for manual rejoin and when the server relaunches an account',gCustom:'or enter a place number',gmShared:'Same game for all',gmPer:'Per-account',gmHintS:'Every account joins the game chosen below',gmHintP:'Set each account\'s game in the "Game" column on the Accounts page · accounts without one use the game below',cGame:'Game',gMain:'Main game',ckLines:'{n} cookie(s) found · paste one per line (cookie or user:pass:cookie)',
  gAuto:'Auto rejoin',gAutoSub:'When the shop server sees an account go quiet, it tells the launcher to rejoin it',gAutoOn:'Auto rejoin on',gAutoOnSub:'Turn it off per account in the "Auto rejoin" column',
  gAfter:'Rejoin after quiet for',gAfterSub:'No data reaches the shop for this long (2–120 min)',gGap:'Launch one at a time, gap',gGapSub:'Avoids freezing the PC when many accounts start together',
  hPerf:'Performance',minAll:'Minimise all Roblox',trimNow:'Free RAM now',pTotal:'RAM used by Roblox',pAvg:'Average per window',pSaved:'RAM freed today',
@@ -329,7 +337,7 @@ en:{connecting:'Connecting…',connOk:'Shop server v',connBad:'Cannot reach serv
  pHint:'"In-game saving" can be turned off per account, e.g. one used to scan a new game · Freeing RAM and minimising work on Windows',
  hLog:'Logs',noLog:'No log entries yet',
  addTitle:'Add account',cancel:'Cancel',saveAcc:'Save account',safe:'The cookie is the key to the account — never share it · stored encrypted on this PC only, never sent to the shop site',
- steps:['Open a <b>private</b> browser window and log in to roblox.com with that account','Press <b>F12</b> → Application → Cookies → https://www.roblox.com','Copy the <b>.ROBLOSECURITY</b> value and paste it below','Close the browser window — <b>do not log out</b> (the cookie would stop working)'],
+ steps:['Open a <b>private</b> browser window and log in to roblox.com with that account','Press <b>F12</b> → Application → Cookies → https://www.roblox.com','Copy the <b>.ROBLOSECURITY</b> value and paste it below · <b>one per line for several accounts</b>','Close the browser window — <b>do not log out</b> (the cookie would stop working)'],
  qOn:'Online',qOff:'Dropped',qBusy:'Launching',qNo:'No cookie',threads:'{n} threads',usedOf:'{a} / {b} GB',rbSub:'{g} GB RAM in total',onSub:'of {n} accounts',saved:'Saved'}};
 let LANG=store.get('fl-lang')==='en'?'en':'th';
 const t=(k,v)=>{let s=(I18N[LANG][k]??I18N.th[k]??k);if(v)for(const x in v)s=String(s).split('{'+x+'}').join(v[x]);return s};
@@ -366,8 +374,9 @@ function rows(){
     if(l&&l.busy)st='busy';else if(!f)st='never';else if(f.last<150||(f.liveAgo!=null&&f.liveAgo<60))st='on';else if(f.last<after)st='late';else st='off';
     return Object.assign(r,{st,auto:!ex.has(r.name.toLowerCase())})}).sort((a,b)=>ord[a.st]-ord[b.st]||a.name.localeCompare(b.name))}
 const ST={on:['stOn','var(--ok)'],late:['stLate','var(--warn)'],off:['stOff','var(--red)'],busy:['stBusy','var(--gold)'],never:['stNever','var(--dim)']};
-function avatar(name,col){const u=S.avatars&&S.avatars[name.toLowerCase()],d=h('div',{class:'av',style:'--avc:'+col,'aria-hidden':'true'},(name.length>2?name.slice(-2):name).toUpperCase());
-  if(u){const i=h('img',{src:u,alt:'',loading:'lazy',referrerpolicy:'no-referrer'});i.onerror=()=>i.remove();d.append(i)}return d}
+const AVOK=new Set();
+function avatar(name,col){const u=S.avatars&&S.avatars[name.toLowerCase()],d=h('div',{class:'av'+(u&&AVOK.has(u)?' has':''),style:'--avc:'+col,'aria-hidden':'true'},h('span',{class:'ini'},(name[0]||'?').toUpperCase()));
+  if(u){const i=h('img',{src:u,alt:'',referrerpolicy:'no-referrer'});i.onload=()=>{AVOK.add(u);d.classList.add('has')};i.onerror=()=>i.remove();d.append(i)}return d}
 const sw=(on,label,fn)=>{const i=h('input',{type:'checkbox','aria-label':label});i.checked=on;i.onchange=()=>fn(i.checked);return h('label',{class:'sw'},i,h('i'))};
 
 function setView(v){view=['acc','game','perf','log'].includes(v)?v:'acc';store.set('fl-view',view);
@@ -376,6 +385,7 @@ $$('.nv').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
 function render(){
   if(!S)return;
+  document.body.classList.toggle('per',S.cfg.gameMode==='per');
   const R=rows(),cnt={all:R.length,on:0,off:0,busy:0,nocookie:0};
   R.forEach(r=>{if(r.st==='on')cnt.on++;if(r.st==='off'||r.st==='late')cnt.off++;if(r.st==='busy')cnt.busy++;if(!r.l)cnt.nocookie++});
   // แถบบน + เมนู
@@ -398,7 +408,7 @@ function renderAcc(R,cnt){
   $('#filters').setAttribute('aria-label',t('cStatus'));
   $('#filters').replaceChildren(...[['all','fAll','var(--mu)'],['on','fOn','var(--ok)'],['off','fOff','var(--red)'],['busy','fBusy','var(--gold)'],['nocookie','fNo','var(--dim)']].map(([k,l,col])=>h('button',{type:'button','aria-pressed':String(flt===k),onclick:()=>{flt=k;render()}},h('span',{class:'dot',style:'--c:'+col}),t(l),h('span',{class:'n'},cnt[k]))));
   const F=R.filter(r=>(flt==='all'||(flt==='off'?(r.st==='off'||r.st==='late'):flt==='nocookie'?!r.l:r.st===flt))&&r.name.toLowerCase().includes(q));
-  $('#rows').replaceChildren(...(F.length?F.map(row):[h('tr',{},h('td',{colspan:8,class:'empty'},R.length?t('emptyF'):t('emptyAll')))]));
+  $('#rows').replaceChildren(...(F.length?F.map(row):[h('tr',{},h('td',{colspan:9,class:'empty'},R.length?t('emptyF'):t('emptyAll')))]));
 }
 function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
   let now;
@@ -418,12 +428,17 @@ function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
     h('td',{class:'mono'},f.level!=null?String(f.level):'–'),
     h('td',{class:'mono mut'},cm(f.token)+' · '+cm(f.ore)),
     h('td',{class:'mut'},f.last!=null?ago(f.last):'–',f.rejoin?h('div',{class:'dim',style:'font-size:11.5px'},t('rejoin')+' ×'+f.rejoin.n):null),
+    h('td',{class:'pcol'},gameSel(r.name)),
     h('td',{},l?sw(r.auto,t('cAuto')+' '+r.name,v=>act(null,'/ui/settings',{name:r.name,auto:v})):h('span',{class:'dim'},'—')),
     h('td',{},h('div',{class:'rowacts'},acts)))}
 
+function gameSel(name){const cur=Number((S.cfg.places||{})[name.toLowerCase()])||0,opts=[h('option',{value:0},t('gMain'))].concat(GAMES.map(g=>h('option',{value:g.id},g.name)));
+  if(cur&&!GAMES.some(g=>g.id===cur))opts.push(h('option',{value:cur},String(cur)));
+  const s=h('select',{class:'sel','aria-label':t('cGame')+' '+name},opts);s.value=String(cur);s.onchange=()=>act(null,'/ui/settings',{name,accPlace:Number(s.value)||0});return s}
 const GAMES=[{name:'Slayers 2',id:16205713724,ini:'S2',c:'var(--red)'},{name:'Steal An Egg',id:107778070777162,ini:'EG',c:'var(--gold)'}];
 function renderGame(){
-  const pid=S.cfg.placeId;
+  const pid=S.cfg.placeId,per=S.cfg.gameMode==='per';
+  $$('[data-gm]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.gm==='per')===per)));$('#gmHint').textContent=t(per?'gmHintP':'gmHintS');
   $('#games').replaceChildren(...GAMES.map(g=>h('button',{type:'button',class:'game','aria-pressed':String(pid===g.id),onclick:e=>act(e.currentTarget,'/ui/settings',{placeId:g.id})},h('span',{class:'gi',style:'--c:'+g.c},g.ini),h('span',{},h('b',{},g.name),h('span',{class:'gid'},String(g.id))))));
   if(document.activeElement!==$('#place'))$('#place').value=pid;
   if(document.activeElement!==$('#auto'))$('#auto').checked=S.cfg.enabled;
@@ -455,12 +470,17 @@ function renderLog(){
 }
 
 async function load(){try{S=await api('/ui/state');render()}catch(e){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--red)'}),t('stopped'))}}
-function closeAdd(){$('#modal').hidden=true;$('#ck').value=''}
-function openAdd(){$('#modal').hidden=false;$('#ck').value='';setTimeout(()=>$('#ck').focus(),50)}
+function closeAdd(){$('#modal').hidden=true;$('#ck').value='';$('#ckres').hidden=true;$('#ckn').textContent=''}
+function openAdd(){$('#modal').hidden=false;$('#ck').value='';$('#ckres').hidden=true;$('#ckn').textContent=t('ckLines',{n:0});setTimeout(()=>$('#ck').focus(),50)}
 $('#add').onclick=openAdd;$('#cancel').onclick=closeAdd;$('#x').onclick=closeAdd;
 $('#modal').onclick=e=>{if(e.target.id==='modal')closeAdd()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeAdd()});
-$('#addf').onsubmit=async e=>{e.preventDefault();const r=await act($('#save'),'/ui/add',{cookie:$('#ck').value});$('#ck').value='';if(r&&r.ok)closeAdd()};
+const ckCount=()=>$('#ck').value.split(/\r?\n/).filter(l=>l.trim()).length;
+$('#ck').oninput=()=>{$('#ckn').textContent=t('ckLines',{n:ckCount()})};
+$('#addf').onsubmit=async e=>{e.preventDefault();$('#ckres').hidden=true;const r=await act($('#save'),'/ui/add',{cookie:$('#ck').value});
+  if(r&&r.bad&&r.bad.length){$('#ckres').replaceChildren(...r.bad.map(b=>h('div',{},b)));$('#ckres').hidden=false;$('#ck').value='';$('#ckn').textContent=''}
+  else if(r&&r.ok)closeAdd()};
+$$('[data-gm]').forEach(b=>b.onclick=()=>act(b,'/ui/settings',{gameMode:b.dataset.gm}));
 $('#rjall').onclick=e=>act(e.currentTarget,'/ui/rejoin-offline',{});
 $('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});if(r&&r.result){const bad=Object.entries(r.result).filter(([,v])=>v!=='ok');toast(bad.length?t('ckBad',{l:bad.map(([n])=>n).join(', ')}):t('ckOk'),bad.length>0)}};
 $('#auto').onchange=e=>act(null,'/ui/settings',{enabled:e.target.checked});

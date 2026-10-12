@@ -62,7 +62,9 @@ function log(line) {
 // ---------- คุยกับ Roblox ----------
 const cookieHdr = (c) => '.ROBLOSECURITY=' + c;
 async function whoAmI(cookie) {
-  const r = await fetch('https://users.roblox.com/v1/users/authenticated', { headers: { Cookie: cookieHdr(cookie), 'User-Agent': UA }, signal: AbortSignal.timeout(15000) });
+  let r;
+  try { r = await fetch('https://users.roblox.com/v1/users/authenticated', { headers: { Cookie: cookieHdr(cookie), 'User-Agent': UA }, signal: AbortSignal.timeout(15000) }); }
+  catch (e) { throw new Error('ต่อ Roblox ไม่ได้ (เน็ตหลุดหรือ Roblox ล่ม)'); }
   if (r.status === 401) throw new Error('cookie ใช้ไม่ได้ (หมดอายุหรือล็อกเอาต์ไปแล้ว)');
   if (!r.ok) throw new Error('Roblox ตอบกลับ ' + r.status);
   const j = await r.json();
@@ -72,11 +74,14 @@ async function whoAmI(cookie) {
 async function authTicket(cookie) {
   let csrf = '';
   for (let i = 0; i < 2; i++) {
-    const r = await fetch('https://auth.roblox.com/v1/authentication-ticket', {
-      method: 'POST', body: '{}',
-      headers: { Cookie: cookieHdr(cookie), 'User-Agent': UA, 'Content-Type': 'application/json', Referer: 'https://www.roblox.com/', Origin: 'https://www.roblox.com', 'x-csrf-token': csrf },
-      signal: AbortSignal.timeout(15000),
-    });
+    let r;
+    try {
+      r = await fetch('https://auth.roblox.com/v1/authentication-ticket', {
+        method: 'POST', body: '{}',
+        headers: { Cookie: cookieHdr(cookie), 'User-Agent': UA, 'Content-Type': 'application/json', Referer: 'https://www.roblox.com/', Origin: 'https://www.roblox.com', 'x-csrf-token': csrf },
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (e) { throw new Error('ต่อ Roblox ไม่ได้ (เน็ตหลุดหรือ Roblox ล่ม) เซิร์ฟเวอร์จะสั่งลองใหม่เอง'); }
     const t = r.headers.get('rbx-authentication-ticket');
     if (t) return t;
     const nc = r.headers.get('x-csrf-token');
@@ -158,6 +163,14 @@ async function refreshAvatars(known, names) {
   } catch (e) { /* ไม่มีเน็ต/Roblox ล่ม: ใช้ตัวอักษรแทนรูปไปก่อน */ } finally { avatarBusy = false; }
 }
 const pidOf = new Map(); // ชื่อไอดี (ตัวเล็ก) -> PID ของ Roblox ที่โปรแกรมนี้เปิดให้
+// ปิด Roblox ที่ค้าง (Windows ขึ้น Not Responding) ทุกหน้าต่าง: ค้างแล้วไม่ส่งข้อมูล กิน RAM เปล่า ๆ
+function killHung() {
+  if (!IS_WIN) return 0;
+  const r = spawnSync('taskkill', ['/F', '/FI', 'IMAGENAME eq RobloxPlayerBeta.exe', '/FI', 'STATUS eq NOT RESPONDING'], { encoding: 'utf8', windowsHide: true });
+  const n = (String(r.stdout || '').match(/PID \d+/g) || []).length;
+  if (n) { log(`ปิด Roblox ที่ค้าง (Not Responding) ${n} หน้าต่าง`); for (const [k, p] of [...pidOf]) if (!robloxPids().includes(p)) pidOf.delete(k); }
+  return n;
+}
 function killOld(name) {
   const pid = pidOf.get(name.toLowerCase());
   if (!pid || !IS_WIN) return false;
@@ -232,6 +245,12 @@ function holdMultiRoblox() {
 const PERF_DEF = { no3d: false, lowGfx: false, fps: 0, except: [], trimMin: 0, minimize: false, staggerSec: 20 };
 function perfCfg() { const p = (readRejoin().perf) || {}; return Object.assign({}, PERF_DEF, p, { except: Array.isArray(p.except) ? p.except : [] }); }
 const placeOf = () => Number(readRejoin().placeId) || DEFAULT_PLACE;
+// โหมดเกม: shared = ทุกไอดีเข้าเกมเดียวกัน · per = ตั้งเกมรายไอดี (ไอดีที่ยังไม่ตั้ง ใช้เกมหลัก)
+function placeFor(name) {
+  const c = readRejoin(), main = Number(c.placeId) || DEFAULT_PLACE;
+  if (c.gameMode !== 'per') return main;
+  return Number((c.places || {})[String(name).toLowerCase()]) || main;
+}
 
 const busy = new Set();
 async function launch(name, placeId) {
@@ -241,6 +260,7 @@ async function launch(name, placeId) {
   if (busy.has(key.toLowerCase())) throw new Error(key + ' กำลังเปิดอยู่แล้ว');
   busy.add(key.toLowerCase());
   try {
+    killHung();
     const killed = killOld(key);
     if (killed) { log(`${key}: ปิด Roblox ตัวเก่าแล้ว`); await new Promise((r) => setTimeout(r, 3000)); }
     const before = new Set(robloxPids());
@@ -257,6 +277,36 @@ async function launch(name, placeId) {
     try { saveAccounts(acc); } catch (e) {}
     return key;
   } finally { setTimeout(() => busy.delete(key.toLowerCase()), 30000).unref(); }
+}
+
+// ---------- เพิ่มไอดี: วาง cookie ได้ทีละหลายบรรทัด ----------
+// รับได้ทั้ง "cookie" ล้วน หรือ "user:pass:cookie" ต่อบรรทัด · เก็บเฉพาะ cookie (ชื่อผู้ใช้/รหัสผ่านที่อาจติดมาถูกทิ้ง ไม่บันทึกที่ไหน)
+function cookieFromLine(line) {
+  const l = String(line).trim(); if (!l) return '';
+  const w = l.indexOf('_|WARNING');
+  let c = w >= 0 ? l.slice(w) : l.split(':').pop();
+  return c.replace(/^\.ROBLOSECURITY=/, '').replace(/^"|"$/g, '').replace(/[;\s"]+$/, '');
+}
+async function importCookies(text) {
+  const lines = text.split(/\r?\n/).map(cookieFromLine).filter(Boolean);
+  if (!lines.length) throw new Error('ยังไม่ได้วาง cookie');
+  if (lines.length > 200) throw new Error('วางได้ครั้งละไม่เกิน 200 บรรทัด');
+  const acc = loadAccounts(), added = [], bad = [];
+  for (let i = 0; i < lines.length; i++) {
+    const c = lines[i];
+    if (c.length < 100) { bad.push(`บรรทัด ${i + 1}: cookie สั้นเกินไป`); continue; }
+    try {
+      const me = await whoAmI(c);
+      for (const k of Object.keys(acc)) if (k.toLowerCase() === me.name.toLowerCase()) delete acc[k];
+      acc[me.name] = { cookie: c, id: me.id, added: Date.now() };
+      avatarCache.delete(me.name.toLowerCase());
+      added.push(me.name); log('เพิ่มไอดี ' + me.name);
+    } catch (e) { bad.push(`บรรทัด ${i + 1}: ${e.message}`); }
+    if (i < lines.length - 1) await new Promise((r) => setTimeout(r, 400)); // ไม่ยิง Roblox ถี่เกิน
+  }
+  if (added.length) saveAccounts(acc);
+  const msg = (added.length ? `เพิ่ม ${added.length} ไอดีแล้ว` + (added.length <= 3 ? ` (${added.join(', ')})` : '') : 'ไม่ได้เพิ่มไอดี') + (bad.length ? ` · ไม่ผ่าน ${bad.length}` : '');
+  return { ok: added.length > 0, msg, added, bad };
 }
 
 // ---------- รับคำสั่งจากเซิร์ฟเวอร์ Fleet (แบบเดียวกับ RAM) ----------
@@ -294,7 +344,7 @@ async function uiState() {
   return {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
     fleet, fleetErr, avatars, version: (() => { try { return fs.readFileSync(path.join(APP, 'version.txt'), 'utf8').trim(); } catch (e) { return ''; } })(),
-    cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, perf: perfCfg() },
+    cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, gameMode: cfg.gameMode === 'per' ? 'per' : 'shared', places: cfg.places || {}, perf: perfCfg() },
     sys: { multi: multiOk, cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
       procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
     log: tail(LOG, 40).concat(tail(path.join(DATA_DIR, 'rejoin.log'), 40).map((l) => l + '  [เซิร์ฟเวอร์]')).sort().reverse().slice(0, 50),
@@ -302,32 +352,31 @@ async function uiState() {
 }
 async function uiAction(p, j) {
   const name = typeof j.name === 'string' ? j.name : '';
-  if (p === '/ui/rejoin') { await launch(name, Number(j.placeId) || placeOf()); return { ok: true, msg: 'กำลังเปิด ' + name }; }
+  if (p === '/ui/rejoin') { await launch(name, placeFor(name)); return { ok: true, msg: 'กำลังเปิด ' + name }; }
   if (p === '/ui/rejoin-offline') {
     const st = await uiState(), have = new Set(st.launcher.map((x) => x.name.toLowerCase())), after = st.cfg.afterMin * 60;
     const off = ((st.fleet && st.fleet.accounts) || []).filter((a) => a.last > after && have.has(a.name.toLowerCase())).map((a) => a.name);
-    const gap = perfCfg().staggerSec, place = placeOf();
-    (async () => { for (const n of off) { try { await launch(n, place); } catch (e) { log(n + ': ' + e.message); } await new Promise((r) => setTimeout(r, gap * 1000)); } })();
+    const gap = perfCfg().staggerSec;
+    (async () => { for (const n of off) { try { await launch(n, placeFor(n)); } catch (e) { log(n + ': ' + e.message); } await new Promise((r) => setTimeout(r, gap * 1000)); } })();
     return { ok: true, msg: off.length ? `กำลังเปิดใหม่ ${off.length} ไอดี (ห่างกันตัวละ ${gap} วิ)` : 'ไม่มีไอดีที่หลุดอยู่' };
   }
   if (p === '/ui/trim') return trimRam();
   if (p === '/ui/minimize') { const ps = robloxPids(); await minimizePids(ps); return { ok: true, msg: IS_WIN ? `ย่อหน้าต่าง Roblox ${ps.length} อันแล้ว` : 'ใช้ได้บน Windows เท่านั้น' };
   }
   if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
-  if (p === '/ui/add') {
-    const c = String(j.cookie || '').trim().replace(/^\.ROBLOSECURITY=/, '').replace(/^"|"$/g, '');
-    if (c.length < 100) throw new Error('cookie สั้นเกินไป ก๊อปมาไม่ครบหรือเปล่า');
-    const me = await whoAmI(c), acc = loadAccounts();
-    for (const k of Object.keys(acc)) if (k.toLowerCase() === me.name.toLowerCase()) delete acc[k];
-    acc[me.name] = { cookie: c, id: me.id, added: Date.now() }; saveAccounts(acc);
-    log('เพิ่มไอดี ' + me.name); return { ok: true, msg: `เพิ่ม ${me.name} (${me.display}) แล้ว` };
-  }
+  if (p === '/ui/add') return importCookies(String(j.cookie || ''));
   if (p === '/ui/remove') { const acc = loadAccounts(), k = Object.keys(acc).find((x) => x.toLowerCase() === name.toLowerCase()); if (!k) throw new Error('ไม่มีไอดีนี้'); delete acc[k]; saveAccounts(acc); log('ลบไอดี ' + k); return { ok: true, msg: 'ลบ ' + k + ' แล้ว' }; }
   if (p === '/ui/check') { const acc = loadAccounts(), out = {}; for (const [n, a] of Object.entries(acc)) { try { await whoAmI(a.cookie); out[n] = 'ok'; } catch (e) { out[n] = e.message; } } return { ok: true, result: out }; }
   if (p === '/ui/settings') {
     const c = readRejoin();
     if ('enabled' in j) c.enabled = !!j.enabled;
     if ('afterMin' in j) { const n = Number(j.afterMin); if (!(n >= 2 && n <= 120)) throw new Error('นาทีต้องอยู่ระหว่าง 2-120'); c.afterMin = n; }
+    if ('gameMode' in j) c.gameMode = j.gameMode === 'per' ? 'per' : 'shared';
+    if ('accPlace' in j && /^[A-Za-z0-9_]{3,20}$/.test(name)) {
+      const n = Number(j.accPlace), m = Object.assign({}, c.places || {});
+      if (!j.accPlace) delete m[name.toLowerCase()]; else if (Number.isSafeInteger(n) && n > 0) m[name.toLowerCase()] = n; else throw new Error('Place ID ต้องเป็นตัวเลข');
+      c.places = m;
+    }
     if ('placeId' in j) { const n = Number(j.placeId); if (!(Number.isSafeInteger(n) && n > 0)) throw new Error('Place ID ต้องเป็นตัวเลข'); c.placeId = n; }
     if (j.perf && typeof j.perf === 'object') {
       const q = j.perf, cur = Object.assign({}, PERF_DEF, c.perf || {}), num = (v, lo, hi, what) => { const n = Number(v); if (!(Number.isInteger(n) && n >= lo && n <= hi)) throw new Error(what + ` ต้องอยู่ระหว่าง ${lo}-${hi}`); return n; };
@@ -367,7 +416,7 @@ function serve() {
         if (!safeEq(req.headers['x-fleet-token'] || '', UI_TOKEN)) return send(401, '{"error":"unauthorized"}', 'application/json');
         if (u.pathname === '/ui/state' && req.method === 'GET') return send(200, JSON.stringify(await uiState()), 'application/json');
         if (req.method !== 'POST') return send(405, '{}', 'application/json');
-        let body = ''; for await (const ch of req) { body += ch; if (body.length > 20000) return send(413, '{}', 'application/json'); }
+        let body = ''; for await (const ch of req) { body += ch; if (body.length > 400000) return send(413, '{}', 'application/json'); }
         let j = {}; try { j = JSON.parse(body || '{}'); } catch (e) { return send(400, '{"error":"bad json"}', 'application/json'); }
         try { return send(200, JSON.stringify(await uiAction(u.pathname, j && typeof j === 'object' ? j : {})), 'application/json'); }
         catch (e) { return send(400, JSON.stringify({ ok: false, error: e.message }), 'application/json'); }
@@ -378,7 +427,7 @@ function serve() {
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
       if (u.pathname === '/LaunchAccount') {
         const name = u.searchParams.get('Account') || '';
-        const place = Number(u.searchParams.get('PlaceId')) || placeOf();
+        const place = readRejoin().gameMode === 'per' ? placeFor(name) : (Number(u.searchParams.get('PlaceId')) || placeOf());
         if (!/^[A-Za-z0-9_]{3,20}$/.test(name) || !(place > 0)) return send(400, 'ข้อมูลไม่ถูกต้อง');
         const k = await launch(name, place);
         return send(200, 'กำลังเปิด ' + k);

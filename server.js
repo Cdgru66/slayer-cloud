@@ -172,7 +172,7 @@ async function rejoinTick() {
   const skip = new Set((cfg.exclude || []).map((x) => String(x).toLowerCase()));
   for (const [name, a] of Object.entries(pool)) {
     if (!a.s) continue;
-    const silent = t - a.s.time;
+    const silent = t - Math.max(a.s.time || 0, a.s.liveAt || 0); // นับจากข้อมูลล่าสุด (เต็ม 120 วิ หรือสด 20 วิ) จับเกมค้าง/หลุดได้เร็วขึ้น
     const st = rjState.get(name);
     if (silent < after) { // ออนไลน์อยู่
       if (st && (st.n || st.alerted)) { rjLog(`${name} กลับมาออนไลน์แล้ว`); discord(cfg, `✅ **${name}** กลับมาออนไลน์แล้ว`); }
@@ -187,7 +187,7 @@ async function rejoinTick() {
     }
     if (t < s2.nextAt) continue;
     s2.n++; s2.at = t; s2.alerted = true;
-    s2.nextAt = t + Math.min(20, (Number(cfg.cooldownMin) || 5) * Math.pow(2, s2.n - 1)) * 60; // 5, 10, 20, 20, ... นาที (ลองเรื่อย ๆ จนกลับมา)
+    s2.nextAt = t + Math.min(10, (Number(cfg.cooldownMin) || 5) * Math.pow(2, s2.n - 1)) * 60; // 5, 10, 10, ... นาที (ลองเรื่อย ๆ จนกลับมา เช่นเน็ตหลุดนาน)
     rjState.set(name, s2);
     const port = Number(cfg.port) || 7963, place = Number(cfg.placeId) || DEFAULT_PLACE;
     const u = `http://127.0.0.1:${port}/LaunchAccount?Account=${encodeURIComponent(name)}&PlaceId=${place}` + (cfg.password ? `&Password=${encodeURIComponent(cfg.password)}` : '');

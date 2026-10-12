@@ -1023,7 +1023,8 @@ local function setupRejoin()
             return
         end
         busy = true
-        print(">> หลุดจากเกม (" .. tostring(reason) .. ") กำลังเข้าเกมใหม่...")
+        local code = tostring(reason or ""):match("Error Code:%s*(%d+)") or ""
+        print(">> หลุดจากเกม" .. (code ~= "" and (" [" .. code .. "]") or "") .. " (" .. tostring(reason) .. ") กำลังเข้าเกมใหม่...")
         queueSelf()
         task.spawn(function()
             local backoff = 10
