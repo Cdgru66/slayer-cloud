@@ -29,16 +29,34 @@ try {
     $tmp = Join-Path $env:TEMP ('fleet-app-' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Force -Path $tmp | Out-Null
     $zip = Join-Path $tmp 'app.zip'
-    Say 'กำลังดาวน์โหลดตัวแอป (~110 MB ครั้งเดียว) ...'
+    $name = "electron-v$Ver-win32-x64.zip"
+    $okZip = { param($f) (Test-Path $f) -and ((Get-FileHash $f -Algorithm SHA256).Hash.ToLower() -eq $Sha) }
     $got = $false
-    try { Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile $zip; $got = $true } catch {}
-    if (-not $got) {
-      Say 'ดาวน์โหลดแบบแรกไม่ได้ ลองอีกวิธี...' 'Yellow'
-      & curl.exe -sS -L -f --ssl-no-revoke -o $zip $Url
-      if ($LASTEXITCODE -ne 0) { throw 'ดาวน์โหลดไม่สำเร็จ (เช็คเน็ต แล้วลองใหม่)' }
+    # 1) ไฟล์ที่ส่งมาไว้ให้แล้ว: ไฟล์เต็ม หรือแบ่งเป็นส่วน (.part1, .part2, ...) ใน %LOCALAPPDATA%\FleetLauncher หรือ Downloads
+    $dirs = @((Join-Path $env:LOCALAPPDATA 'FleetLauncher'), (Join-Path $env:USERPROFILE 'Downloads'))
+    foreach ($d in $dirs) {
+      if ($got) { break }
+      $full = Join-Path $d $name
+      if (& $okZip $full) { Copy-Item $full $zip; $got = $true; Say "ใช้ไฟล์ที่มีอยู่แล้ว: $full"; break }
+      $parts = @(Get-ChildItem -Path $d -Filter "$name.part*" -File -ErrorAction SilentlyContinue | Sort-Object { [int]($_.Name -replace '.*\.part', '') })
+      if ($parts.Count -gt 0) {
+        $out = [IO.File]::Create($zip)
+        try { foreach ($pt in $parts) { $in = [IO.File]::OpenRead($pt.FullName); try { $in.CopyTo($out) } finally { $in.Close() } } } finally { $out.Close() }
+        if (& $okZip $zip) { $got = $true; Say "รวมไฟล์ $($parts.Count) ส่วนจาก $d แล้ว" } else { Remove-Item $zip -Force; Say "ไฟล์ส่วนใน $d ไม่ครบหรือเสีย ข้ามไป" 'Yellow' }
+      }
     }
-    $h = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-    if ($h -ne $Sha) { throw 'ไฟล์ที่โหลดมาไม่ตรงกับต้นฉบับ (อาจเสียระหว่างโหลด) ลองใหม่อีกครั้ง' }
+    # 2) ดาวน์โหลด (GitHub ก่อน ถ้าไม่ได้ใช้ mirror · ไม่ว่ามาจากไหนต้องผ่านการตรวจ SHA256 เท่านั้น)
+    $urls = @($Url, "https://npmmirror.com/mirrors/electron/$Ver/$name")
+    foreach ($u in $urls) {
+      if ($got) { break }
+      Say ('กำลังดาวน์โหลดตัวแอป (~110 MB) จาก ' + ([Uri]$u).Host + ' ...')
+      try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile $zip } catch { Say ('  โหลดไม่ได้: ' + $_.Exception.Message) 'Yellow' }
+      if (& $okZip $zip) { $got = $true; break }
+      & curl.exe -sS -L -f -o $zip $u 2>$null
+      if (& $okZip $zip) { $got = $true; break }
+      Remove-Item $zip -Force -ErrorAction SilentlyContinue
+    }
+    if (-not $got) { throw ("ดาวน์โหลดไม่ได้ (โปรแกรมแอนตี้ไวรัส/VPN/เน็ตบ้านดักการเชื่อมต่อ HTTPS อยู่) · โหลดไฟล์ $name ด้วยเบราว์เซอร์จาก $Url ไว้ในโฟลเดอร์ Downloads แล้วรัน install-app.bat ใหม่") }
     Say 'ตรวจไฟล์ผ่าน กำลังแตกไฟล์...'
     if (Test-Path $Dest) { Remove-Item $Dest -Recurse -Force }
     Expand-Archive -LiteralPath $zip -DestinationPath $Dest -Force
@@ -46,6 +64,7 @@ try {
     Remove-Item (Join-Path $Dest 'resources\default_app.asar') -Force -ErrorAction SilentlyContinue
     Set-Content -Path (Join-Path $Dest "electron-$Ver.txt") -Value $Ver
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'FleetLauncher') -Filter "$name*" -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
   } else { Say 'มีตัวแอปอยู่แล้ว อัปเดตเฉพาะโค้ดแอป' }
 
   # ใส่โค้ดแอป (main.js, ไอคอน) จากโฟลเดอร์ desktop
