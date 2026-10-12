@@ -166,10 +166,43 @@ function killOld(name) {
   pidOf.delete(name.toLowerCase());
   return true;
 }
+// เปิด Roblox ตรงจากคำสั่งที่ Roblox (หรือ Bloxstrap) ลงทะเบียนไว้กับลิงก์ roblox-player: ใน Windows
+// (ไม่ผ่าน cmd start: ตัวเดิมส่งชื่อหน้าต่าง "" ผิดรูปแบบ Windows เลยหาไฟล์ไม่เจอแล้วดังเตือน)
+function regDefault(key) {
+  const r = spawnSync('reg', ['query', key, '/ve'], { encoding: 'utf8', windowsHide: true });
+  const m = r.status === 0 && String(r.stdout || '').match(/REG_(?:EXPAND_)?SZ\s+(.+?)\s*$/m);
+  return m ? m[1] : '';
+}
+function splitCmd(s) { const out = [], re = /"([^"]*)"|(\S+)/g; let m; while ((m = re.exec(s))) out.push(m[1] !== undefined ? m[1] : m[2]); return out; }
 function openUri(uri) {
   if (TEST_PLAIN) { log('(โหมดทดสอบ: ไม่ได้เปิด Roblox จริง)'); return; }
   if (!IS_WIN) throw new Error('เปิด Roblox ได้บน Windows เท่านั้น');
-  spawn('cmd', ['/c', 'start', '""', uri], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  const tpl = regDefault('HKCU\\Software\\Classes\\roblox-player\\shell\\open\\command') || regDefault('HKCR\\roblox-player\\shell\\open\\command');
+  const parts = splitCmd(tpl.replace(/%(\w+)%/g, (x, v) => process.env[v] || x)), exe = parts.shift();
+  const onErr = (e) => log('เปิด Roblox ไม่สำเร็จ: ' + e.message);
+  if (exe && fs.existsSync(exe)) {
+    let used = false;
+    const args = parts.map((a) => (a.includes('%1') ? ((used = true), a.replace('%1', uri)) : a));
+    if (!used) args.push(uri);
+    const ch = spawn(exe, args, { detached: true, stdio: 'ignore' }); ch.on('error', onErr); ch.unref();
+    return;
+  }
+  log('ไม่เจอ Roblox ในเครื่อง (ลง Roblox แล้วเปิดเกมจากเว็บ roblox.com สักครั้ง) ลองเปิดผ่าน Windows แทน');
+  const ch = spawn('rundll32', ['url.dll,FileProtocolHandler', uri], { detached: true, stdio: 'ignore', windowsHide: true }); ch.on('error', onErr); ch.unref();
+}
+
+// เปิด Roblox หลายจอพร้อมกัน: Roblox ยอมให้เปิดได้ทีละตัวถ้าไม่มีใครถือ "ROBLOX_singleton..." ไว้ก่อน
+// (แบบเดียวกับ Multi Roblox ของ RAM) · ต้องเริ่มก่อนเปิด Roblox ตัวแรก ถือไว้จนปิดหน้าต่างนี้
+let multiOk = null;
+function holdMultiRoblox() {
+  if (!IS_WIN || TEST_PLAIN) return;
+  const ps = "$o=@(); foreach($n in 'ROBLOX_singletonMutex','ROBLOX_singletonEvent'){ $m=New-Object System.Threading.Mutex($false,$n); try{ $o+=$m.WaitOne(0) }catch{ $o+=$true } }; if($o -contains $false){'busy'}else{'ok'}; [Console]::In.ReadToEnd() | Out-Null";
+  const ch = spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
+  ch.stdout.once('data', (d) => {
+    multiOk = String(d).includes('ok');
+    log(multiOk ? 'เปิด Roblox หลายจอพร้อมกันได้แล้ว' : 'เปิดหลายจอไม่ได้: มี Roblox เปิดค้างอยู่ก่อน · ปิด Roblox ทุกหน้าต่างแล้วเปิด launcher.bat ใหม่');
+  });
+  ch.on('error', () => {});
 }
 
 // ตั้งค่าประหยัดเครื่อง (เก็บใน data/rejoin.json คีย์ perf · เซิร์ฟเวอร์ส่งส่วน "ในเกม" ต่อให้สคริปต์)
@@ -239,7 +272,7 @@ async function uiState() {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
     fleet, fleetErr, avatars, version: (() => { try { return fs.readFileSync(path.join(APP, 'version.txt'), 'utf8').trim(); } catch (e) { return ''; } })(),
     cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, perf: perfCfg() },
-    sys: { cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
+    sys: { multi: multiOk, cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
       procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
     log: tail(LOG, 40).concat(tail(path.join(DATA_DIR, 'rejoin.log'), 40).map((l) => l + '  [เซิร์ฟเวอร์]')).sort().reverse().slice(0, 50),
   };
@@ -295,6 +328,7 @@ function openWindow(url) {
 }
 function serve() {
   const cfg = ensureRejoinCfg();
+  holdMultiRoblox();
   const UI_FILE = path.join(__dirname, 'ui.html');
   const srv = http.createServer(async (req, res) => {
     const send = (code, text, type) => { res.writeHead(code, { 'Content-Type': type || 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' }); res.end(text); };
