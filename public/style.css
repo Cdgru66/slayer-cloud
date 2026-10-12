@@ -694,3 +694,5 @@ img.bossic{flex:none;border-radius:50%;object-fit:cover;background:#1c1315;box-s
 .tokcard .res{grid-template-columns:1fr!important}.tokcard .ri .v{font-size:30px}.tk-note{color:var(--mu)!important}
 
 #t-ore{grid-template-columns:1fr!important}#t-ore .ri .v{font-size:30px}
+
+.goall .gn .ic,.goall .gn img{vertical-align:middle;margin-right:7px;border-radius:6px}
