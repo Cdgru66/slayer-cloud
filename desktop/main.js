@@ -4,6 +4,7 @@
 // - โค้ดตัวเปิดเกมอ่านจากโฟลเดอร์ร้าน (โฟลเดอร์แม่ที่มี launcher\fleet-launcher.js) จึงอัปเดตผ่าน update.bat ได้ตามปกติ
 'use strict';
 const { app, BrowserWindow, Tray, Menu, nativeImage, shell, dialog } = require('electron');
+const { spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -73,6 +74,21 @@ function createWindow() {
   });
 }
 
+// พอร์ต 7963 ถูกใช้: ดูว่าใครใช้ ถ้าเป็นตัวเปิดเกมแบบเก่า (node fleet-launcher.js / launcher.bat ที่รันเบื้องหลัง) ปิดให้เอง
+// คืน 'killed' = ปิดตัวเก่าแล้ว (เปิดแอปใหม่ได้) · 'ram' = Roblox Account Manager · null = ไม่รู้
+function freePort() {
+  if (process.platform !== 'win32') return null;
+  const ps = "$c=Get-NetTCPConnection -LocalPort 7963 -State Listen -ErrorAction SilentlyContinue|Select-Object -First 1; if(-not $c){'none';exit}; " +
+    "$p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$c.OwningProcess); if(-not $p){'none';exit}; " +
+    "if(($p.Name -eq 'node.exe' -and $p.CommandLine -like '*fleet-launcher.js*') -or ($p.Name -eq 'FleetLauncher.exe' -and $p.ProcessId -ne " + process.pid + ")){Stop-Process -Id $p.ProcessId -Force; 'killed'} " +
+    "elseif($p.Name -like '*Account*Manager*' -or $p.Name -like 'RAM*'){'ram'} else {'other:'+$p.Name}";
+  try {
+    const r = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
+    const out = String(r.stdout || '').trim().split(/\r?\n/).pop() || '';
+    return out === 'killed' || out === 'none' ? 'killed' : out === 'ram' ? 'ram' : out ? out : null;
+  } catch (e) { return null; }
+}
+
 function quitAll() { quitting = true; if (tray) tray.destroy(); app.exit(0); }
 
 function createTray() {
@@ -107,9 +123,14 @@ app.whenReady().then(() => {
     onOpenUI: showWindow,
     onQuit: quitAll,
     onError: (e) => {
-      dialog.showErrorBox('Fleet Launcher', e.code === 'EADDRINUSE'
-        ? 'มีตัวเปิดเกมอีกตัวทำงานอยู่ (แบบเก่าที่เปิดจาก launcher.bat หรือ Roblox Account Manager)\n\nปิดตัวนั้นก่อน แล้วเปิด Fleet Launcher ใหม่'
-        : 'เริ่มทำงานไม่ได้: ' + e.message);
+      if (e.code === 'EADDRINUSE') {
+        const who = freePort();
+        // ปิดตัวเก่าให้แล้ว → เปิดแอปใหม่เอง (ลองครั้งเดียว กันวนไม่จบ)
+        if (who === 'killed' && !process.argv.includes('--port-retry')) { setTimeout(() => { app.relaunch({ args: process.argv.slice(1).concat('--port-retry') }); quitAll(); }, 1500); return; }
+        dialog.showErrorBox('Fleet Launcher', who === 'ram'
+          ? 'Roblox Account Manager เปิดอยู่ (ใช้พอร์ตเดียวกัน)\n\nปิด Roblox Account Manager ก่อน แล้วเปิด Fleet Launcher ใหม่'
+          : 'มีโปรแกรมอื่นใช้พอร์ต 7963 อยู่' + (who && who.startsWith('other:') ? ' (' + who.slice(6) + ')' : '') + '\n\nรีสตาร์ทคอม 1 ครั้งแล้วเปิด Fleet Launcher ใหม่');
+      } else dialog.showErrorBox('Fleet Launcher', 'เริ่มทำงานไม่ได้: ' + e.message);
       quitAll();
     },
   });
