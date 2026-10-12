@@ -187,12 +187,13 @@ tbody tr{transition:background .12s}tbody tr:hover{background:rgba(241,225,205,.
 /* ไอคอนของ (Token/Ore) ในตาราง */
 .amt{display:inline-flex;align-items:center;gap:5px;margin-right:12px;white-space:nowrap}.amt:last-child{margin-right:0}
 .amt img,.amt .ico{width:18px;height:18px;border-radius:5px;object-fit:cover;flex:none}
-.amt .ico{display:inline-grid;place-items:center;font-size:11px;background:var(--s3);color:var(--gold)}
+.amt .ico{display:inline-grid;place-items:center;background:var(--s3);color:var(--gold);box-shadow:inset 0 0 0 1px rgba(226,182,92,.25)}
+.svi{display:inline-grid;place-items:center;line-height:0}.btn .svi{margin-right:1px}.bbtn .bi svg{display:block}
 /* ปุ่มลดแรมแบบกดทีเดียว */
 .boost{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .bbtn{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;border:0;text-align:left;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line2);color:var(--tx);transition:box-shadow .15s,background .15s}
 .bbtn:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.45)}
-.bbtn .bi{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--s3);color:var(--gold-hi);font-size:19px}
+.bbtn .bi{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--s3);color:var(--gold-hi);box-shadow:inset 0 0 0 1px rgba(226,182,92,.22)}
 .bbtn b{display:block;font-size:15px}.bbtn small{display:block;color:var(--mu);font-size:12px;margin-top:2px}
 .bbtn.main{background:linear-gradient(180deg,#2a1d12,#1f150e);box-shadow:inset 0 0 0 1px rgba(226,182,92,.45)}
 .bbtn[aria-pressed=true]{box-shadow:inset 0 0 0 1.5px var(--ok);background:rgba(95,208,160,.07)}.bbtn[aria-pressed=true] .bi{color:var(--ok)}
@@ -324,8 +325,8 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
         <h1 data-i="hPerf"></h1>
       </div>
       <div class="boost">
-        <button type="button" class="bbtn main" id="boostNow"><span class="bi">⚡</span><span><b data-i="bNow"></b><small data-i="bNowSub"></small></span></button>
-        <button type="button" class="bbtn" id="ecoBtn" aria-pressed="false"><span class="bi">🌙</span><span><b data-i="bEco"></b><small data-i="bEcoSub"></small></span><span class="st" id="ecoSt"></span></button>
+        <button type="button" class="bbtn main" id="boostNow"><span class="bi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/><path d="M12 9v5M9.8 12l2.2 2.2 2.2-2.2"/></svg></span><span><b data-i="bNow"></b><small data-i="bNowSub"></small></span></button>
+        <button type="button" class="bbtn" id="ecoBtn" aria-pressed="false"><span class="bi"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span><span><b data-i="bEco"></b><small data-i="bEcoSub"></small></span><span class="st" id="ecoSt"></span></button>
       </div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">
         <div class="tile"><p class="l" data-i="pTotal"></p><p class="v" id="p-total">–</p><p class="s" id="p-total-s"></p></div>
@@ -365,7 +366,7 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
 
 <div class="modal" id="modal" hidden>
   <form class="sheet" id="addf" aria-labelledby="addT">
-    <div class="sh"><h2 id="addT" data-i="addTitle"></h2><button type="button" class="btn ic sm" id="x" data-ia="cancel">✕</button></div>
+    <div class="sh"><h2 id="addT" data-i="addTitle"></h2><button type="button" class="btn ic sm" id="x" data-ia="cancel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="sb">
       <ol class="steps" id="steps"></ol>
       <textarea id="ck" placeholder="_|WARNING:-DO-NOT-SHARE-THIS…" spellcheck="false" autocomplete="off" aria-label="cookie"></textarea>
@@ -543,10 +544,10 @@ function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
   else if(f.holding)now=[h('b',{},f.holding)];
   else now=[r.st==='never'?h('span',{class:'dim'},t('noData')):f.goal?t('goal')+f.goal:h('span',{class:'dim'},'—')];
   const acts=[];
-  if(l)acts.push(h('button',{type:'button',class:'btn sm gold',onclick:async e=>{const b=e.currentTarget;if(r.st==='on'&&!await ask(t('confirmRj',{n:r.name}),t('rejoin')))return;act(b,'/ui/rejoin',{name:r.name})}},'⟳ '+t('rejoin')));
+  if(l)acts.push(h('button',{type:'button',class:'btn sm gold',onclick:async e=>{const b=e.currentTarget;if(r.st==='on'&&!await ask(t('confirmRj',{n:r.name}),t('rejoin')))return;act(b,'/ui/rejoin',{name:r.name})}},ic('rj',13),t('rejoin')));
   else acts.push(h('button',{type:'button',class:'btn sm gold',onclick:openAdd},t('addCk')));
   if(l&&l.window)acts.push(h('button',{type:'button',class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},t('closeG')));
-  if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:async()=>{if(await ask(t('confirmDel',{n:r.name}),t('del'),true))act(null,'/ui/remove',{name:r.name})}},'✕'));
+  if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:async()=>{if(await ask(t('confirmDel',{n:r.name}),t('del'),true))act(null,'/ui/remove',{name:r.name})}},ic('x',13)));
   return h('tr',{},
     h('td',{},h('div',{class:'who'},avatar(r.name,col),h('div',{},h('b',{},mask(f.display||r.name)),h('span',{},'@'+mask(r.name))))),
     h('td',{},h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),t(sk))),
@@ -559,10 +560,15 @@ function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
     h('td',{},h('div',{class:'rowacts'},acts)))}
 
 // Token / Ore พร้อมไอคอนจริงจากเกม (โหลดไม่ขึ้น = ไอคอนสำรอง) แสดงเฉพาะค่าที่มี
-function itemIco(url,fb){const sp=h('span',{class:'ico'},fb);if(!url)return sp;const i=h('img',{src:url,alt:'',referrerpolicy:'no-referrer'});i.onerror=()=>i.replaceWith(sp);return i}
+// ไอคอนเส้นแบบเดียวกับเมนู (ไม่ใช้อิโมจิ) · ข้อความคงที่ของเราเอง
+const ICONS={x:'<path d="M6 6l12 12M18 6L6 18"/>',rj:'<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+  token:'<path d="M12 3l7.5 4.3v9.4L12 21l-7.5-4.3V7.3z"/><path d="M12 8l3.5 2v4L12 16l-3.5-2v-4z"/>',
+  ore:'<path d="M7 4h10l4 6-9 10L3 10z"/><path d="M3 10h18M9 4l3 6 3-6M12 10v10"/>'};
+function ic(n,w){const sp=document.createElement('span');sp.className='svi';sp.innerHTML='<svg width="'+(w||14)+'" height="'+(w||14)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ICONS[n]+'</svg>';return sp}
+function itemIco(url,fb){const sp=h('span',{class:'ico'},ic(fb,12));if(!url)return sp;const i=h('img',{src:url,alt:'',referrerpolicy:'no-referrer'});i.onerror=()=>i.replaceWith(sp);return i}
 function amtCell(f){const I=S.icons||{},out=[];
-  if(f.token!=null)out.push(h('span',{class:'amt',title:'Ouwigahara Token'},itemIco(I.token,'◆'),cm(f.token)));
-  if(f.ore!=null)out.push(h('span',{class:'amt',title:'Ore'},itemIco(I.ore,'⛏'),cm(f.ore)));
+  if(f.token!=null)out.push(h('span',{class:'amt',title:'Ouwigahara Token'},itemIco(I.token,'token'),cm(f.token)));
+  if(f.ore!=null)out.push(h('span',{class:'amt',title:'Ore'},itemIco(I.ore,'ore'),cm(f.ore)));
   return out.length?out:h('span',{class:'dim'},'—')}
 function gameSel(name){const G=S.games||[],cur=Number((S.cfg.places||{})[name.toLowerCase()])||0,opts=[h('option',{value:0},t('gMain'))].concat(G.map(g=>h('option',{value:g.id},g.name||String(g.id))));
   if(cur&&!G.some(g=>g.id===cur))opts.push(h('option',{value:cur},String(cur)));
@@ -573,7 +579,7 @@ function gameCard(g,pid){const nm=g.name||('Place '+g.id),gi=h('span',{class:'gi
   const sel=pid===g.id;
   return h('div',{class:'game','aria-pressed':String(sel),role:'button',tabindex:'0',onclick:e=>{if(e.target.closest('.gx'))return;act(null,'/ui/settings',{placeId:g.id})},onkeydown:e=>{if(e.key==='Enter')act(null,'/ui/settings',{placeId:g.id})}},
     gi,h('span',{class:'gb'},h('b',{title:nm},nm),h('span',{class:'gid'},String(g.id))),
-    sel?null:h('button',{type:'button',class:'gx','aria-label':t('gDel'),title:t('gDel'),onclick:async()=>{if(await ask(t('gDelAsk',{n:nm}),t('gDel'),true))act(null,'/ui/game-remove',{place:g.id})}},'✕'))}
+    sel?null:h('button',{type:'button',class:'gx','aria-label':t('gDel'),title:t('gDel'),onclick:async()=>{if(await ask(t('gDelAsk',{n:nm}),t('gDel'),true))act(null,'/ui/game-remove',{place:g.id})}},ic('x',13)))}
 function renderGame(){
   $('#scriptBox').hidden=!S.script;
   if(S.script){const shown=CEN?S.script.loader.replace(/(sfl_[0-9a-f]{4})[0-9a-f]+/,'$1••••••••'):S.script.loader;if($('#scLoader').value!==shown)$('#scLoader').value=shown;$('#scNote').textContent=t('scNote',{n:S.script.max})}
