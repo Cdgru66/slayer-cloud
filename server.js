@@ -442,7 +442,10 @@ function handleReq(req, res) {
       let accepted = 0, rejected = 0; const why = [];
       for (const s of list) { const e = ingest(a.id, a.c, s); if (e) { rejected++; if (why.length < 5) why.push(e); } else accepted++; }
       const sc = scriptTemplate();
-      send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null, sv: sc ? sc.ver : undefined });
+      // โหมดประหยัดในเกม (ตั้งในหน้าจอตัวเปิดเกม) ส่งเฉพาะไอดีฟาร์มของร้านเอง
+      const pf = settings.mode === 'owner' ? rejoinCfg().perf : null;
+      const perf = pf && typeof pf === 'object' ? { no3d: !!pf.no3d, lowGfx: !!pf.lowGfx, fps: Number(pf.fps) || 0, except: Array.isArray(pf.except) ? pf.except.slice(0, 200) : [] } : undefined;
+      send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null, sv: sc ? sc.ver : undefined, perf });
     });
   }
 

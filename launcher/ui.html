@@ -5,169 +5,270 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fleet Launcher</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --lac:#140c0e;--lac2:#1c1215;--lac3:#251a1d;--edge:#3a2a2c;--hair:rgba(241,233,221,.07);
-  --tx:#f1e9dd;--mu:#9d9088;--dim:#6d625c;
+  --lac:#140c0e;--lac1:#180e11;--lac2:#1c1215;--lac3:#251a1d;--edge:#3a2a2c;--hair:#2c1f22;--row:#241719;
+  --tx:#f1e9dd;--tx2:#d9cfc3;--mu:#9d9088;--mu2:#b5a99f;--dim:#6d625c;
   --gold:#e2b65c;--gold-hi:#f6dd9c;--gold-lo:#8f6c2c;--steel:#9db8c9;
-  --seal:#d8432c;--seal-lo:#8e2416;--ok:#5fd0a0;--warn:#e9a24a;--red:#e2574b;
+  --seal:#d8432c;--seal-lo:#8e2416;--ok:#5fd0a0;--warn:#e9a24a;--red:#ef7b6c;
   --serif:'Noto Serif Thai','Noto Serif',Georgia,serif;
   --sans:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
 }
 *{box-sizing:border-box;margin:0}
 [hidden]{display:none!important}
-body{background:var(--lac);color:var(--tx);font:14px/1.55 var(--sans);min-height:100vh;font-variant-numeric:tabular-nums;
-  background-image:radial-gradient(60rem 30rem at 85% -15%,rgba(216,67,44,.12),transparent 60%),radial-gradient(40rem 28rem at -10% 110%,rgba(226,182,92,.06),transparent 60%);background-attachment:fixed}
-button,input,textarea{font:inherit;color:inherit}
+html{color-scheme:dark;scrollbar-width:thin;scrollbar-color:#4a3436 var(--lac)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#3a2a2c;border-radius:10px;border:2px solid var(--lac)}
+::-webkit-scrollbar-thumb:hover{background:var(--gold-lo)}
+::-webkit-scrollbar-corner{background:transparent}
+body{background:var(--lac);color:var(--tx);font:14px/1.5 var(--sans);font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(60rem 30rem at 90% -20%,rgba(216,67,44,.10),transparent 60%);background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-.serif{font-family:var(--serif)}
-.app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
-/* แถบซ้าย */
-aside{position:sticky;top:0;height:100vh;padding:22px 14px 18px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--hair);background:linear-gradient(180deg,rgba(28,18,21,.85),rgba(20,12,14,.6))}
-.brand{display:flex;align-items:center;gap:11px;margin:0 6px 22px}
-.seal{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:16px;color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(216,67,44,.35)}
-.brand b{font:600 17px var(--serif);display:block;line-height:1.15}.brand small{color:var(--mu);font-size:11.5px}
-.sect{font-size:11px;letter-spacing:.08em;color:var(--dim);margin:14px 10px 4px}
-.fl{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:9px;color:var(--mu)}
-.fl:hover{color:var(--tx);background:rgba(241,233,221,.04)}
-.fl[aria-pressed=true]{color:var(--tx);background:rgba(241,233,221,.06);box-shadow:inset 0 0 0 1px var(--edge)}
-.fl .n{margin-left:auto;font-size:12px;color:var(--dim)}
+.mono{font-family:var(--mono)}
+
+/* ---- แถบบน ---- */
+.topbar{height:46px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;border-bottom:1px solid var(--hair);background:var(--lac1);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.seal{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:13px;color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+.brand b{font:700 15px var(--serif);color:var(--gold-hi)}
+.brand .ver{font:12px var(--mono);color:var(--mu)}
+.tr{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--mu);min-width:0}
+.conn{display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--dim));flex:none}
-.dot.pulse{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent);animation:pl 2s infinite}
-@keyframes pl{70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.auto{margin-top:auto;padding:13px;border-radius:12px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:10px}
-.auto .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.auto .row span{font-size:13px}
-.minput{width:54px;padding:4px 6px;border-radius:7px;border:0;background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge);text-align:center}
-.conn{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:7px;padding:0 4px}
-/* สวิตช์ */
-.sw{position:relative;width:38px;height:22px;flex:none;cursor:pointer}
-.sw input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
-.sw i{position:absolute;inset:0;border-radius:99px;background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge);transition:.2s}
-.sw i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--mu);transition:.2s}
-.sw input:checked+i{background:rgba(95,208,160,.25);box-shadow:inset 0 0 0 1px rgba(95,208,160,.5)}
-.sw input:checked+i::after{left:19px;background:var(--ok)}
+.pulse{box-shadow:0 0 0 0 var(--c);animation:pu 2s infinite}
+@keyframes pu{70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.lang{display:flex;background:var(--lac2);border:1px solid var(--edge);border-radius:8px;padding:2px;flex:none}
+.lang button{border:0;background:transparent;color:var(--mu);padding:3px 11px;border-radius:6px;cursor:pointer;font-size:12px}
+.lang button[aria-pressed=true]{background:var(--edge);color:var(--gold-hi);font-weight:600}
+
+/* ---- โครง ---- */
+.shell{display:flex;flex-wrap:wrap;min-height:calc(100vh - 46px)}
+nav.side{flex:1 1 210px;max-width:230px;background:var(--lac1);border-right:1px solid var(--hair);padding:16px 12px;display:flex;flex-direction:column;gap:3px}
+.go{display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:10px;border:0;cursor:pointer;margin-bottom:14px;font-weight:700;color:#2a1a08;background:linear-gradient(180deg,var(--gold-hi),var(--gold));box-shadow:0 8px 22px -10px rgba(226,182,92,.6)}
+.go:hover{filter:brightness(1.06)}.go:disabled{opacity:.6;cursor:wait}
+.sect{font-size:11px;letter-spacing:.08em;color:var(--dim);padding:10px 10px 4px}
+.nv{display:flex;align-items:center;justify-content:space-between;gap:8px;height:40px;padding:0 10px;border-radius:8px;color:var(--mu2);background:transparent;border:0;cursor:pointer;text-align:left;width:100%}
+.nv:hover{color:var(--tx);background:rgba(241,233,221,.04)}
+.nv[aria-current=page]{background:var(--lac3);color:var(--tx);font-weight:600;box-shadow:inset 0 0 0 1px var(--edge)}
+.nv svg{flex:none;opacity:.8}.nv span:first-child{display:flex;align-items:center;gap:10px}
+.cnt{font:12px var(--mono);background:var(--edge);padding:1px 8px;border-radius:6px;color:var(--tx2)}
+.qs{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;padding-top:14px}
+.qs div{background:var(--lac2);border:1px solid var(--hair);border-radius:8px;padding:6px 8px;display:flex;justify-content:space-between;gap:4px}
+.qs b{font:600 12px var(--mono)}.qs span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{flex:999 1 560px;min-width:0;padding:20px 24px 40px;display:flex;flex-direction:column;gap:16px}
+.view{display:flex;flex-direction:column;gap:16px}
+
+/* ---- ส่วนประกอบ ---- */
+h1{font:700 21px var(--serif)}
+.head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--edge);background:var(--lac2);color:var(--tx2);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#5a4244;color:var(--tx)}.btn:disabled{opacity:.55;cursor:wait}
+.btn.gold{background:#2a1d12;border-color:var(--gold-lo);color:var(--gold-hi);font-weight:600}
+.btn.gold:hover{border-color:var(--gold)}
+.btn.red{border-color:rgba(239,123,108,.45);color:#ffb3a8}
+.btn.sm{height:32px;padding:0 10px;font-size:12.5px;border-radius:8px}
+.btn.ic{width:32px;padding:0}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--lac2);border:1px solid var(--hair);border-radius:12px;padding:14px 16px;min-width:0}
+.tile .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--mu)}
+.tile .v{font:600 20px var(--mono);color:var(--tx)}
+.tile .v small{font-size:12px;color:var(--mu);font-weight:400}
+.tile .s{font-size:11.5px;color:var(--dim);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{height:6px;background:#2a1d20;border-radius:3px;margin-top:10px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:3px;background:var(--mc,var(--gold));transition:width .6s}
+.banner{padding:10px 14px;border-radius:10px;background:#2e1715;border:1px solid rgba(239,123,108,.35);color:#ffc2b8;font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;background:var(--lac2);border:1px solid var(--hair);border-radius:10px;color:var(--mu)}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--tx)}
+.seg{display:flex;flex-wrap:wrap;gap:3px;background:var(--lac2);border:1px solid var(--hair);border-radius:10px;padding:4px}
+.seg button{display:flex;align-items:center;gap:6px;height:32px;padding:0 11px;border:0;border-radius:7px;background:transparent;color:var(--mu);cursor:pointer;font-size:13px}
+.seg button[aria-pressed=true]{background:var(--edge);color:var(--tx);font-weight:600}
+.seg .n{font:12px var(--mono);opacity:.75}
+.box{background:var(--lac2);border:1px solid var(--hair);border-radius:12px}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--mu);font-size:11px;font-weight:500;letter-spacing:.04em;padding:11px 8px;white-space:nowrap}
+th:first-child,td:first-child{padding-left:16px}th:last-child,td:last-child{padding-right:16px}
+td{padding:9px 8px;border-top:1px solid var(--row);vertical-align:middle}
+tr:hover td{background:rgba(241,233,221,.018)}
+.who{display:flex;align-items:center;gap:10px;min-width:170px}
+.av{width:38px;height:38px;border-radius:50%;flex:none;background:#2a1d20;box-shadow:0 0 0 2px var(--avc,var(--edge));display:grid;place-items:center;overflow:hidden;font-weight:700;color:var(--gold);position:relative}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.who b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.who span{font-size:11.5px;color:var(--dim)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent)}
+.now{color:var(--tx2);max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now b{color:var(--tx);font-weight:600}
+.mut{color:var(--mu)}.dim{color:var(--dim)}
+.rowacts{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+.sw{position:relative;display:inline-block;width:44px;height:26px;flex:none;cursor:pointer}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.sw i{position:absolute;inset:0;border-radius:999px;background:var(--edge);transition:.2s;pointer-events:none}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--mu);transition:.2s}
+.sw input:checked+i{background:#5a4320}.sw input:checked+i::after{left:21px;background:var(--gold-hi)}
 .sw input:focus-visible+i{outline:2px solid var(--gold);outline-offset:2px}
-/* เนื้อหา */
-main{padding:24px 28px 40px;min-width:0}
-.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px}
-h1{font:700 24px/1.2 var(--serif)}
-.sub{color:var(--mu);font-size:13px;margin-top:3px}
-.acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-.btn{cursor:pointer;border:0;padding:9px 14px;border-radius:10px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);font-size:13px;display:inline-flex;align-items:center;gap:7px;transition:.15s}
-.btn:hover{background:var(--lac3)}
-.btn.gold{background:linear-gradient(180deg,#3a2b17,#2a1f12);box-shadow:inset 0 0 0 1px rgba(226,182,92,.45);color:var(--gold-hi)}
-.btn.gold:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.75)}
-.btn.red{background:linear-gradient(135deg,rgba(216,67,44,.9),rgba(142,36,22,.9));box-shadow:inset 0 0 0 1px rgba(255,214,150,.3);color:#fff3e6}
-.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px}
-.btn[disabled]{opacity:.55;cursor:wait}
-.tiles{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
-.tile{padding:14px 16px;border-radius:14px;background:linear-gradient(170deg,var(--lac2),#170f11);box-shadow:inset 0 0 0 1px var(--edge)}
-.tile .l{font-size:12px;color:var(--mu)}
-.tile .v{font:700 26px/1.2 var(--serif);margin-top:2px}
-.tile .v small{font-size:14px;color:var(--mu);font-weight:500}
-.tile.hero{background:linear-gradient(135deg,rgba(226,182,92,.13),rgba(216,67,44,.08)),var(--lac2);box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
-.tile.hero .v{color:var(--gold-hi)}
-.meter{height:5px;border-radius:9px;background:var(--lac3);margin-top:9px;overflow:hidden}
-.meter i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--steel),#c7dbe7);transition:width .8s}
-.meter.hot i{background:linear-gradient(90deg,var(--warn),var(--red))}
-.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
-.search{flex:1;padding:10px 14px;border-radius:11px;border:0;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge)}
-.wrap{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
-/* การ์ดไอดี */
-.card{position:relative;border-radius:15px;padding:14px 15px 12px;background:linear-gradient(170deg,#21161a,#170f11);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:10px;transition:box-shadow .2s,transform .2s}
-.card:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
-.card.on{box-shadow:inset 0 0 0 1px rgba(95,208,160,.28)}
-.card.off{box-shadow:inset 0 0 0 1px rgba(226,87,75,.35);background:linear-gradient(170deg,#261518,#170f11)}
-.card.nocookie{box-shadow:inset 0 0 0 1px var(--edge);border:1px dashed rgba(241,233,221,.12);opacity:.85}
-.card.busy::after{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:sl 1.4s linear infinite}
-@keyframes sl{0%{transform:translateX(-40%)}100%{transform:translateX(40%)}}
-.ch{display:flex;align-items:center;gap:10px}
-.av{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font:700 15px var(--serif);color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));flex:none;position:relative}
-.av small{position:absolute;bottom:-5px;right:-6px;font:600 10px var(--sans);padding:1px 5px;border-radius:6px;background:var(--lac);box-shadow:inset 0 0 0 1px var(--edge);color:var(--gold-hi)}
-.nm{min-width:0}.nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm span{font-size:12px;color:var(--mu)}
-.pill{margin-left:auto;font-size:11.5px;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.now{font-size:12.5px;color:var(--mu);display:grid;gap:3px;min-height:38px}
-.now b{color:var(--tx);font-weight:500}
-.mini{display:flex;gap:14px;font-size:12px;color:var(--mu)}
-.mini b{font:600 14px var(--serif);color:var(--gold-hi)}.mini .o b{color:var(--steel)}
-.cf{display:flex;align-items:center;gap:6px;padding-top:9px;border-top:1px solid var(--hair)}
-.cf .sw{width:32px;height:19px}.cf .sw i::after{width:13px;height:13px}.cf .sw input:checked+i::after{left:16px}
-.cf label.al{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mu);margin-left:auto;cursor:pointer}
-.x{all:unset;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 4px}.x:hover{color:var(--red)}
-.empty{grid-column:1/-1;padding:46px 20px;text-align:center;color:var(--mu);border-radius:15px;box-shadow:inset 0 0 0 1px var(--edge)}
-/* บันทึก */
-.logbox{border-radius:15px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);padding:14px 14px 6px;position:sticky;top:20px}
-.logbox h3{font:600 14px var(--serif);margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.logs{list-style:none;padding:0;max-height:calc(100vh - 120px);overflow:auto;display:grid;gap:2px}
-.logs li{font-size:12px;color:var(--mu);padding:6px 4px;border-bottom:1px solid var(--hair);line-height:1.45}
-.logs li time{display:block;color:var(--dim);font-size:11px}
-.logs li.bad{color:#f0a49b}.logs li.good{color:#a7e4c8}
-.banner{padding:10px 14px;border-radius:11px;margin-bottom:14px;font-size:13px;background:rgba(233,162,74,.1);box-shadow:inset 0 0 0 1px rgba(233,162,74,.35);color:#f2c88c}
-/* หน้าต่างเพิ่มไอดี */
-.modal{position:fixed;inset:0;background:rgba(8,4,5,.7);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px;z-index:20}
-.sheet{width:min(520px,100%);border-radius:18px;padding:22px;background:linear-gradient(170deg,#24171a,#170e11);box-shadow:inset 0 0 0 1px rgba(226,182,92,.25),0 40px 90px -30px #000;display:grid;gap:12px}
-.sheet h2{font:700 19px var(--serif)}
-.steps{margin:0;padding-left:20px;color:var(--mu);font-size:13px;display:grid;gap:4px}.steps b{color:var(--tx)}
-textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:11px;border:0;background:var(--lac);box-shadow:inset 0 0 0 1px var(--edge);font:12px/1.4 ui-monospace,Consolas,monospace;word-break:break-all}
-.warn{font-size:12px;color:#f2c88c}
-.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:10px 16px;border-radius:11px;background:#1f3a2e;box-shadow:inset 0 0 0 1px rgba(95,208,160,.45);transition:.25s;z-index:30;font-size:13px}
-.toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#3a1f1f;box-shadow:inset 0 0 0 1px rgba(226,87,75,.5)}
-@media (max-width:1100px){.wrap{grid-template-columns:1fr}.logbox{position:static}.tiles{grid-template-columns:1fr 1fr}}
-@media (max-width:760px){.app{grid-template-columns:1fr}aside{position:static;height:auto}}
+.empty{padding:40px 16px;text-align:center;color:var(--mu)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{padding:18px;display:flex;flex-direction:column}
+.card h2{font:700 15px var(--sans)}
+.card .sub{font-size:12px;color:var(--mu);margin:2px 0 8px}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--hair)}
+.opt b{display:block;font-weight:600}.opt small{display:block;font-size:12px;color:var(--mu)}
+.sel,.num,.txt{height:38px;padding:0 10px;background:var(--lac);border:1px solid var(--edge);border-radius:9px;color:var(--tx)}
+.num{width:76px;font-family:var(--mono)}.txt{font-family:var(--mono);width:100%;max-width:300px}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:4px 0 14px}
+.game{display:flex;gap:14px;align-items:center;padding:12px;border-radius:12px;background:var(--lac);border:1px solid var(--hair);cursor:pointer;text-align:left;color:var(--tx)}
+.game[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold-lo) inset}
+.game .gi{width:48px;height:48px;border-radius:10px;background:var(--lac3);display:grid;place-items:center;font:700 15px var(--mono);color:var(--c)}
+.game b{display:block;font-weight:600}.game .gid{font:12px var(--mono);color:var(--mu)}
+.ram{display:flex;align-items:center;gap:10px;min-width:200px}
+.ram .meter{flex:1;margin:0}
+.ram span{width:72px;text-align:right;font-family:var(--mono);color:var(--tx2)}
+.logs{list-style:none;padding:6px 0;max-height:calc(100vh - 210px);overflow:auto}
+.logs li{display:flex;gap:14px;padding:8px 16px;border-top:1px solid var(--row);font-size:13px}
+.logs li:first-child{border-top:0}
+.logs time{flex:none;width:150px;color:var(--dim);font:12px var(--mono)}
+.logs li.bad{color:#ffb3a8}.logs li.good{color:#a8e3c6}
+.hint{font-size:12px;color:var(--mu)}
+/* ---- หน้าต่างเพิ่มไอดี ---- */
+.modal{position:fixed;inset:0;background:rgba(10,5,6,.74);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px;z-index:20}
+.sheet{width:min(560px,100%);background:var(--lac2);border:1px solid var(--edge);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.sheet .sh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--hair)}
+.sheet h2{font:700 17px var(--serif)}
+.sheet .sb{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.sheet .sf{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--hair)}
+.steps{padding-left:20px;color:var(--mu2);font-size:13px;display:grid;gap:4px}.steps b{color:var(--tx)}
+textarea{width:100%;height:110px;resize:none;padding:10px 12px;background:var(--lac);border:1px solid var(--edge);border-radius:10px;font:12px var(--mono);color:var(--tx)}
+.safe{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:#14271e;color:#a8e3c6;font-size:12px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:10px 16px;border-radius:11px;background:#1f3a2e;box-shadow:inset 0 0 0 1px rgba(95,208,160,.45);transition:.25s;z-index:30;font-size:13px;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#3a1f1f;box-shadow:inset 0 0 0 1px rgba(239,123,108,.5)}
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+@media (max-width:760px){nav.side{max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--hair)}.nv{width:auto}.sect,.qs{display:none}.go{width:100%;margin-bottom:4px}main{padding:16px}.tr .conn{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside>
-    <div class="brand"><span class="seal" aria-hidden="true">艦</span><span><b>Fleet Launcher</b><small>ตัวเปิดเกม · รีจอยอัตโนมัติ</small></span></div>
-    <div class="sect">ไอดี</div>
-    <nav id="filters" aria-label="กรองไอดี"></nav>
-    <div class="auto">
-      <div class="row"><span>รีจอยอัตโนมัติ</span><label class="sw" title="เปิด/ปิดรีจอยอัตโนมัติ"><input type="checkbox" id="auto" aria-label="รีจอยอัตโนมัติ"><i></i></label></div>
-      <div class="row"><span style="color:var(--mu)">เมื่อเงียบเกิน</span><span><input class="minput" id="after" type="number" min="2" max="120" aria-label="นาที"> นาที</span></div>
-    </div>
-    <div class="conn" id="conn"><span class="dot"></span>กำลังต่อ…</div>
-  </aside>
+<header class="topbar">
+  <div class="brand"><span class="seal" aria-hidden="true">艦</span><b>Fleet Launcher</b><span class="ver" id="ver"></span></div>
+  <div class="tr">
+    <span class="conn" id="conn"><span class="dot"></span><span data-i="connecting"></span></span>
+    <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="th">ไทย</button><button type="button" data-lang="en">EN</button></div>
+  </div>
+</header>
+<div class="shell">
+  <nav class="side" aria-label="menu">
+    <button type="button" class="go" id="rjall"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg><span data-i="rejoinOff"></span></button>
+    <div class="sect" data-i="sGeneral"></div>
+    <button type="button" class="nv" data-v="acc"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M17 4a4 4 0 0 1 0 8"/><path d="M22 21c0-3-2-5-4-5.6"/></svg><span data-i="nAcc"></span></span><span class="cnt" id="n-acc">0</span></button>
+    <button type="button" class="nv" data-v="game"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="4"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg><span data-i="nGame"></span></span></button>
+    <div class="sect" data-i="sPc"></div>
+    <button type="button" class="nv" data-v="perf"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span data-i="nPerf"></span></span></button>
+    <button type="button" class="nv" data-v="log"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="nLog"></span></span></button>
+    <div class="qs" id="qs"></div>
+  </nav>
+
   <main>
-    <div class="top">
-      <div><h1>ไอดีทั้งหมด</h1><p class="sub" id="sub">ดูทุกไอดีพร้อมกัน · อัปเดตทุก 3 วินาที</p></div>
-      <div class="acts">
-        <button class="btn" id="check">ตรวจ cookie</button>
-        <button class="btn red" id="rjall">⟳ รีจอยไอดีที่หลุด</button>
-        <button class="btn gold" id="add">+ เพิ่มไอดี</button>
-      </div>
-    </div>
     <div class="banner" id="banner" hidden></div>
-    <div class="tiles">
-      <div class="tile hero"><p class="l">ออนไลน์</p><p class="v" id="t-on">–</p></div>
-      <div class="tile"><p class="l">หน้าต่าง Roblox</p><p class="v" id="t-rb">–</p></div>
-      <div class="tile"><p class="l">CPU</p><p class="v" id="t-cpu">–</p><div class="meter" id="m-cpu"><i></i></div></div>
-      <div class="tile"><p class="l">RAM</p><p class="v" id="t-ram">–</p><div class="meter" id="m-ram"><i></i></div></div>
-    </div>
-    <div class="bar"><input class="search" id="q" placeholder="ค้นหาไอดี…" aria-label="ค้นหาไอดี"></div>
-    <div class="wrap">
-      <section class="grid" id="grid" aria-label="ไอดี"></section>
-      <aside class="logbox" aria-label="บันทึก"><h3><span class="dot pulse" style="--c:var(--ok)"></span>บันทึกล่าสุด</h3><ul class="logs" id="logs"></ul></aside>
-    </div>
+
+    <!-- ===== ไอดี ===== -->
+    <section class="view" id="v-acc">
+      <div class="tiles">
+        <div class="tile"><p class="l"><span data-i="tOnline"></span><span class="v" id="t-on">–</span></p><div class="meter"><i id="m-on" style="--mc:var(--ok);width:0"></i></div><p class="s" id="s-on"></p></div>
+        <div class="tile"><p class="l"><span>CPU</span><span class="v" id="t-cpu">–</span></p><div class="meter"><i id="m-cpu" style="--mc:var(--steel);width:0"></i></div><p class="s" id="s-cpu"></p></div>
+        <div class="tile"><p class="l"><span>RAM</span><span class="v" id="t-ram">–</span></p><div class="meter"><i id="m-ram" style="--mc:var(--ok);width:0"></i></div><p class="s" id="s-ram"></p></div>
+        <div class="tile"><p class="l"><span data-i="tRoblox"></span><span class="v" id="t-rb">–</span></p><div class="meter"><i id="m-rb" style="--mc:var(--gold);width:0"></i></div><p class="s" id="s-rb"></p></div>
+      </div>
+      <div class="head">
+        <h1 data-i="hAcc"></h1>
+        <div class="acts">
+          <button type="button" class="btn" id="check" data-i="checkCk"></button>
+          <button type="button" class="btn gold" id="add" data-i="addAcc"></button>
+        </div>
+      </div>
+      <div class="bar">
+        <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="q" data-ip="search" autocomplete="off"></label>
+        <div class="seg" id="filters" role="group"></div>
+      </div>
+      <div class="box tbl">
+        <table>
+          <thead><tr><th data-i="cAcc"></th><th data-i="cStatus"></th><th data-i="cNow"></th><th>Lv</th><th>Token · Ore</th><th data-i="cLast"></th><th data-i="cAuto"></th><th style="text-align:right" data-i="cAct"></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== เกม ===== -->
+    <section class="view" id="v-game" hidden>
+      <h1 data-i="hGame"></h1>
+      <div class="box card">
+        <h2 data-i="gPick"></h2><p class="sub" data-i="gPickSub"></p>
+        <div class="games" id="games"></div>
+        <label class="opt" style="justify-content:flex-start;flex-wrap:wrap"><span style="min-width:120px"><b>Place ID</b><small data-i="gCustom"></small></span><input class="txt" id="place" inputmode="numeric" autocomplete="off"><button type="button" class="btn gold sm" id="placeSave" data-i="save"></button></label>
+      </div>
+      <div class="box card">
+        <h2 data-i="gAuto"></h2><p class="sub" data-i="gAutoSub"></p>
+        <div class="opt"><span><b data-i="gAutoOn"></b><small data-i="gAutoOnSub"></small></span><label class="sw"><input type="checkbox" id="auto" data-ia="gAutoOn"><i></i></label></div>
+        <div class="opt"><span><b data-i="gAfter"></b><small data-i="gAfterSub"></small></span><span><input class="num" id="after" type="number" min="2" max="120" data-ia="gAfter"> <span data-i="min"></span></span></div>
+        <div class="opt"><span><b data-i="gGap"></b><small data-i="gGapSub"></small></span><span><input class="num" id="gap" type="number" min="5" max="120" data-ia="gGap"> <span data-i="sec"></span></span></div>
+      </div>
+    </section>
+
+    <!-- ===== ประหยัดเครื่อง ===== -->
+    <section class="view" id="v-perf" hidden>
+      <div class="head">
+        <h1 data-i="hPerf"></h1>
+        <div class="acts"><button type="button" class="btn" id="minAll" data-i="minAll"></button><button type="button" class="btn gold" id="trim" data-i="trimNow"></button></div>
+      </div>
+      <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="tile"><p class="l" data-i="pTotal"></p><p class="v" id="p-total">–</p><p class="s" id="p-total-s"></p></div>
+        <div class="tile"><p class="l" data-i="pAvg"></p><p class="v" id="p-avg">–</p><p class="s" id="p-avg-s"></p></div>
+        <div class="tile"><p class="l" data-i="pSaved"></p><p class="v" id="p-saved" style="color:var(--ok)">–</p><p class="s" id="p-saved-s"></p></div>
+      </div>
+      <div class="grid2">
+        <div class="box card">
+          <h2 data-i="pGame"></h2><p class="sub" data-i="pGameSub"></p>
+          <div class="opt"><span><b data-i="pNo3d"></b><small data-i="pNo3dSub"></small></span><label class="sw"><input type="checkbox" id="no3d" data-ia="pNo3d"><i></i></label></div>
+          <div class="opt"><span><b data-i="pLow"></b><small data-i="pLowSub"></small></span><label class="sw"><input type="checkbox" id="lowGfx" data-ia="pLow"><i></i></label></div>
+          <div class="opt"><span><b data-i="pFps"></b><small data-i="pFpsSub"></small></span><select class="sel" id="fps" data-ia="pFps"></select></div>
+        </div>
+        <div class="box card">
+          <h2 data-i="pPc"></h2><p class="sub" data-i="pPcSub"></p>
+          <div class="opt"><span><b data-i="pTrim"></b><small data-i="pTrimSub"></small></span><select class="sel" id="trimMin" data-ia="pTrim"></select></div>
+          <div class="opt"><span><b data-i="pMin"></b><small data-i="pMinSub"></small></span><label class="sw"><input type="checkbox" id="minimize" data-ia="pMin"><i></i></label></div>
+          <div class="opt"><span><b data-i="gGap"></b><small data-i="gGapSub"></small></span><span><input class="num" id="gap2" type="number" min="5" max="120" data-ia="gGap"> <span data-i="sec"></span></span></div>
+        </div>
+      </div>
+      <div class="box tbl">
+        <table>
+          <thead><tr><th data-i="cAcc"></th><th style="width:45%">RAM</th><th data-i="c3d"></th></tr></thead>
+          <tbody id="procs"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="p-hint" data-i="pHint"></p>
+    </section>
+
+    <!-- ===== บันทึก ===== -->
+    <section class="view" id="v-log" hidden>
+      <h1 data-i="hLog"></h1>
+      <div class="box"><ul class="logs" id="logs"></ul></div>
+    </section>
   </main>
 </div>
 
 <div class="modal" id="modal" hidden>
-  <form class="sheet" id="addf">
-    <h2>เพิ่มไอดี</h2>
-    <ol class="steps">
-      <li>เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น</li>
-      <li>กด <b>F12</b> → Application → Cookies → https://www.roblox.com</li>
-      <li>ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง</li>
-      <li>ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)</li>
-    </ol>
-    <textarea id="ck" placeholder="_|WARNING:-DO-NOT-SHARE-THIS…" spellcheck="false" autocomplete="off" aria-label="cookie"></textarea>
-    <p class="warn">cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บแบบเข้ารหัสบนคอมเครื่องนี้เท่านั้น</p>
-    <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" id="cancel">ยกเลิก</button><button class="btn gold" id="save">บันทึก</button></div>
+  <form class="sheet" id="addf" aria-labelledby="addT">
+    <div class="sh"><h2 id="addT" data-i="addTitle"></h2><button type="button" class="btn ic sm" id="x" data-ia="cancel">✕</button></div>
+    <div class="sb">
+      <ol class="steps" id="steps"></ol>
+      <textarea id="ck" placeholder="_|WARNING:-DO-NOT-SHARE-THIS…" spellcheck="false" autocomplete="off" aria-label="cookie"></textarea>
+      <div class="safe"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex:none;margin-top:1px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span data-i="safe"></span></div>
+    </div>
+    <div class="sf"><button type="button" class="btn" id="cancel" data-i="cancel"></button><button class="btn gold" id="save" data-i="saveAcc"></button></div>
   </form>
 </div>
 <div class="toast" id="toast" role="status"></div>
@@ -176,71 +277,202 @@ textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-rad
 'use strict';
 const TOKEN=new URLSearchParams(location.search).get('t')||'';
 history.replaceState(null,'','/'); // ไม่ทิ้งโทเคนไว้ในแถบที่อยู่
-const $=s=>document.querySelector(s);
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const h=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(v==null||v===false)continue;if(x==='class')e.className=v;else if(x.startsWith('on'))e[x]=v;else e.setAttribute(x,v===true?'':v)}for(const c of k.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e};
-const cm=n=>n==null?'–':Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(n/1e3).toFixed(1)+'K':String(Math.round(n));
-const ago=s=>s==null?'–':s<60?Math.round(s)+' วิ':s<3600?Math.round(s/60)+' นาที':s<86400?Math.round(s/3600)+' ชม.':Math.round(s/86400)+' วัน';
-let S=null,flt='all',q='';
-function toast(m,bad){const t=$('#toast');t.textContent=m;t.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='toast',3200)}
-async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('ผิดพลาด '+r.status));return j}
-async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
+const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 
-// รวมไอดีจากเซิร์ฟเวอร์ Fleet (สถานะในเกม) + ไอดีที่มี cookie ในโปรแกรม
+// ---------- ภาษา ----------
+const I18N={
+th:{connecting:'กำลังต่อ…',connOk:'เซิร์ฟเวอร์ร้าน v',connBad:'ต่อเซิร์ฟเวอร์ไม่ได้',stopped:'โปรแกรมหยุดทำงาน',
+ rejoinOff:'รีจอยตัวที่หลุด',sGeneral:'ทั่วไป',sPc:'เครื่อง',nAcc:'ไอดี',nGame:'เกม & รีจอย',nPerf:'ประหยัดเครื่อง',nLog:'บันทึกการทำงาน',
+ tOnline:'ออนไลน์',tRoblox:'หน้าต่าง Roblox',hAcc:'ไอดีทั้งหมด',checkCk:'ตรวจ cookie',addAcc:'+ เพิ่มไอดี',search:'ค้นหาไอดี…',
+ cAcc:'ไอดี',cStatus:'สถานะ',cNow:'ตอนนี้',cLast:'ข้อมูลล่าสุด',cAuto:'รีจอยเอง',cAct:'จัดการ',c3d:'ประหยัดในเกม',
+ fAll:'ทั้งหมด',fOn:'ออนไลน์',fOff:'หลุด / เงียบ',fBusy:'กำลังเปิดเกม',fNo:'ยังไม่มี cookie',
+ stOn:'ออนไลน์',stLate:'เงียบ',stOff:'หลุด',stBusy:'กำลังเปิดเกม',stNever:'ยังไม่ส่งข้อมูล',
+ fighting:'สู้ ',noData:'ยังไม่มีข้อมูลจากในเกม',goal:'เป้าหมาย: ',rejoin:'รีจอย',closeG:'ปิดเกม',addCk:'+ cookie',del:'ลบ',
+ confirmRj:'{n} ออนไลน์อยู่ จะปิดแล้วเข้าเกมใหม่?',confirmDel:'ลบ {n} ออกจากตัวเปิดเกม? (ต้องวาง cookie ใหม่ถ้าจะใช้อีก)',
+ emptyF:'ไม่มีไอดีในตัวกรองนี้',emptyAll:'ยังไม่มีไอดี กด "+ เพิ่มไอดี" เพื่อเริ่ม',ckOk:'cookie ใช้ได้ทุกไอดี ✓',ckBad:'ใช้ไม่ได้: {l} (เพิ่ม cookie ใหม่)',
+ ago:'ที่แล้ว',s:' วิ',m:' นาที',hr:' ชม.',d:' วัน',min:'นาที',sec:'วินาที',save:'บันทึก',
+ hGame:'เกม & รีจอย',gPick:'เกมที่จะเปิด',gPickSub:'ใช้ตอนกดรีจอยและตอนเซิร์ฟเวอร์สั่งเปิดเกมใหม่',gCustom:'หรือใส่เลขแมพเอง',
+ gAuto:'รีจอยอัตโนมัติ',gAutoSub:'เซิร์ฟเวอร์ร้านเห็นว่าไอดีไหนเงียบ จะสั่งตัวเปิดเกมเข้าเกมใหม่ให้เอง',gAutoOn:'เปิดรีจอยอัตโนมัติ',gAutoOnSub:'ปิดเฉพาะไอดีได้ที่ช่อง "รีจอยเอง" ในหน้าไอดี',
+ gAfter:'รีจอยเมื่อเงียบเกิน',gAfterSub:'ไม่ส่งข้อมูลเข้าร้านนานเท่านี้ (2–120 นาที)',gGap:'เปิดทีละไอดี เว้น',gGapSub:'กันเครื่องค้างตอนเปิดหลายไอดีพร้อมกัน',
+ hPerf:'ประหยัดเครื่อง',minAll:'ย่อทุกหน้าต่าง Roblox',trimNow:'คืน RAM ตอนนี้',pTotal:'RAM ที่ Roblox ใช้อยู่',pAvg:'เฉลี่ยต่อหน้าต่าง',pSaved:'คืน RAM ได้วันนี้',
+ pWins:'{n} หน้าต่าง',pLast:'ล่าสุด {t}',pNever:'ยังไม่ได้คืน RAM',pOfTotal:'จาก RAM ทั้งเครื่อง {g} GB',
+ pGame:'ในเกม (ผ่านสคริปต์ Fleet)',pGameSub:'ประหยัดได้มากที่สุด · มีผลภายใน ~20 วินาที',pNo3d:'ปิดภาพ 3D ตอนฟาร์ม',pNo3dSub:'ลด CPU/การ์ดจอมากสุด · จอเกมจะว่าง แต่ยังฟาร์มและส่งข้อมูลปกติ',
+ pLow:'กราฟิกต่ำสุด',pLowSub:'ลดเงา เอฟเฟกต์ ระยะมองเห็น',pFps:'จำกัด FPS',pFpsSub:'ต้องใช้ตัวรันที่มี setfpscap',fpsOff:'ไม่จำกัด',
+ pPc:'บนเครื่อง (ตัวเปิดเกม)',pPcSub:'จัดการหน้าต่าง Roblox จากนอกเกม',pTrim:'คืน RAM อัตโนมัติ',pTrimSub:'ย้ายหน่วยความจำที่ Roblox ไม่ได้ใช้ออก · ช่วยมากตอน RAM ใกล้เต็ม',trimOff:'ปิด',every:'ทุก {n} นาที',
+ pMin:'ย่อหน้าต่างเกมทันทีที่เปิด',pMinSub:'หน้าต่างที่ย่อไว้วาดภาพน้อยลง',unknownWin:'ไม่รู้ไอดี (PID {p})',noWin:'ยังไม่มีหน้าต่าง Roblox เปิดอยู่',
+ pHint:'"ประหยัดในเกม" ปิดได้รายไอดี เช่น ไอดีที่ใช้สแกนเกมใหม่ · การคืน RAM และย่อหน้าต่างใช้ได้บน Windows',
+ hLog:'บันทึกการทำงาน',noLog:'ยังไม่มีบันทึก',
+ addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
+ steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
+ qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
+en:{connecting:'Connecting…',connOk:'Shop server v',connBad:'Cannot reach server',stopped:'Launcher stopped',
+ rejoinOff:'Rejoin dropped',sGeneral:'General',sPc:'This PC',nAcc:'Accounts',nGame:'Game & rejoin',nPerf:'Performance',nLog:'Logs',
+ tOnline:'Online',tRoblox:'Roblox windows',hAcc:'All accounts',checkCk:'Check cookies',addAcc:'+ Add account',search:'Search accounts…',
+ cAcc:'Account',cStatus:'Status',cNow:'Now',cLast:'Last data',cAuto:'Auto rejoin',cAct:'Actions',c3d:'In-game saving',
+ fAll:'All',fOn:'Online',fOff:'Dropped / quiet',fBusy:'Launching',fNo:'No cookie',
+ stOn:'Online',stLate:'Quiet',stOff:'Dropped',stBusy:'Launching',stNever:'No data yet',
+ fighting:'Fighting ',noData:'No in-game data yet',goal:'Goal: ',rejoin:'Rejoin',closeG:'Close',addCk:'+ cookie',del:'Remove',
+ confirmRj:'{n} is online. Close it and rejoin?',confirmDel:'Remove {n} from the launcher? (you will need to paste its cookie again)',
+ emptyF:'No accounts match this filter',emptyAll:'No accounts yet — press "+ Add account" to start',ckOk:'All cookies work ✓',ckBad:'Not working: {l} (add a new cookie)',
+ ago:' ago',s:'s',m:' min',hr:' h',d:' d',min:'min',sec:'sec',save:'Save',
+ hGame:'Game & rejoin',gPick:'Game to launch',gPickSub:'Used for manual rejoin and when the server relaunches an account',gCustom:'or enter a place number',
+ gAuto:'Auto rejoin',gAutoSub:'When the shop server sees an account go quiet, it tells the launcher to rejoin it',gAutoOn:'Auto rejoin on',gAutoOnSub:'Turn it off per account in the "Auto rejoin" column',
+ gAfter:'Rejoin after quiet for',gAfterSub:'No data reaches the shop for this long (2–120 min)',gGap:'Launch one at a time, gap',gGapSub:'Avoids freezing the PC when many accounts start together',
+ hPerf:'Performance',minAll:'Minimise all Roblox',trimNow:'Free RAM now',pTotal:'RAM used by Roblox',pAvg:'Average per window',pSaved:'RAM freed today',
+ pWins:'{n} windows',pLast:'last {t}',pNever:'Not freed yet',pOfTotal:'of {g} GB on this PC',
+ pGame:'In-game (via Fleet script)',pGameSub:'Biggest savings · takes effect within ~20 s',pNo3d:'Turn off 3D rendering',pNo3dSub:'Cuts CPU/GPU the most · the game view goes blank but farming and data keep running',
+ pLow:'Lowest graphics',pLowSub:'Fewer shadows, effects, shorter view distance',pFps:'FPS cap',pFpsSub:'Needs an executor with setfpscap',fpsOff:'No cap',
+ pPc:'On this PC (launcher)',pPcSub:'Manages Roblox windows from outside the game',pTrim:'Free RAM automatically',pTrimSub:'Moves memory Roblox is not using out of RAM · helps most when RAM is nearly full',trimOff:'Off',every:'Every {n} min',
+ pMin:'Minimise game windows on launch',pMinSub:'Minimised windows draw less',unknownWin:'Unknown account (PID {p})',noWin:'No Roblox windows open',
+ pHint:'"In-game saving" can be turned off per account, e.g. one used to scan a new game · Freeing RAM and minimising work on Windows',
+ hLog:'Logs',noLog:'No log entries yet',
+ addTitle:'Add account',cancel:'Cancel',saveAcc:'Save account',safe:'The cookie is the key to the account — never share it · stored encrypted on this PC only, never sent to the shop site',
+ steps:['Open a <b>private</b> browser window and log in to roblox.com with that account','Press <b>F12</b> → Application → Cookies → https://www.roblox.com','Copy the <b>.ROBLOSECURITY</b> value and paste it below','Close the browser window — <b>do not log out</b> (the cookie would stop working)'],
+ qOn:'Online',qOff:'Dropped',qBusy:'Launching',qNo:'No cookie',threads:'{n} threads',usedOf:'{a} / {b} GB',rbSub:'{g} GB RAM in total',onSub:'of {n} accounts',saved:'Saved'}};
+let LANG=store.get('fl-lang')==='en'?'en':'th';
+const t=(k,v)=>{let s=(I18N[LANG][k]??I18N.th[k]??k);if(v)for(const x in v)s=String(s).split('{'+x+'}').join(v[x]);return s};
+function applyLang(){
+  document.documentElement.lang=LANG;
+  $$('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  $$('[data-ip]').forEach(e=>e.placeholder=t(e.dataset.ip));
+  $$('[data-ia]').forEach(e=>e.setAttribute('aria-label',t(e.dataset.ia)));
+  $$('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.lang===LANG)));
+  $('#steps').replaceChildren(...t('steps').map(s=>{const li=h('li');li.innerHTML=s;return li})); // ข้อความคงที่ของเราเอง ไม่มีข้อมูลจากภายนอก
+  $('#fps').replaceChildren(...[0,10,15,20,30,60].map(n=>h('option',{value:n},n?n+' FPS':t('fpsOff'))));
+  $('#trimMin').replaceChildren(...[0,5,10,15,30,60].map(n=>h('option',{value:n},n?t('every',{n}):t('trimOff'))));
+  render();
+}
+$$('[data-lang]').forEach(b=>b.onclick=()=>{LANG=b.dataset.lang;store.set('fl-lang',LANG);applyLang()});
+
+// ---------- ข้อมูล ----------
+const cm=n=>n==null?'–':Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(n/1e3).toFixed(1)+'K':String(Math.round(n));
+const ago=s=>s==null?'–':(s<60?Math.round(s)+t('s'):s<3600?Math.round(s/60)+t('m'):s<86400?Math.round(s/3600)+t('hr'):Math.round(s/86400)+t('d'))+(LANG==='th'?' '+t('ago'):t('ago'));
+const gb=b=>(b/1073741824).toFixed(1);
+let S=null,flt='all',q='',view=store.get('fl-view')||'acc';
+function toast(m,bad){const e=$('#toast');e.textContent=m;e.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>e.className='toast',3200)}
+async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('error '+r.status));return j}
+async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
+const setP=(o,name)=>act(null,'/ui/settings',Object.assign({perf:o},name?{name}:{}));
+
+// รวมไอดีจากเซิร์ฟเวอร์ร้าน (สถานะในเกม) + ไอดีที่มี cookie ในโปรแกรม
 function rows(){
   const after=(S.cfg.afterMin||5)*60,ex=new Set(S.cfg.exclude.map(x=>x.toLowerCase())),m=new Map();
   for(const a of (S.fleet&&S.fleet.accounts)||[])m.set(a.name.toLowerCase(),{name:a.name,f:a});
   for(const l of S.launcher){const k=l.name.toLowerCase();m.set(k,Object.assign(m.get(k)||{name:l.name},{l}))}
+  const ord={off:0,busy:1,late:2,never:3,on:4};
   return[...m.values()].map(r=>{const f=r.f,l=r.l;let st;
     if(l&&l.busy)st='busy';else if(!f)st='never';else if(f.last<150||(f.liveAgo!=null&&f.liveAgo<60))st='on';else if(f.last<after)st='late';else st='off';
-    return Object.assign(r,{st,auto:!ex.has(r.name.toLowerCase())})}).sort((a,b)=>({off:0,busy:1,late:2,never:3,on:4})[a.st]-({off:0,busy:1,late:2,never:3,on:4})[b.st]||a.name.localeCompare(b.name))}
-const ST={on:['ออนไลน์','var(--ok)'],late:['ไม่มีข้อมูลสักพัก','var(--warn)'],off:['หลุด','var(--red)'],busy:['กำลังเปิดเกม','var(--gold)'],never:['ยังไม่เคยส่งข้อมูล','var(--dim)']};
+    return Object.assign(r,{st,auto:!ex.has(r.name.toLowerCase())})}).sort((a,b)=>ord[a.st]-ord[b.st]||a.name.localeCompare(b.name))}
+const ST={on:['stOn','var(--ok)'],late:['stLate','var(--warn)'],off:['stOff','var(--red)'],busy:['stBusy','var(--gold)'],never:['stNever','var(--dim)']};
+function avatar(name,col){const u=S.avatars&&S.avatars[name.toLowerCase()],d=h('div',{class:'av',style:'--avc:'+col,'aria-hidden':'true'},(name.length>2?name.slice(-2):name).toUpperCase());
+  if(u){const i=h('img',{src:u,alt:'',loading:'lazy',referrerpolicy:'no-referrer'});i.onerror=()=>i.remove();d.append(i)}return d}
+const sw=(on,label,fn)=>{const i=h('input',{type:'checkbox','aria-label':label});i.checked=on;i.onchange=()=>fn(i.checked);return h('label',{class:'sw'},i,h('i'))};
+
+function setView(v){view=['acc','game','perf','log'].includes(v)?v:'acc';store.set('fl-view',view);
+  $$('.view').forEach(s=>s.hidden=s.id!=='v-'+view);$$('.nv').forEach(b=>{if(b.dataset.v===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});render()}
+$$('.nv').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
 function render(){
-  if(!S)return;const R=rows(),cnt={all:R.length,on:0,off:0,busy:0,nocookie:0};
+  if(!S)return;
+  const R=rows(),cnt={all:R.length,on:0,off:0,busy:0,nocookie:0};
   R.forEach(r=>{if(r.st==='on')cnt.on++;if(r.st==='off'||r.st==='late')cnt.off++;if(r.st==='busy')cnt.busy++;if(!r.l)cnt.nocookie++});
-  $('#filters').replaceChildren(...[['all','ทั้งหมด','var(--mu)'],['on','ออนไลน์','var(--ok)'],['off','หลุด / เงียบ','var(--red)'],['busy','กำลังเปิดเกม','var(--gold)'],['nocookie','ยังไม่มี cookie','var(--dim)']].map(([k,l,c])=>h('button',{class:'fl','aria-pressed':String(flt===k),onclick:()=>{flt=k;render()}},h('span',{class:'dot',style:'--c:'+c}),l,h('span',{class:'n'},cnt[k]))));
-  $('#t-on').replaceChildren(String(cnt.on),h('small',{},' / '+cnt.all));
-  $('#t-rb').textContent=S.sys.roblox;
-  $('#t-cpu').textContent=S.sys.cpu+'%';$('#m-cpu i').style.width=S.sys.cpu+'%';$('#m-cpu').classList.toggle('hot',S.sys.cpu>85);
-  const rp=Math.round(S.sys.ramUsed/S.sys.ramTotal*100);$('#t-ram').replaceChildren(rp+'%',h('small',{},' '+(S.sys.ramUsed/1073741824).toFixed(1)+' / '+(S.sys.ramTotal/1073741824).toFixed(0)+' GB'));$('#m-ram i').style.width=rp+'%';$('#m-ram').classList.toggle('hot',rp>90);
-  const c=$('#conn');c.replaceChildren(h('span',{class:'dot'+(S.fleet?' pulse':''),style:'--c:'+(S.fleet?'var(--ok)':'var(--red)')}),S.fleet?'ต่อเซิร์ฟเวอร์ Fleet แล้ว · v'+S.fleet.version:'ต่อเซิร์ฟเวอร์ไม่ได้');
+  // แถบบน + เมนู
+  const c=$('#conn');c.replaceChildren(h('span',{class:'dot'+(S.fleet?' pulse':''),style:'--c:'+(S.fleet?'var(--ok)':'var(--red)')}),S.fleet?t('connOk')+S.fleet.version:t('connBad'));
+  $('#ver').textContent=S.version||'';
   $('#banner').hidden=!S.fleetErr;$('#banner').textContent=S.fleetErr||'';
+  $('#n-acc').textContent=cnt.all;
+  $('#qs').replaceChildren(...[['qOn',cnt.on,'var(--ok)'],['qOff',cnt.off,'var(--red)'],['qBusy',cnt.busy,'var(--gold)'],['qNo',cnt.nocookie,'var(--mu)']].map(([k,n,col])=>h('div',{},h('span',{style:'color:'+col},t(k)),h('b',{},n))));
+  if(view==='acc')renderAcc(R,cnt);
+  if(view==='game')renderGame();
+  if(view==='perf')renderPerf();
+  if(view==='log')renderLog();
+}
+function renderAcc(R,cnt){
+  const sy=S.sys,rp=Math.round(sy.ramUsed/sy.ramTotal*100),rbMb=(sy.procs||[]).reduce((a,p)=>a+p.mb,0);
+  $('#t-on').replaceChildren(String(cnt.on),h('small',{},' / '+cnt.all));$('#m-on').style.width=(cnt.all?cnt.on/cnt.all*100:0)+'%';$('#s-on').textContent=t('onSub',{n:cnt.all});
+  $('#t-cpu').textContent=sy.cpu+'%';$('#m-cpu').style.width=sy.cpu+'%';$('#m-cpu').style.setProperty('--mc',sy.cpu>85?'var(--red)':'var(--steel)');$('#s-cpu').textContent='';
+  $('#t-ram').textContent=rp+'%';$('#m-ram').style.width=rp+'%';$('#m-ram').style.setProperty('--mc',rp>90?'var(--red)':rp>75?'var(--warn)':'var(--ok)');$('#s-ram').textContent=t('usedOf',{a:gb(sy.ramUsed),b:gb(sy.ramTotal)});
+  $('#t-rb').textContent=sy.roblox;$('#m-rb').style.width=Math.min(100,rbMb/(sy.ramTotal/1048576)*100)+'%';$('#s-rb').textContent=t('rbSub',{g:(rbMb/1024).toFixed(1)});
+  $('#filters').setAttribute('aria-label',t('cStatus'));
+  $('#filters').replaceChildren(...[['all','fAll','var(--mu)'],['on','fOn','var(--ok)'],['off','fOff','var(--red)'],['busy','fBusy','var(--gold)'],['nocookie','fNo','var(--dim)']].map(([k,l,col])=>h('button',{type:'button','aria-pressed':String(flt===k),onclick:()=>{flt=k;render()}},h('span',{class:'dot',style:'--c:'+col}),t(l),h('span',{class:'n'},cnt[k]))));
+  const F=R.filter(r=>(flt==='all'||(flt==='off'?(r.st==='off'||r.st==='late'):flt==='nocookie'?!r.l:r.st===flt))&&r.name.toLowerCase().includes(q));
+  $('#rows').replaceChildren(...(F.length?F.map(row):[h('tr',{},h('td',{colspan:8,class:'empty'},R.length?t('emptyF'):t('emptyAll')))]));
+}
+function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
+  let now;
+  if(f.boss)now=[t('fighting'),h('b',{},f.boss)];
+  else if(f.quest)now=[h('b',{},f.quest.name),f.quest.max?' '+f.quest.v+'/'+f.quest.max:''];
+  else if(f.holding)now=[h('b',{},f.holding)];
+  else now=[r.st==='never'?h('span',{class:'dim'},t('noData')):f.goal?t('goal')+f.goal:h('span',{class:'dim'},'—')];
+  const acts=[];
+  if(l)acts.push(h('button',{type:'button',class:'btn sm gold',onclick:e=>{if(r.st==='on'&&!confirm(t('confirmRj',{n:r.name})))return;act(e.currentTarget,'/ui/rejoin',{name:r.name})}},'⟳ '+t('rejoin')));
+  else acts.push(h('button',{type:'button',class:'btn sm gold',onclick:openAdd},t('addCk')));
+  if(l&&l.window)acts.push(h('button',{type:'button',class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},t('closeG')));
+  if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:()=>{if(confirm(t('confirmDel',{n:r.name})))act(null,'/ui/remove',{name:r.name})}},'✕'));
+  return h('tr',{},
+    h('td',{},h('div',{class:'who'},avatar(r.name,col),h('div',{},h('b',{},f.display||r.name),h('span',{},'@'+r.name)))),
+    h('td',{},h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),t(sk))),
+    h('td',{},h('div',{class:'now'},now)),
+    h('td',{class:'mono'},f.level!=null?String(f.level):'–'),
+    h('td',{class:'mono mut'},cm(f.token)+' · '+cm(f.ore)),
+    h('td',{class:'mut'},f.last!=null?ago(f.last):'–',f.rejoin?h('div',{class:'dim',style:'font-size:11.5px'},t('rejoin')+' ×'+f.rejoin.n):null),
+    h('td',{},l?sw(r.auto,t('cAuto')+' '+r.name,v=>act(null,'/ui/settings',{name:r.name,auto:v})):h('span',{class:'dim'},'—')),
+    h('td',{},h('div',{class:'rowacts'},acts)))}
+
+const GAMES=[{name:'Slayers 2',id:16205713724,ini:'S2',c:'var(--red)'},{name:'Steal An Egg',id:107778070777162,ini:'EG',c:'var(--gold)'}];
+function renderGame(){
+  const pid=S.cfg.placeId;
+  $('#games').replaceChildren(...GAMES.map(g=>h('button',{type:'button',class:'game','aria-pressed':String(pid===g.id),onclick:e=>act(e.currentTarget,'/ui/settings',{placeId:g.id})},h('span',{class:'gi',style:'--c:'+g.c},g.ini),h('span',{},h('b',{},g.name),h('span',{class:'gid'},String(g.id))))));
+  if(document.activeElement!==$('#place'))$('#place').value=pid;
   if(document.activeElement!==$('#auto'))$('#auto').checked=S.cfg.enabled;
   if(document.activeElement!==$('#after'))$('#after').value=S.cfg.afterMin;
-  const F=R.filter(r=>(flt==='all'||(flt==='off'?(r.st==='off'||r.st==='late'):flt==='nocookie'?!r.l:r.st===flt))&&r.name.toLowerCase().includes(q));
-  $('#grid').replaceChildren(...(F.length?F.map(card):[h('div',{class:'empty'},R.length?'ไม่มีไอดีในตัวกรองนี้':'ยังไม่มีไอดี กด "+ เพิ่มไอดี" เพื่อเริ่ม')]));
-  $('#logs').replaceChildren(...(S.log.length?S.log.map(l=>{const m=l.match(/^(\S+\s+\S+)\s+(.*)$/)||[0,'',l];return h('li',{class:/ไม่สำเร็จ|ผิดพลาด|ใช้ไม่ได้|ต่อ.*ไม่ได้/.test(m[2])?'bad':/กลับมาออนไลน์|เพิ่มไอดี|กำลังเข้าเกม/.test(m[2])?'good':''},h('time',{},m[1]),m[2])}):[h('li',{},'ยังไม่มีบันทึก')]));
+  if(document.activeElement!==$('#gap'))$('#gap').value=S.cfg.perf.staggerSec;
 }
-function card(r){const f=r.f||{},l=r.l,[stt,col]=ST[r.st];
-  const now=[];
-  if(f.boss)now.push(h('span',{},'⚔ กำลังสู้ ',h('b',{},f.boss)));
-  if(f.quest)now.push(h('span',{},'📜 ',h('b',{},f.quest.name),f.quest.max?' '+f.quest.v+'/'+f.quest.max:''));
-  if(!now.length&&f.holding)now.push(h('span',{},'🗡 ',h('b',{},f.holding)));
-  if(!now.length)now.push(h('span',{},r.st==='never'?'ยังไม่มีข้อมูลจากในเกม':f.goal?'เป้าหมาย: '+f.goal:'—'));
-  return h('article',{class:'card '+(r.st==='on'?'on':r.st==='off'?'off':'')+(r.st==='busy'?' busy':'')+(l?'':' nocookie')},
-    h('div',{class:'ch'},h('div',{class:'av'},(r.name[0]||'?').toUpperCase(),f.level?h('small',{},'Lv '+f.level):null),
-      h('div',{class:'nm'},h('b',{},f.display||r.name),h('span',{},'@'+r.name)),
-      h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),stt+(r.st==='off'||r.st==='late'?' '+ago(f.last):''))),
-    h('div',{class:'now'},now),
-    h('div',{class:'mini'},h('span',{},'Token ',h('b',{},cm(f.token))),h('span',{class:'o'},'Ore ',h('b',{},cm(f.ore))),f.rejoin?h('span',{},'รีจอย ',h('b',{style:'color:var(--tx)'},f.rejoin.n),' ครั้ง'):null),
-    h('div',{class:'cf'},
-      l?h('button',{class:'btn sm gold',onclick:e=>{if(r.st==='on'&&!confirm(r.name+' ออนไลน์อยู่ จะปิดแล้วเข้าเกมใหม่?'))return;act(e.currentTarget,'/ui/rejoin',{name:r.name})}},'⟳ รีจอย'):h('button',{class:'btn sm gold',onclick:openAdd},'+ เพิ่ม cookie'),
-      l&&l.window?h('button',{class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},'ปิดเกม'):null,
-      l?h('label',{class:'al',title:'รีจอยไอดีนี้อัตโนมัติ'},'อัตโนมัติ',h('span',{class:'sw'},h('input',{type:'checkbox',checked:r.auto,'aria-label':'รีจอยอัตโนมัติ '+r.name,onchange:e=>act(null,'/ui/settings',{name:r.name,auto:e.target.checked})}),h('i'))):null,
-      l?h('button',{class:'x',title:'ลบไอดีออกจากโปรแกรม','aria-label':'ลบ '+r.name,onclick:()=>{if(confirm('ลบ '+r.name+' ออกจากตัวเปิดเกม? (ต้องวาง cookie ใหม่ถ้าจะใช้อีก)'))act(null,'/ui/remove',{name:r.name})}},'✕'):null))}
+function renderPerf(){
+  const P=S.cfg.perf,sy=S.sys,pr=sy.procs||[],tot=pr.reduce((a,p)=>a+p.mb,0),ex=new Set(P.except.map(x=>x.toLowerCase()));
+  $('#p-total').textContent=(tot/1024).toFixed(1)+' GB';$('#p-total-s').textContent=t('pWins',{n:pr.length})+' · '+t('pOfTotal',{g:gb(sy.ramTotal)});
+  $('#p-avg').textContent=pr.length?Math.round(tot/pr.length)+' MB':'–';$('#p-avg-s').textContent='';
+  const tr=sy.trim||{};$('#p-saved').textContent=(tr.todayMb||0)>=1024?((tr.todayMb/1024).toFixed(1)+' GB'):(tr.todayMb||0)+' MB';
+  $('#p-saved-s').textContent=tr.at?t('pLast',{t:ago((Date.now()-tr.at)/1000)}):t('pNever');
+  for(const k of ['no3d','lowGfx','minimize'])if(document.activeElement!==$('#'+k))$('#'+k).checked=!!P[k];
+  if(document.activeElement!==$('#fps'))$('#fps').value=String(P.fps);
+  if(document.activeElement!==$('#trimMin'))$('#trimMin').value=String(P.trimMin);
+  if(document.activeElement!==$('#gap2'))$('#gap2').value=P.staggerSec;
+  // แถวละไอดี: ไอดีที่มี cookie + หน้าต่าง Roblox ที่เปิดอยู่
+  const names=new Map();for(const l of S.launcher)names.set(l.name.toLowerCase(),{name:l.name,mb:null});
+  const unknown=[];for(const p of pr){if(p.name&&names.has(p.name.toLowerCase()))names.get(p.name.toLowerCase()).mb=p.mb;else if(p.name)names.set(p.name.toLowerCase(),{name:p.name,mb:p.mb});else unknown.push(p)}
+  const max=Math.max(1500,...pr.map(p=>p.mb));
+  const bar=mb=>h('div',{class:'ram'},h('div',{class:'meter'},h('i',{style:'width:'+(mb?Math.min(100,mb/max*100):0)+'%;--mc:'+(mb>1400?'var(--warn)':'var(--gold)')})),h('span',{},mb!=null?mb+' MB':'–'));
+  const list=[...names.values()].map(x=>h('tr',{},h('td',{},h('div',{class:'who'},avatar(x.name,x.mb!=null?'var(--gold-lo)':'var(--edge)'),h('b',{},x.name))),h('td',{},bar(x.mb)),
+    h('td',{},sw(!ex.has(x.name.toLowerCase()),t('c3d')+' '+x.name,v=>setP({except:!v},x.name)))));
+  for(const p of unknown)list.push(h('tr',{},h('td',{class:'mut'},t('unknownWin',{p:p.pid})),h('td',{},bar(p.mb)),h('td',{class:'dim'},'—')));
+  $('#procs').replaceChildren(...(list.length?list:[h('tr',{},h('td',{colspan:3,class:'empty'},t('noWin')))]));
+}
+function renderLog(){
+  $('#logs').replaceChildren(...(S.log.length?S.log.map(l=>{const m=l.match(/^(\S+\s+\S+)\s+(.*)$/)||[0,'',l];return h('li',{class:/ไม่สำเร็จ|ผิดพลาด|ใช้ไม่ได้|ต่อ.*ไม่ได้/.test(m[2])?'bad':/กลับมาออนไลน์|เพิ่มไอดี|กำลังเข้าเกม|คืน RAM/.test(m[2])?'good':''},h('time',{},m[1]),h('span',{},m[2]))}):[h('li',{class:'mut'},t('noLog'))]));
+}
 
-async function load(){try{S=await api('/ui/state');render()}catch(e){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--red)'}),'โปรแกรมหยุดทำงาน')}}
+async function load(){try{S=await api('/ui/state');render()}catch(e){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--red)'}),t('stopped'))}}
+function closeAdd(){$('#modal').hidden=true;$('#ck').value=''}
 function openAdd(){$('#modal').hidden=false;$('#ck').value='';setTimeout(()=>$('#ck').focus(),50)}
-$('#add').onclick=openAdd;$('#cancel').onclick=()=>{$('#modal').hidden=true;$('#ck').value=''};
-$('#modal').onclick=e=>{if(e.target.id==='modal'){$('#modal').hidden=true;$('#ck').value=''}};
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden){$('#modal').hidden=true;$('#ck').value=''}});
-$('#addf').onsubmit=async e=>{e.preventDefault();const r=await act($('#save'),'/ui/add',{cookie:$('#ck').value});$('#ck').value='';if(r&&r.ok)$('#modal').hidden=true};
+$('#add').onclick=openAdd;$('#cancel').onclick=closeAdd;$('#x').onclick=closeAdd;
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeAdd()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden)closeAdd()});
+$('#addf').onsubmit=async e=>{e.preventDefault();const r=await act($('#save'),'/ui/add',{cookie:$('#ck').value});$('#ck').value='';if(r&&r.ok)closeAdd()};
 $('#rjall').onclick=e=>act(e.currentTarget,'/ui/rejoin-offline',{});
-$('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});if(r&&r.result){const bad=Object.entries(r.result).filter(([,v])=>v!=='ok');toast(bad.length?'ใช้ไม่ได้: '+bad.map(([n])=>n).join(', ')+' (เพิ่ม cookie ใหม่)':'cookie ใช้ได้ทุกไอดี ✓',bad.length>0)}};
+$('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});if(r&&r.result){const bad=Object.entries(r.result).filter(([,v])=>v!=='ok');toast(bad.length?t('ckBad',{l:bad.map(([n])=>n).join(', ')}):t('ckOk'),bad.length>0)}};
 $('#auto').onchange=e=>act(null,'/ui/settings',{enabled:e.target.checked});
 $('#after').onchange=e=>act(null,'/ui/settings',{afterMin:Number(e.target.value)});
+$('#gap').onchange=e=>setP({staggerSec:Number(e.target.value)});$('#gap2').onchange=e=>setP({staggerSec:Number(e.target.value)});
+$('#placeSave').onclick=e=>act(e.currentTarget,'/ui/settings',{placeId:Number($('#place').value.trim())});
+$('#no3d').onchange=e=>setP({no3d:e.target.checked});$('#lowGfx').onchange=e=>setP({lowGfx:e.target.checked});$('#minimize').onchange=e=>setP({minimize:e.target.checked});
+$('#fps').onchange=e=>setP({fps:Number(e.target.value)});$('#trimMin').onchange=e=>setP({trimMin:Number(e.target.value)});
+$('#trim').onclick=e=>act(e.currentTarget,'/ui/trim',{});$('#minAll').onclick=e=>act(e.currentTarget,'/ui/minimize',{});
 $('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
-load();setInterval(()=>{if(!document.hidden&&$('#modal').hidden)load()},3000);
+applyLang();setView(view);load();
+setInterval(()=>{if(!document.hidden&&$('#modal').hidden)load()},3000);
 </script>
 </body>
 </html>

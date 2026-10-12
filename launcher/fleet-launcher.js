@@ -18,7 +18,7 @@ const http = require('http');
 const os = require('os');
 const crypto = require('crypto');
 const readline = require('readline');
-const { spawnSync, spawn } = require('child_process');
+const { spawnSync, spawn, execFile } = require('child_process');
 
 const APP = path.join(__dirname, '..');
 const DATA_DIR = path.join(APP, 'data');
@@ -93,10 +93,69 @@ function launchUri(ticket, placeId) {
 }
 
 // ---------- จัดการหน้าต่าง Roblox ----------
-function robloxPids() {
+// รายการ Roblox ที่เปิดอยู่ + RAM ที่ใช้ (tasklist ตอบ "ชื่อ","PID","Session","#","123,456 K")
+function robloxProcs() {
   if (!IS_WIN) return [];
   const r = spawnSync('tasklist', ['/FI', 'IMAGENAME eq RobloxPlayerBeta.exe', '/FO', 'CSV', '/NH'], { encoding: 'utf8', windowsHide: true });
-  return String(r.stdout || '').split(/\r?\n/).map((l) => (l.match(/^"RobloxPlayerBeta\.exe","(\d+)"/) || [])[1]).filter(Boolean).map(Number);
+  return String(r.stdout || '').split(/\r?\n/).map((l) => {
+    const m = l.match(/^"RobloxPlayerBeta\.exe","(\d+)"(?:,"[^"]*"){2},"([^"]*)"/i);
+    return m ? { pid: Number(m[1]), mb: Math.round(Number(m[2].replace(/[^\d]/g, '')) / 1024) || 0 } : null;
+  }).filter(Boolean);
+}
+const robloxPids = () => robloxProcs().map((p) => p.pid);
+
+// ---------- ประหยัดเครื่อง: คืน RAM / ย่อหน้าต่าง (เรียก Windows API ผ่าน PowerShell แบบไม่บล็อกโปรแกรม) ----------
+function runPs(script, timeout) {
+  return new Promise((resolve) => {
+    if (!IS_WIN) return resolve('');
+    execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', windowsHide: true, timeout: timeout || 30000 }, (e, out) => resolve(e ? '' : String(out || '')));
+  });
+}
+const PS_API = "Add-Type -Namespace FL -Name W -MemberDefinition '[DllImport(\"psapi.dll\")] public static extern bool EmptyWorkingSet(IntPtr h); [DllImport(\"user32.dll\")] public static extern bool ShowWindowAsync(IntPtr h, int c);';";
+const trimStat = { at: 0, freedMb: 0, dayKey: '', dayMb: 0, running: false };
+// ย้ายหน่วยความจำที่ Roblox ไม่ได้ใช้อยู่ออกจาก RAM (ส่วนที่ต้องใช้ Windows ดึงกลับให้เอง) · ช่วยมากตอน RAM ใกล้เต็ม
+async function trimRam() {
+  if (trimStat.running) return { ok: false, msg: 'กำลังคืน RAM อยู่' };
+  trimStat.running = true;
+  try {
+    const out = await runPs(PS_API + " $b=0;$a=0; Get-Process RobloxPlayerBeta -ErrorAction SilentlyContinue | ForEach-Object { try { $b+=$_.WorkingSet64; [void][FL.W]::EmptyWorkingSet($_.Handle); $_.Refresh(); $a+=$_.WorkingSet64 } catch {} }; \"$b $a\"");
+    const [b, a] = out.trim().split(/\s+/).map(Number);
+    const freed = b > 0 && a >= 0 ? Math.max(0, Math.round((b - a) / 1048576)) : 0;
+    const day = new Date().toDateString();
+    if (trimStat.dayKey !== day) { trimStat.dayKey = day; trimStat.dayMb = 0; }
+    Object.assign(trimStat, { at: Date.now(), freedMb: freed }); trimStat.dayMb += freed;
+    if (freed > 0) log(`คืน RAM จาก Roblox ได้ ${freed} MB`);
+    return { ok: true, msg: IS_WIN ? `คืน RAM ได้ ${freed} MB` : 'คืน RAM ใช้ได้บน Windows เท่านั้น', freed };
+  } finally { trimStat.running = false; }
+}
+function minimizePids(pids) {
+  const list = pids.filter((p) => Number.isInteger(p) && p > 0);
+  if (!list.length) return Promise.resolve('');
+  return runPs(PS_API + ' ' + list.map((p) => `$p=Get-Process -Id ${p} -ErrorAction SilentlyContinue; if($p -and $p.MainWindowHandle -ne 0){[void][FL.W]::ShowWindowAsync($p.MainWindowHandle,6)}`).join('; '));
+}
+
+// ---------- รูปโปรไฟล์ Roblox (headshot) · ดึงจาก Roblox เก็บไว้ในหน่วยความจำ 1 ชม. ----------
+const avatarCache = new Map(); // ชื่อ (ตัวเล็ก) -> { id, url, at }
+let avatarBusy = false;
+async function refreshAvatars(known, names) {
+  if (avatarBusy) return; avatarBusy = true;
+  try {
+    const stale = (k) => { const c = avatarCache.get(k); return !c || Date.now() - c.at > 3600e3; };
+    const ids = new Map(); // ชื่อ -> id
+    for (const [n, id] of Object.entries(known)) if (id && stale(n.toLowerCase())) ids.set(n.toLowerCase(), Number(id));
+    const need = names.map((n) => n.toLowerCase()).filter((k) => !ids.has(k) && stale(k) && /^[a-z0-9_]{3,20}$/.test(k)).slice(0, 100);
+    if (need.length) {
+      const r = await fetch('https://users.roblox.com/v1/usernames/users', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': UA }, body: JSON.stringify({ usernames: need, excludeBannedUsers: false }), signal: AbortSignal.timeout(10000) });
+      if (r.ok) for (const u of ((await r.json()).data || [])) if (u && u.id) ids.set(String(u.requestedUsername || u.name).toLowerCase(), u.id);
+      for (const k of need) if (!ids.has(k)) avatarCache.set(k, { id: null, url: null, at: Date.now() });
+    }
+    const all = [...ids.entries()].slice(0, 100);
+    if (!all.length) return;
+    const r = await fetch('https://thumbnails.roblox.com/v1/users/avatar-headshot?size=150x150&format=Png&isCircular=false&userIds=' + all.map(([, id]) => id).join(','), { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(10000) });
+    const urls = new Map();
+    if (r.ok) for (const t of ((await r.json()).data || [])) if (t && t.state === 'Completed' && /^https:\/\/[a-z0-9.-]+\.rbxcdn\.com\//.test(t.imageUrl || '')) urls.set(t.targetId, t.imageUrl);
+    for (const [k, id] of all) avatarCache.set(k, { id, url: urls.get(id) || null, at: Date.now() });
+  } catch (e) { /* ไม่มีเน็ต/Roblox ล่ม: ใช้ตัวอักษรแทนรูปไปก่อน */ } finally { avatarBusy = false; }
 }
 const pidOf = new Map(); // ชื่อไอดี (ตัวเล็ก) -> PID ของ Roblox ที่โปรแกรมนี้เปิดให้
 function killOld(name) {
@@ -113,6 +172,11 @@ function openUri(uri) {
   spawn('cmd', ['/c', 'start', '""', uri], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
 
+// ตั้งค่าประหยัดเครื่อง (เก็บใน data/rejoin.json คีย์ perf · เซิร์ฟเวอร์ส่งส่วน "ในเกม" ต่อให้สคริปต์)
+const PERF_DEF = { no3d: false, lowGfx: false, fps: 0, except: [], trimMin: 0, minimize: false, staggerSec: 20 };
+function perfCfg() { const p = (readRejoin().perf) || {}; return Object.assign({}, PERF_DEF, p, { except: Array.isArray(p.except) ? p.except : [] }); }
+const placeOf = () => Number(readRejoin().placeId) || DEFAULT_PLACE;
+
 const busy = new Set();
 async function launch(name, placeId) {
   const acc = loadAccounts();
@@ -128,7 +192,11 @@ async function launch(name, placeId) {
     openUri(launchUri(ticket, placeId));
     log(`${key}: กำลังเข้าเกม (place ${placeId})`);
     // จำว่า Roblox หน้าต่างใหม่เป็นของไอดีไหน (ไว้ปิดตัวค้างรอบหน้า)
-    setTimeout(() => { const nw = robloxPids().filter((p) => !before.has(p)); if (nw.length === 1) pidOf.set(key.toLowerCase(), nw[0]); }, 20000).unref();
+    setTimeout(() => {
+      const nw = robloxPids().filter((p) => !before.has(p));
+      if (nw.length === 1) pidOf.set(key.toLowerCase(), nw[0]);
+      if (perfCfg().minimize && nw.length) { minimizePids(nw); setTimeout(() => minimizePids(nw), 20000).unref(); } // ย่อหน้าต่างเกมใหม่ (ลองซ้ำเผื่อหน้าต่างยังโหลดไม่เสร็จ)
+    }, 20000).unref();
     acc[key].lastLaunch = Date.now();
     try { saveAccounts(acc); } catch (e) {}
     return key;
@@ -151,6 +219,7 @@ const UI_TOKEN = crypto.randomBytes(24).toString('hex'); // สุ่มให�
 const FLEET = process.env.FLEET_URL || 'http://127.0.0.1:8800';
 let cpuPrev = os.cpus(), cpuPct = 0;
 setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i] && cpuPrev[i].times; if (!p) return; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round((1 - idle / tot) * 100) : 0; cpuPrev = c; }, 3000).unref();
+setInterval(() => { const m = perfCfg().trimMin; if (m > 0 && Date.now() - trimStat.at >= m * 60e3 && robloxPids().length) trimRam(); }, 60e3).unref();
 function tail(file, n) { try { return fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).slice(-n).reverse(); } catch (e) { return []; } }
 function readRejoin() { try { return JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')); } catch (e) { return {}; } }
 function writeRejoin(c) { const t = REJOIN_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(c, null, 2)); fs.renameSync(t, REJOIN_FILE); }
@@ -161,22 +230,32 @@ async function uiState() {
     const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
     if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' (อัปเดตเซิร์ฟเวอร์เป็นเวอร์ชันล่าสุดหรือยัง)' : '');
   } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
-  const pids = robloxPids();
+  const procs = robloxProcs(), pids = procs.map((p) => p.pid), owner = new Map([...pidOf].map(([n, p]) => [p, n]));
+  const known = Object.fromEntries(Object.entries(acc).map(([n, a]) => [n, a.id]));
+  const names = [...new Set(Object.keys(acc).concat(((fleet && fleet.accounts) || []).map((a) => a.name)))];
+  refreshAvatars(known, names); // ทำเบื้องหลัง รอบถัดไปได้รูป
+  const avatars = {}; for (const n of names) { const c = avatarCache.get(n.toLowerCase()); if (c && c.url) avatars[n.toLowerCase()] = c.url; }
   return {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
-    fleet, fleetErr, cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [] },
-    sys: { cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length },
+    fleet, fleetErr, avatars, version: (() => { try { return fs.readFileSync(path.join(APP, 'version.txt'), 'utf8').trim(); } catch (e) { return ''; } })(),
+    cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, perf: perfCfg() },
+    sys: { cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
+      procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
     log: tail(LOG, 40).concat(tail(path.join(DATA_DIR, 'rejoin.log'), 40).map((l) => l + '  [เซิร์ฟเวอร์]')).sort().reverse().slice(0, 50),
   };
 }
 async function uiAction(p, j) {
   const name = typeof j.name === 'string' ? j.name : '';
-  if (p === '/ui/rejoin') { await launch(name, Number(j.placeId) || DEFAULT_PLACE); return { ok: true, msg: 'กำลังเปิด ' + name }; }
+  if (p === '/ui/rejoin') { await launch(name, Number(j.placeId) || placeOf()); return { ok: true, msg: 'กำลังเปิด ' + name }; }
   if (p === '/ui/rejoin-offline') {
     const st = await uiState(), have = new Set(st.launcher.map((x) => x.name.toLowerCase())), after = st.cfg.afterMin * 60;
     const off = ((st.fleet && st.fleet.accounts) || []).filter((a) => a.last > after && have.has(a.name.toLowerCase())).map((a) => a.name);
-    (async () => { for (const n of off) { try { await launch(n, DEFAULT_PLACE); } catch (e) { log(n + ': ' + e.message); } await new Promise((r) => setTimeout(r, 20000)); } })();
-    return { ok: true, msg: off.length ? `กำลังเปิดใหม่ ${off.length} ไอดี (ห่างกันตัวละ 20 วิ)` : 'ไม่มีไอดีที่หลุดอยู่' };
+    const gap = perfCfg().staggerSec, place = placeOf();
+    (async () => { for (const n of off) { try { await launch(n, place); } catch (e) { log(n + ': ' + e.message); } await new Promise((r) => setTimeout(r, gap * 1000)); } })();
+    return { ok: true, msg: off.length ? `กำลังเปิดใหม่ ${off.length} ไอดี (ห่างกันตัวละ ${gap} วิ)` : 'ไม่มีไอดีที่หลุดอยู่' };
+  }
+  if (p === '/ui/trim') return trimRam();
+  if (p === '/ui/minimize') { const ps = robloxPids(); await minimizePids(ps); return { ok: true, msg: IS_WIN ? `ย่อหน้าต่าง Roblox ${ps.length} อันแล้ว` : 'ใช้ได้บน Windows เท่านั้น' };
   }
   if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
   if (p === '/ui/add') {
@@ -193,6 +272,16 @@ async function uiAction(p, j) {
     const c = readRejoin();
     if ('enabled' in j) c.enabled = !!j.enabled;
     if ('afterMin' in j) { const n = Number(j.afterMin); if (!(n >= 2 && n <= 120)) throw new Error('นาทีต้องอยู่ระหว่าง 2-120'); c.afterMin = n; }
+    if ('placeId' in j) { const n = Number(j.placeId); if (!(Number.isSafeInteger(n) && n > 0)) throw new Error('Place ID ต้องเป็นตัวเลข'); c.placeId = n; }
+    if (j.perf && typeof j.perf === 'object') {
+      const q = j.perf, cur = Object.assign({}, PERF_DEF, c.perf || {}), num = (v, lo, hi, what) => { const n = Number(v); if (!(Number.isInteger(n) && n >= lo && n <= hi)) throw new Error(what + ` ต้องอยู่ระหว่าง ${lo}-${hi}`); return n; };
+      for (const k of ['no3d', 'lowGfx', 'minimize']) if (k in q) cur[k] = !!q[k];
+      if ('fps' in q) cur.fps = Number(q.fps) === 0 ? 0 : num(q.fps, 5, 240, 'FPS');
+      if ('trimMin' in q) cur.trimMin = Number(q.trimMin) === 0 ? 0 : num(q.trimMin, 2, 120, 'นาที');
+      if ('staggerSec' in q) cur.staggerSec = num(q.staggerSec, 5, 120, 'วินาที');
+      if ('except' in q && /^[A-Za-z0-9_]{3,20}$/.test(name)) { const ex = new Set((cur.except || []).map((x) => x.toLowerCase())); if (q.except) ex.add(name.toLowerCase()); else ex.delete(name.toLowerCase()); cur.except = [...ex]; }
+      c.perf = cur;
+    }
     if ('auto' in j && /^[A-Za-z0-9_]{3,20}$/.test(name)) { const ex = new Set((c.exclude || []).map((x) => x.toLowerCase())); if (j.auto) ex.delete(name.toLowerCase()); else ex.add(name.toLowerCase()); c.exclude = [...ex]; }
     writeRejoin(c); return { ok: true, msg: 'บันทึกแล้ว' };
   }
@@ -201,7 +290,7 @@ async function uiAction(p, j) {
 function openWindow(url) {
   if (!IS_WIN) { console.log('เปิดหน้าจอที่: ' + url); return; }
   const edge = ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'].find((f) => fs.existsSync(f));
-  if (edge) spawn(edge, ['--app=' + url, '--window-size=1320,860'], { detached: true, stdio: 'ignore' }).unref(); // หน้าต่างแยก ไม่มีแถบเบราว์เซอร์
+  if (edge) spawn(edge, ['--app=' + url, '--window-size=1340,880'], { detached: true, stdio: 'ignore' }).unref(); // หน้าต่างแยก ไม่มีแถบเบราว์เซอร์
   else spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
 function serve() {
@@ -232,7 +321,7 @@ function serve() {
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
       if (u.pathname === '/LaunchAccount') {
         const name = u.searchParams.get('Account') || '';
-        const place = Number(u.searchParams.get('PlaceId')) || DEFAULT_PLACE;
+        const place = Number(u.searchParams.get('PlaceId')) || placeOf();
         if (!/^[A-Za-z0-9_]{3,20}$/.test(name) || !(place > 0)) return send(400, 'ข้อมูลไม่ถูกต้อง');
         const k = await launch(name, place);
         return send(200, 'กำลังเปิด ' + k);

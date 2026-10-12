@@ -803,8 +803,41 @@ local function post(url, body, extraHeaders)
 end
 
 -- อัปเดตตัวเอง: เซิร์ฟเวอร์ตอบ sv (ลายนิ้วมือสคริปต์ล่าสุด) มากับทุกครั้งที่ส่งข้อมูล ถ้าไม่ตรงกับตัวที่รันอยู่ → โหลดตัวใหม่ทับ
+-- โหมดประหยัดเครื่อง: เซิร์ฟเวอร์ส่ง perf มากับทุกครั้งที่ส่งข้อมูล (ตั้งจากหน้าจอตัวเปิดเกม → ประหยัดเครื่อง)
+-- no3d = ปิดการวาดภาพ 3D (หน้าจอเกมจะดำ/ว่าง แต่ตัวละครยังทำงานและส่งข้อมูลปกติ) · lowGfx = กราฟิกต่ำสุด · fps = จำกัด FPS (0 = ไม่จำกัด)
+local perfNow = {} -- ว่างไว้: รอบแรกตั้งค่าทุกอย่างเสมอ (เผื่อสคริปต์ตัวก่อนปิดภาพไว้)
+local function applyPerf(res)
+    if type(res) ~= "table" or not res.Body then return end
+    local r
+    pcall(function() r = HttpService:JSONDecode(res.Body) end)
+    if type(r) ~= "table" or type(r.perf) ~= "table" then return end
+    local pf, skip = r.perf, false
+    if type(pf.except) == "table" then
+        for _, n in ipairs(pf.except) do if type(n) == "string" and n:lower() == player.Name:lower() then skip = true end end
+    end
+    local want = {
+        no3d = (not skip) and pf.no3d == true,
+        lowGfx = (not skip) and pf.lowGfx == true,
+        fps = (not skip) and math.clamp(math.floor(tonumber(pf.fps) or 0), 0, 240) or 0,
+    }
+    if want.no3d ~= perfNow.no3d then
+        pcall(function() game:GetService("RunService"):Set3dRenderingEnabled(not want.no3d) end)
+        perfNow.no3d = want.no3d
+        print(">> ภาพ 3D: " .. (want.no3d and "ปิด (ประหยัดเครื่อง)" or "เปิด"))
+    end
+    if want.lowGfx ~= perfNow.lowGfx then
+        pcall(function() settings().Rendering.QualityLevel = want.lowGfx and Enum.QualityLevel.Level01 or Enum.QualityLevel.Automatic end)
+        perfNow.lowGfx = want.lowGfx
+    end
+    if want.fps ~= perfNow.fps and setfpscap and (want.fps > 0 or (perfNow.fps or 0) > 0) then
+        pcall(setfpscap, want.fps > 0 and want.fps or 0)
+        perfNow.fps = want.fps
+    end
+end
+
 local updating = false
 local function checkUpdate(res)
+    pcall(applyPerf, res)
     if updating or not AUTO_UPDATE or SCRIPT_VER == "dev" or not getgenv or not alive() or WEB_API_URL == "" then return end
     if type(res) ~= "table" or not res.Body then return end
     local r
