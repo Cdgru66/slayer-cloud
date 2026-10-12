@@ -80,7 +80,8 @@ function freePort() {
   if (process.platform !== 'win32') return null;
   const ps = "$c=Get-NetTCPConnection -LocalPort 7963 -State Listen -ErrorAction SilentlyContinue|Select-Object -First 1; if(-not $c){'none';exit}; " +
     "$p=Get-CimInstance Win32_Process -Filter ('ProcessId='+$c.OwningProcess); if(-not $p){'none';exit}; " +
-    "if(($p.Name -eq 'node.exe' -and $p.CommandLine -like '*fleet-launcher.js*') -or ($p.Name -eq 'FleetLauncher.exe' -and $p.ProcessId -ne " + process.pid + ")){Stop-Process -Id $p.ProcessId -Force; 'killed'} " +
+    "if($p.Name -eq 'node.exe' -and $p.CommandLine -like '*fleet-launcher.js*'){Stop-Process -Id $p.ProcessId -Force; 'killed'} " +
+    "elseif($p.Name -eq 'FleetLauncher.exe'){'app'} " +
     "elseif($p.Name -like '*Account*Manager*' -or $p.Name -like 'RAM*'){'ram'} else {'other:'+$p.Name}";
   try {
     const r = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { encoding: 'utf8', windowsHide: true, timeout: 15000 });
@@ -127,6 +128,8 @@ app.whenReady().then(() => {
         const who = freePort();
         // ปิดตัวเก่าให้แล้ว → เปิดแอปใหม่เอง (ลองครั้งเดียว กันวนไม่จบ)
         if (who === 'killed' && !process.argv.includes('--port-retry')) { setTimeout(() => { app.relaunch({ args: process.argv.slice(1).concat('--port-retry') }); quitAll(); }, 1500); return; }
+        // อีกตัวเป็นแอป Fleet Launcher ด้วยกัน (เช่น ตัวของร้าน กับ ตัวขาย บนคอมเดียวกัน): ไม่ปิดให้ กันรีจอยของร้านหยุดโดยไม่รู้ตัว
+        if (who === 'app') { dialog.showErrorBox('Fleet Launcher', 'มี Fleet Launcher อีกตัวเปิดอยู่ในเครื่องนี้ (เช่น ตัวของร้าน หรือตัวขาย)\n\nเปิดได้ทีละตัว: ปิดตัวนั้นก่อน (คลิกขวาไอคอนที่ถาด → ออก) แล้วเปิดตัวนี้ใหม่'); return quitAll(); }
         dialog.showErrorBox('Fleet Launcher', who === 'ram'
           ? 'Roblox Account Manager เปิดอยู่ (ใช้พอร์ตเดียวกัน)\n\nปิด Roblox Account Manager ก่อน แล้วเปิด Fleet Launcher ใหม่'
           : 'มีโปรแกรมอื่นใช้พอร์ต 7963 อยู่' + (who && who.startsWith('other:') ? ' (' + who.slice(6) + ')' : '') + '\n\nรีสตาร์ทคอม 1 ครั้งแล้วเปิด Fleet Launcher ใหม่');
