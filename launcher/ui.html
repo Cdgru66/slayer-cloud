@@ -274,6 +274,11 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
     <!-- ===== เกม ===== -->
     <section class="view" id="v-game" hidden>
       <h1 data-i="hGame"></h1>
+      <div class="box card" id="scriptBox" hidden>
+        <h2 data-i="scT"></h2><p class="sub" data-i="scSub"></p>
+        <textarea id="scLoader" readonly spellcheck="false" style="width:100%;height:64px;margin:4px 0 10px;padding:10px 12px;border:0;border-radius:9px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--line2);color:var(--tx2);font:12px/1.5 var(--mono);resize:none"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="btn gold" id="scCopy" data-i="scCopy"></button><span class="hint" id="scNote"></span></div>
+      </div>
       <div class="box card">
         <h2 data-i="gPick"></h2><p class="sub" data-i="gPickSub"></p>
         <div class="seg" id="gmode" role="group" style="align-self:flex-start;margin-bottom:12px"><button type="button" data-gm="shared" data-i="gmShared"></button><button type="button" data-gm="per" data-i="gmPer"></button></div>
@@ -357,7 +362,7 @@ const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s
 
 // ---------- ภาษา ----------
 const I18N={
-th:{licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์ที่ได้จากร้านเพื่อเริ่มใช้ Fleet Launcher (คีย์ผูกกับเครื่องนี้)',licGo:'ยืนยัน',licDash:'เช็คคีย์ / ย้ายเครื่อง',licHelp:'ยังไม่มีคีย์? ติดต่อร้านที่ซื้อแอป',licWait:'กำลังตรวจคีย์…',licOut:'ถอดคีย์',licOutAsk:'ถอดคีย์ออกจากเครื่องนี้?\nรีจอยจะหยุดจนกว่าจะใส่คีย์ใหม่ และคีย์จะว่างให้ใช้กับเครื่องอื่นได้',licUntil:'คีย์ {k} · ถึง {d}',licLife:'คีย์ {k} · ถาวร',
+th:{scT:'สคริปต์ใส่ executor',scSub:'รันสคริปต์นี้ในทุกไอดีที่ฟาร์ม ข้อมูลในเกมจะขึ้นในแอปนี้และใช้รีจอยอัตโนมัติ · สคริปต์อัปเดตตัวเอง',scCopy:'ก๊อปสคริปต์',scNote:'ห้ามแชร์ให้คนอื่น (มีรหัสของคีย์คุณ) · ไอดีได้สูงสุด {n} ตัว',scDone:'ก๊อปสคริปต์แล้ว',licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์ที่ได้จากร้านเพื่อเริ่มใช้ Fleet Launcher (คีย์ผูกกับเครื่องนี้)',licGo:'ยืนยัน',licDash:'เช็คคีย์ / ย้ายเครื่อง',licHelp:'ยังไม่มีคีย์? ติดต่อร้านที่ซื้อแอป',licWait:'กำลังตรวจคีย์…',licOut:'ถอดคีย์',licOutAsk:'ถอดคีย์ออกจากเครื่องนี้?\nรีจอยจะหยุดจนกว่าจะใส่คีย์ใหม่ และคีย์จะว่างให้ใช้กับเครื่องอื่นได้',licUntil:'คีย์ {k} · ถึง {d}',licLife:'คีย์ {k} · ถาวร',
  connecting:'กำลังต่อ…',connOk:'เชื่อมเซิร์ฟเวอร์ร้านแล้ว',connBad:'ต่อเซิร์ฟเวอร์ไม่ได้',stopped:'โปรแกรมหยุดทำงาน',
  rejoinOff:'รีจอยตัวที่หลุด',sGeneral:'ทั่วไป',sPc:'เครื่อง',nAcc:'ไอดี',nGame:'เกม & รีจอย',nPerf:'ประหยัดเครื่อง',nLog:'บันทึกการทำงาน',
  tOnline:'ออนไลน์',tRoblox:'หน้าต่าง Roblox',hAcc:'ไอดีทั้งหมด',checkCk:'ตรวจ cookie',addAcc:'+ เพิ่มไอดี',search:'ค้นหาไอดี…',
@@ -382,7 +387,7 @@ th:{licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
  steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
-en:{licT:'Enter your key',licSub:'Paste the key from your shop to start Fleet Launcher (the key is tied to this PC)',licGo:'Continue',licDash:'Check key / move PC',licHelp:'No key yet? Contact the shop you bought from',licWait:'Checking key…',licOut:'Remove',licOutAsk:'Remove the key from this PC?\nRejoin stops until a key is entered again, and the key is freed for another PC',licUntil:'Key {k} · until {d}',licLife:'Key {k} · lifetime',
+en:{scT:'Executor script',scSub:'Run this in every farming account; in-game data shows up here and drives auto rejoin · the script updates itself',scCopy:'Copy script',scNote:'Do not share it (contains your key\'s token) · up to {n} accounts',scDone:'Script copied',licT:'Enter your key',licSub:'Paste the key from your shop to start Fleet Launcher (the key is tied to this PC)',licGo:'Continue',licDash:'Check key / move PC',licHelp:'No key yet? Contact the shop you bought from',licWait:'Checking key…',licOut:'Remove',licOutAsk:'Remove the key from this PC?\nRejoin stops until a key is entered again, and the key is freed for another PC',licUntil:'Key {k} · until {d}',licLife:'Key {k} · lifetime',
  connecting:'Connecting…',connOk:'Connected to shop server',connBad:'Cannot reach server',stopped:'Launcher stopped',
  rejoinOff:'Rejoin dropped',sGeneral:'General',sPc:'This PC',nAcc:'Accounts',nGame:'Game & rejoin',nPerf:'Performance',nLog:'Logs',
  tOnline:'Online',tRoblox:'Roblox windows',hAcc:'All accounts',checkCk:'Check cookies',addAcc:'+ Add account',search:'Search accounts…',
@@ -524,6 +529,8 @@ function gameSel(name){const cur=Number((S.cfg.places||{})[name.toLowerCase()])|
   const s=h('select',{class:'sel','aria-label':t('cGame')+' '+name},opts);s.value=String(cur);s.onchange=()=>act(null,'/ui/settings',{name,accPlace:Number(s.value)||0});return s}
 const GAMES=[{name:'Slayers 2',id:16205713724,ini:'S2',c:'var(--red)'},{name:'Steal An Egg',id:107778070777162,ini:'EG',c:'var(--gold)'}];
 function renderGame(){
+  $('#scriptBox').hidden=!S.script;
+  if(S.script){if($('#scLoader').value!==S.script.loader)$('#scLoader').value=S.script.loader;$('#scNote').textContent=t('scNote',{n:S.script.max})}
   const pid=S.cfg.placeId,per=S.cfg.gameMode==='per';
   $$('[data-gm]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.gm==='per')===per)));$('#gmHint').textContent=t(per?'gmHintP':'gmHintS');
   $('#games').replaceChildren(...GAMES.map(g=>h('button',{type:'button',class:'game','aria-pressed':String(pid===g.id),onclick:e=>act(e.currentTarget,'/ui/settings',{placeId:g.id})},h('span',{class:'gi',style:'--c:'+g.c},g.ini),h('span',{},h('b',{},g.name),h('span',{class:'gid'},String(g.id))))));
@@ -568,6 +575,7 @@ $('#addf').onsubmit=async e=>{e.preventDefault();$('#ckres').hidden=true;const r
   if(r&&r.bad&&r.bad.length){$('#ckres').replaceChildren(...r.bad.map(b=>h('div',{},b)));$('#ckres').hidden=false;$('#ck').value='';$('#ckn').textContent=''}
   else if(r&&r.ok)closeAdd()};
 $$('[data-gm]').forEach(b=>b.onclick=()=>act(b,'/ui/settings',{gameMode:b.dataset.gm}));
+$('#scCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#scLoader').value);toast(t('scDone'))}catch(e){$('#scLoader').select();document.execCommand('copy');toast(t('scDone'))}};
 $('#licf').onsubmit=async e=>{e.preventDefault();const b=$('#licgo');b.disabled=true;$('#licerr').textContent=t('licWait');
   try{const r=await api('/ui/license',{key:$('#lick').value});$('#licerr').textContent='';$('#lick').value='';toast(r.msg||'OK');await load()}catch(x){$('#licerr').textContent=x.message}finally{b.disabled=false}};
 $('#licout').onclick=async()=>{if(!await ask(t('licOutAsk'),t('licOut'),true))return;$('#licerr').textContent='';await act(null,'/ui/license-out',{})};

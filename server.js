@@ -88,7 +88,7 @@ function loadCustomers(force) {
     for (const [id, c] of Object.entries(j)) { d.set(c.deviceHash, id); v.set(c.viewHash, id); }
     cust = { all: j, byDevice: d, byView: v, mtime: st.mtimeMs, checked: t };
     // ลูกค้าที่ถูกลบออก -> ลบข้อมูลของเขาด้วย (ตามสิทธิ์ขอลบข้อมูล)
-    for (const id of Object.keys(accounts)) if (id !== OWNER && !j[id]) { delete accounts[id]; dirty = true; }
+    for (const id of Object.keys(accounts)) if (id !== OWNER && !id.startsWith('lic:') && !j[id]) { delete accounts[id]; dirty = true; } // กล่องของผู้ซื้อแอป (lic:) จัดการใน licenses.js
     for (const c of Object.values(j)) c._set = new Set((c.accounts || []).map((n) => String(n).toLowerCase()));
   } catch (e) { console.error('อ่าน customers.json ไม่ได้:', e.message); }
 }
@@ -386,8 +386,10 @@ function ingest(id, c, snap) {
   const amtOf = (n) => { const it = snap.items.find((i) => i.name === n); return it ? it.amount : 0; };
   a.hist.push({ o: amtOf('Ore'), r: amtOf('Refinement Ore'), t: snap.time, w: isNum(snap.wen) ? snap.wen : 0, k: isNum(snap.progress && snap.progress.kills) ? snap.progress.kills : 0, b: isNum(snap.progress && snap.progress.boss_kills) ? snap.progress.boss_kills : 0 });
   if (a.hist.length > MAX_HIST) a.hist.splice(0, a.hist.length - MAX_HIST);
-  try { notify.onSnapshot(id === OWNER, name, a); } catch (e) { console.error('notify:', e.message); }
-  try { orders.trackGoal(name, a.s); } catch (e) {}
+  if (!id.startsWith('lic:')) { // ข้อมูลของผู้ซื้อแอป ไม่ไปปนแจ้งเตือน/เป้าหมายของร้าน
+    try { notify.onSnapshot(id === OWNER, name, a); } catch (e) { console.error('notify:', e.message); }
+    try { orders.trackGoal(name, a.s); } catch (e) {}
+  }
   dirty = true;
   return null;
 }
@@ -402,7 +404,21 @@ const admin = require('./admin-api.js')({
   listBackups, backupNow, orders,
 });
 // คีย์ใช้งานแอป Fleet Launcher ที่ขายให้ร้านอื่น (licenses.js)
-const licenses = require('./licenses.js')({ DATA_DIR, send, readBody, rate, failBlocked, recordFail, now, isAdmin: (req) => admin.isAdmin(req) });
+// แถวสถานะไอดีสำหรับตัวเปิดเกม (ใช้ทั้งของร้าน และของผู้ซื้อแอปแต่ละคีย์)
+function statusRows(pool, rejoinOf, goalOf) {
+  const t = now(), amt = (s, n) => { const it = (s.items || []).find((i) => i && i.name === n); return it ? it.amount : null; };
+  return Object.entries(pool || {}).filter(([, a]) => a.s).map(([n, a]) => {
+    const s = a.s, r = rejoinOf && rejoinOf(n), q = s.quests && Array.isArray(s.quests.active) && s.quests.active[0], g = goalOf && goalOf(n);
+    return { name: n, display: s.display, level: s.level, last: Math.round(t - s.time), liveAgo: s.liveAt ? Math.round(t - s.liveAt) : null,
+      wen: s.wen, ore: amt(s, 'Ore'), token: amt(s, 'Ouwigahara Token'), boss: s.boss && s.boss.name, holding: s.holding,
+      quest: q ? { name: q.name, v: q.tasks && q.tasks[0] ? q.tasks[0].v : null, max: q.tasks && q.tasks[0] ? q.tasks[0].max : null } : null,
+      goal: g ? g.title || 'เป้าหมาย' : null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
+  });
+}
+const licenses = require('./licenses.js')({ DATA_DIR, send, readBody, rate, failBlocked, recordFail, now, isAdmin: (req) => admin.isAdmin(req),
+  rowsFor: (id) => statusRows(accounts[id]), countFor: (id) => Object.keys(accounts[id] || {}).length,
+  dropPool: (id) => { if (accounts[id]) { delete accounts[id]; dirty = true; } } });
+{ const live = licenses.liveIds(); for (const id of Object.keys(accounts)) if (id.startsWith('lic:') && !live.has(id)) { delete accounts[id]; dirty = true; } }
 
 const server = http.createServer((req, res) => {
   try { handleReq(req, res); } catch (e) {
@@ -434,7 +450,9 @@ function handleReq(req, res) {
   if (req.method === 'GET' && url.pathname === '/healthz') return send(res, 200, { ok: true, version: VERSION });
 
   if (req.method === 'POST' && url.pathname === '/api/v1/ingest') {
-    const a = authenticate(req, 'sfd_');
+    // สคริปต์ของผู้ซื้อแอป (sfl_) → กล่องข้อมูลของคีย์นั้น · ของร้าน/ลูกค้า (sfd_) → แบบเดิม
+    const lb = /^Bearer\s+(sfl_\S{1,80})$/.exec(req.headers.authorization || '');
+    const a = lb ? licenses.authIngest(lb[1]) : authenticate(req, 'sfd_');
     if (a.error) return authFail(res, ip, a);
     if (!rate(a.id + ':i', RATE_INGEST_PER_MIN)) return send(res, 429, { error: 'rate limited' });
     return readBody(req, res, (body) => {
@@ -447,7 +465,7 @@ function handleReq(req, res) {
       for (const s of list) { const e = ingest(a.id, a.c, s); if (e) { rejected++; if (why.length < 5) why.push(e); } else accepted++; }
       const sc = scriptTemplate();
       // โหมดประหยัดในเกม (ตั้งในหน้าจอตัวเปิดเกม) ส่งเฉพาะไอดีฟาร์มของร้านเอง
-      const pf = settings.mode === 'owner' ? rejoinCfg().perf : null;
+      const pf = lb ? a.perf : settings.mode === 'owner' && a.id === OWNER ? rejoinCfg().perf : null;
       const perf = pf && typeof pf === 'object' ? { no3d: !!pf.no3d, lowGfx: !!pf.lowGfx, fps: Number(pf.fps) || 0, except: Array.isArray(pf.except) ? pf.except.slice(0, 200) : [] } : undefined;
       send(res, 200, { ok: true, accepted, rejected, why, expires: a.c.expires || null, sv: sc ? sc.ver : undefined, perf });
     });
@@ -521,16 +539,9 @@ function handleReq(req, res) {
     const ok = pw && m && m[1].length === pw.length && crypto.timingSafeEqual(Buffer.from(m[1]), Buffer.from(pw));
     if (!ok) { recordFail(ip); return send(res, 401, { error: 'unauthorized' }); }
     if (!rate('launcher:' + ip, 120)) return send(res, 429, { error: 'rate limited' });
-    const pool = accounts[OWNER] || {}, t = now(), cfg = rejoinCfg();
-    const amt = (s, n) => { const it = (s.items || []).find((i) => i && i.name === n); return it ? it.amount : null; };
+    const t = now(), cfg = rejoinCfg();
     return send(res, 200, { serverTime: t, version: VERSION, afterMin: cfg.afterMin || 5, enabled: !!cfg.enabled, exclude: cfg.exclude || [],
-      accounts: Object.entries(pool).filter(([, a]) => a.s).map(([n, a]) => {
-        const s = a.s, r = rjState.get(n), q = s.quests && Array.isArray(s.quests.active) && s.quests.active[0], g = orders && orders.goalOf(n);
-        return { name: n, display: s.display, level: s.level, last: Math.round(t - s.time), liveAgo: s.liveAt ? Math.round(t - s.liveAt) : null,
-          wen: s.wen, ore: amt(s, 'Ore'), token: amt(s, 'Ouwigahara Token'), boss: s.boss && s.boss.name, holding: s.holding,
-          quest: q ? { name: q.name, v: q.tasks && q.tasks[0] ? q.tasks[0].v : null, max: q.tasks && q.tasks[0] ? q.tasks[0].max : null } : null,
-          goal: g ? g.title || 'เป้าหมาย' : null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
-      }) });
+      accounts: statusRows(accounts[OWNER], (n) => rjState.get(n), (n) => orders && orders.goalOf(n)) });
   }
 
   if (req.method === 'GET' && url.pathname === '/script.lua') {

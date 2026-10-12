@@ -18,7 +18,7 @@ module.exports = function createLicense(o) {
   let cfg = null;
   try { cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); } catch (e) {} // อ่านจากในตัวแอปเท่านั้น (ห้ามให้ตัวแปรระบบชี้ไปไฟล์อื่น = ข้ามคีย์ได้)
   const enabled = !!(cfg && /^https?:\/\/[^\s/]+$/.test(String(cfg.server || '').replace(/\/+$/, '')) && cfg.pub);
-  if (!enabled) return { enabled: false, ok: () => true, state: () => ({ enabled: false }), start() {}, activate: async () => ({ ok: true }), deactivate: async () => ({ ok: true }) };
+  if (!enabled) return { enabled: false, status: async () => ({ v: null, err: '' }), ok: () => true, state: () => ({ enabled: false }), start() {}, activate: async () => ({ ok: true }), deactivate: async () => ({ ok: true }) };
 
   const SERVER = String(cfg.server).replace(/\/+$/, '');
   let pub; try { pub = crypto.createPublicKey({ key: Buffer.from(cfg.pub, 'base64'), format: 'der', type: 'spki' }); } catch (e) { pub = null; }
@@ -103,6 +103,25 @@ module.exports = function createLicense(o) {
     }
   }
 
+  // สถานะไอดีของคีย์นี้จากเซิร์ฟเวอร์ร้าน (เก็บผลไว้ 15 วิ หน้าจอถามทุก 3 วิ ไม่ยิงเซิร์ฟเวอร์ถี่)
+  let stCache = { at: 0, v: null, err: '' }, stBusy = null;
+  async function status(perf) {
+    if (Date.now() - stCache.at < 15000 || !st.key || !valid()) return stCache;
+    if (stBusy) return stBusy;
+    stBusy = (async () => {
+      try {
+        const r = await call('/api/v1/license/status', { key: st.key, hwid: HW, perf });
+        if (r.status === 200) stCache = { at: Date.now(), v: r.j, err: '' };
+        else {
+          stCache = { at: Date.now(), v: stCache.v, err: r.j.error || ('เซิร์ฟเวอร์ร้านตอบ ' + r.status) };
+          if (r.status === 401 || r.status === 403) refresh().catch(() => {}); // คีย์มีปัญหา: เช็คคีย์เต็มรอบ (ล็อกถ้าใช้ไม่ได้แล้ว)
+        }
+      } catch (e) { stCache = { at: Date.now(), v: stCache.v, err: 'ต่อเซิร์ฟเวอร์ร้านไม่ได้ (เช็คอินเทอร์เน็ต)' }; }
+      stBusy = null; return stCache;
+    })();
+    return stBusy;
+  }
+
   async function deactivate() {
     if (st.key) { try { await call('/api/v1/license/release', { key: st.key, hwid: HW }); } catch (e) {} }
     st = { key: '', lease: '', sig: '', seen: st.seen }; writeStore(); reason = '';
@@ -126,5 +145,5 @@ module.exports = function createLicense(o) {
     if (timer.unref) timer.unref();
   }
 
-  return { enabled: true, ok, state, start, activate, deactivate, refresh, hw: HW };
+  return { enabled: true, ok, state, start, activate, deactivate, refresh, status, server: SERVER, hw: HW };
 };

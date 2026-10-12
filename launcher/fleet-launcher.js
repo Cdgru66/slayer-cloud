@@ -342,8 +342,16 @@ async function uiState() {
   const acc = loadAccounts(), cfg = readRejoin();
   let fleet = null, fleetErr = '';
   // ตัวขาย: ผู้ซื้อไม่มีเซิร์ฟเวอร์ Fleet (และบนคอมร้าน 127.0.0.1:8800 คือเซิร์ฟเวอร์ของร้าน ห้ามแตะ) → ใช้เปิดเกม/รีจอยด้วยมือได้อย่างเดียว
-  if (LIC.enabled) fleetErr = 'โหมดตัวเปิดเกม: เปิดเกมและรีจอยด้วยปุ่มได้ · สถานะในเกมและรีจอยอัตโนมัติยังไม่มีในเวอร์ชันนี้';
-  else try {
+  let script = null;
+  if (LIC.enabled) { // ตัวขาย: ข้อมูลไอดีของคีย์นี้จากเซิร์ฟเวอร์ร้าน (ห้ามแตะเซิร์ฟเวอร์ Fleet ในเครื่อง)
+    const r = await LIC.status(perfCfg());
+    if (r.v) {
+      fleet = { serverTime: r.v.serverTime, afterMin: cfg.afterMin || 5, enabled: !!cfg.enabled, exclude: cfg.exclude || [],
+        accounts: (r.v.accounts || []).map((a) => Object.assign({}, a, { last: a.last + Math.round((Date.now() - r.at) / 1000), rejoin: sellRj.get(a.name.toLowerCase()) ? { n: sellRj.get(a.name.toLowerCase()).n, ago: Math.round((Date.now() - sellRj.get(a.name.toLowerCase()).at) / 1000) } : null })) };
+      script = { loader: `getgenv().SLAYER_KEY = "${r.v.token}"\nloadstring(game:HttpGet("${LIC.server}/script.lua"))()`, max: r.v.maxAccounts };
+    }
+    if (r.err) fleetErr = r.err;
+  } else try {
     const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
     if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' · รหัสไม่ตรงกัน: แอปนี้ใช้โฟลเดอร์ ' + APP + ' ต้องเปิด start-cloud.bat จากโฟลเดอร์เดียวกัน (ถ้าเพิ่งเปิดแอป ปิดหน้าต่างเซิร์ฟเวอร์แล้วเปิด start-cloud.bat ใหม่)' : '');
   } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
@@ -354,7 +362,7 @@ async function uiState() {
   const avatars = {}; for (const n of names) { const c = avatarCache.get(n.toLowerCase()); if (c && c.url) avatars[n.toLowerCase()] = c.url; }
   return {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
-    fleet, fleetErr, avatars, version: appVersion(), license: LIC.enabled ? LIC.state() : null,
+    fleet, fleetErr, avatars, script, version: appVersion(), license: LIC.enabled ? LIC.state() : null,
     cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, gameMode: cfg.gameMode === 'per' ? 'per' : 'shared', places: cfg.places || {}, perf: perfCfg() },
     sys: { multi: multiOk, cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
       procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
@@ -413,6 +421,30 @@ function openWindow(url) {
     '--hide-crash-restore-bubble', '--disable-features=Translate,msEdgeTranslate,msUndersideButton,msEdgeSidebarV2,EdgeShoppingAssistant,msShowSidebar', '--lang=th'], { detached: true, stdio: 'ignore' }).unref();
   else spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
+// ---------- รีจอยอัตโนมัติของตัวขาย (ผู้ซื้อไม่มีเซิร์ฟเวอร์ Fleet ในเครื่อง: แอปดูสถานะจากเซิร์ฟเวอร์ร้านแล้วเปิดเกมเอง) ----------
+const sellRj = new Map(); // ชื่อ -> { n, at, nextAt }
+async function sellRejoinTick() {
+  if (!LIC.enabled || !LIC.ok()) return;
+  const cfg = readRejoin(); if (!cfg.enabled) return;
+  const r = await LIC.status(perfCfg()); if (!r.v) return;
+  const acc = loadAccounts(), have = new Map(Object.keys(acc).map((k) => [k.toLowerCase(), k]));
+  const after = Math.max(2, Number(cfg.afterMin) || 5) * 60, skip = new Set((cfg.exclude || []).map((x) => String(x).toLowerCase()));
+  const lag = Math.round((Date.now() - r.at) / 1000), t = Date.now() / 1000;
+  for (const a of r.v.accounts || []) {
+    const k = a.name.toLowerCase(), silent = Math.min(a.last, a.liveAgo == null ? a.last : a.liveAgo) + lag;
+    if (silent < after) { if (sellRj.has(k)) { log(a.name + ' กลับมาออนไลน์แล้ว'); sellRj.delete(k); } continue; }
+    if (!have.has(k) || skip.has(k) || busy.has(k) || silent > 12 * 3600) continue;
+    const s2 = sellRj.get(k) || { n: 0, at: 0, nextAt: 0 };
+    if (t < s2.nextAt) continue;
+    s2.n++; s2.at = t; s2.nextAt = t + Math.min(10, 5 * Math.pow(2, s2.n - 1)) * 60; sellRj.set(k, s2);
+    log(`${a.name} เงียบ ${Math.round(silent / 60)} นาที -> เปิดเกมใหม่ (ครั้งที่ ${s2.n})`);
+    try { await launch(have.get(k), placeFor(have.get(k))); } catch (e) { log(a.name + ': ' + e.message); }
+    await new Promise((res) => setTimeout(res, perfCfg().staggerSec * 1000));
+  }
+}
+let sellBusy = false;
+setInterval(() => { if (sellBusy) return; sellBusy = true; sellRejoinTick().catch((e) => log('รีจอยอัตโนมัติผิดพลาด: ' + e.message)).finally(() => { sellBusy = false; }); }, 60e3).unref();
+
 // opts.embedded = รันอยู่ในแอป FleetLauncher.exe (Electron): แอปเปิดหน้าต่างเอง ไม่ใช้ Edge และไม่ปิดโปรเซสเองตอนเริ่มไม่สำเร็จ
 let EMBED = null;
 function serve(opts) {
