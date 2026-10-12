@@ -10,7 +10,8 @@
 //  - รับคำสั่งเฉพาะจากเครื่องตัวเอง (127.0.0.1) และต้องมีรหัส (สร้างให้อัตโนมัติ เขียนลง data\rejoin.json ให้เซิร์ฟเวอร์ใช้)
 //  - ส่ง cookie ไปที่ roblox.com เท่านั้น ไม่พิมพ์ลงหน้าจอ ไม่เขียนลง log
 //
-// ใช้งาน: ดับเบิลคลิก launcher.bat → เปิดหน้าจอควบคุม (launcher.bat menu = เมนูตัวอักษร)
+// ใช้งาน: ดับเบิลคลิก launcher.bat → ทำงานเบื้องหลัง (ไม่มีหน้าต่างดำ) + เปิดหน้าจอควบคุม · กดซ้ำ = เปิดหน้าจอของตัวที่ทำงานอยู่
+// launcher.bat console = แบบมีหน้าต่างดำ (ไว้ดูปัญหา) · launcher.bat menu = เมนูตัวอักษร
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -365,6 +366,7 @@ async function uiAction(p, j) {
   }
   if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
   if (p === '/ui/add') return importCookies(String(j.cookie || ''));
+  if (p === '/ui/quit') { log('ปิดโปรแกรมจากหน้าจอควบคุม (หยุดรีจอย)'); setTimeout(() => process.exit(0), 400); return { ok: true, msg: 'ปิดโปรแกรมแล้ว' }; }
   if (p === '/ui/remove') { const acc = loadAccounts(), k = Object.keys(acc).find((x) => x.toLowerCase() === name.toLowerCase()); if (!k) throw new Error('ไม่มีไอดีนี้'); delete acc[k]; saveAccounts(acc); log('ลบไอดี ' + k); return { ok: true, msg: 'ลบ ' + k + ' แล้ว' }; }
   if (p === '/ui/check') { const acc = loadAccounts(), out = {}; for (const [n, a] of Object.entries(acc)) { try { await whoAmI(a.cookie); out[n] = 'ok'; } catch (e) { out[n] = e.message; } } return { ok: true, result: out }; }
   if (p === '/ui/settings') {
@@ -410,7 +412,7 @@ function serve() {
       if (u.pathname === '/' || u.pathname.startsWith('/ui/')) {
         if (!/^(127\.0\.0\.1|localhost):7963$/.test(req.headers.host || '')) return send(403, 'forbidden');
         if (u.pathname === '/') {
-          if (!safeEq(u.searchParams.get('t') || '', UI_TOKEN)) return send(401, 'เปิดหน้าจอจากหน้าต่าง launcher.bat เท่านั้น');
+          if (!safeEq(u.searchParams.get('t') || '', UI_TOKEN)) return send(401, 'ดับเบิลคลิก launcher.bat เพื่อเปิดหน้าจอควบคุม');
           return send(200, fs.readFileSync(UI_FILE, 'utf8'), 'text/html; charset=utf-8');
         }
         if (!safeEq(req.headers['x-fleet-token'] || '', UI_TOKEN)) return send(401, '{"error":"unauthorized"}', 'application/json');
@@ -424,6 +426,7 @@ function serve() {
       // คำสั่งจากเซิร์ฟเวอร์ Fleet (แบบเดียวกับ RAM)
       const pw = rejoinPw();
       if (!pw || !safeEq(u.searchParams.get('Password') || '', pw)) return send(401, 'รหัสไม่ถูกต้อง');
+      if (u.pathname === '/OpenUI') { openWindow(`http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`); return send(200, 'ok'); } // กด launcher.bat ซ้ำ
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
       if (u.pathname === '/LaunchAccount') {
         const name = u.searchParams.get('Account') || '';
@@ -435,10 +438,21 @@ function serve() {
       send(404, 'not found');
     } catch (e) { log('ผิดพลาด: ' + e.message); send(500, e.message); }
   });
-  srv.on('error', (e) => { console.log(e.code === 'EADDRINUSE' ? `พอร์ต ${PORT} ถูกใช้อยู่ (เปิด Roblox Account Manager หรือหน้าต่างนี้ซ้ำอยู่หรือเปล่า) ปิดตัวอื่นก่อน` : e.message); process.exit(1); });
+  srv.on('error', async (e) => {
+    if (e.code === 'EADDRINUSE') {
+      // มีตัวเปิดเกมทำงานอยู่แล้ว: บอกให้ตัวนั้นเปิดหน้าจอแทน แล้วตัวนี้ปิดไป
+      try {
+        const r = await fetch(`http://127.0.0.1:${PORT}/OpenUI?Password=${encodeURIComponent(rejoinPw())}`, { signal: AbortSignal.timeout(4000) });
+        if (r.ok) { console.log('ตัวเปิดเกมทำงานอยู่แล้ว เปิดหน้าจอให้แล้ว'); process.exit(0); }
+      } catch (x) {}
+      log(`พอร์ต ${PORT} ถูกใช้อยู่ (Roblox Account Manager เปิดอยู่หรือเปล่า) ปิดตัวนั้นก่อน`);
+    } else log('เริ่มทำงานไม่ได้: ' + e.message);
+    process.exit(1);
+  });
   srv.listen(PORT, '127.0.0.1', () => {
     const url = `http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`;
-    console.log(`\n===== Fleet Launcher ทำงานแล้ว (ปิดหน้าต่างนี้ = หยุดรีจอย) =====`);
+    log('เริ่มทำงาน (เบื้องหลัง) · ปิดได้จากปุ่ม "ปิดโปรแกรม" ในหน้าจอควบคุม');
+    console.log(`\n===== Fleet Launcher ทำงานแล้ว =====`);
     console.log(`ไอดีที่รีจอยได้ ${Object.keys(loadAccounts()).length} ตัว · รีจอยเมื่อเงียบเกิน ${cfg.afterMin || 5} นาที`);
     console.log('หน้าจอควบคุมเปิดให้แล้ว (ถ้าปิดไป ก๊อปลิงก์นี้ไปเปิดในเบราว์เซอร์): ' + url + '\n');
     if (!process.env.FLEET_NO_WINDOW) openWindow(url);
@@ -501,6 +515,9 @@ async function menu() {
 
 if (require.main === module) {
   const a = process.argv[2];
+  // ทำงานเบื้องหลังไม่มีหน้าต่างดำ: error ที่ไม่คาดคิดเขียนลงบันทึกแทน (ดูในหน้า "บันทึกการทำงาน")
+  process.on('uncaughtException', (e) => { log('ผิดพลาด: ' + (e && e.message)); });
+  process.on('unhandledRejection', (e) => { log('ผิดพลาด: ' + (e && e.message)); });
   if (a === 'menu') menu(); else serve(); // ปกติเปิดหน้าจอควบคุมเลย · launcher.bat menu = เมนูตัวอักษรแบบเดิม
 }
 module.exports = { launchUri, authTicket, whoAmI, launch, loadAccounts, saveAccounts, serve, UI_TOKEN };

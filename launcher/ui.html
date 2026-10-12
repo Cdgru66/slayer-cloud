@@ -56,6 +56,7 @@ nav.side{flex:1 1 210px;max-width:230px;background:var(--lac1);border-right:1px 
 .nv[aria-current=page]{background:var(--lac3);color:var(--tx);font-weight:600;box-shadow:inset 0 0 0 1px var(--edge)}
 .nv svg{flex:none;opacity:.8}.nv span:first-child{display:flex;align-items:center;gap:10px}
 .cnt{font:12px var(--mono);background:var(--edge);padding:1px 8px;border-radius:6px;color:var(--tx2)}
+.quit{margin-top:8px;color:#ffb3a8}.quit:hover{color:#ffd0c8;background:rgba(239,123,108,.08)}
 .qs{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;padding-top:14px}
 .qs div{background:var(--lac2);border:1px solid var(--hair);border-radius:8px;padding:6px 8px;display:flex;justify-content:space-between;gap:4px}
 .qs b{font:600 12px var(--mono)}.qs span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -152,13 +153,14 @@ textarea{width:100%;height:160px;resize:none;padding:10px 12px;background:var(--
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:10px 16px;border-radius:11px;background:#1f3a2e;box-shadow:inset 0 0 0 1px rgba(95,208,160,.45);transition:.25s;z-index:30;font-size:13px;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#3a1f1f;box-shadow:inset 0 0 0 1px rgba(239,123,108,.5)}
 @media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
-@media (max-width:760px){nav.side{max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--hair)}.nv{width:auto}.sect,.qs{display:none}.go{width:100%;margin-bottom:4px}main{padding:16px}.tr .conn{display:none}}
+@media (max-width:1000px){#bgh{display:none}}
+@media (max-width:760px){nav.side{max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--hair)}.nv{width:auto}.sect,.qs,.quit{display:none}.go{width:100%;margin-bottom:4px}main{padding:16px}.tr .conn{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="seal" aria-hidden="true">艦</span><b>Fleet Launcher</b><span class="ver" id="ver"></span></div>
+  <div class="brand"><span class="seal" aria-hidden="true">艦</span><b>Fleet Launcher</b><span class="ver" id="ver"></span><span class="ver" id="bgh" data-i="bg" style="font-family:var(--sans)"></span></div>
   <div class="tr">
     <span class="conn" id="conn"><span class="dot"></span><span data-i="connecting"></span></span>
     <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="th">ไทย</button><button type="button" data-lang="en">EN</button></div>
@@ -174,6 +176,7 @@ textarea{width:100%;height:160px;resize:none;padding:10px 12px;background:var(--
     <button type="button" class="nv" data-v="perf"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span data-i="nPerf"></span></span></button>
     <button type="button" class="nv" data-v="log"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="nLog"></span></span></button>
     <div class="qs" id="qs"></div>
+    <button type="button" class="nv quit" id="quit"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg><span data-i="quit"></span></span></button>
   </nav>
 
   <main>
@@ -311,7 +314,7 @@ th:{connecting:'กำลังต่อ…',connOk:'เซิร์ฟเวอ
  pPc:'บนเครื่อง (ตัวเปิดเกม)',pPcSub:'จัดการหน้าต่าง Roblox จากนอกเกม',pTrim:'คืน RAM อัตโนมัติ',pTrimSub:'ย้ายหน่วยความจำที่ Roblox ไม่ได้ใช้ออก · ช่วยมากตอน RAM ใกล้เต็ม',trimOff:'ปิด',every:'ทุก {n} นาที',
  pMin:'ย่อหน้าต่างเกมทันทีที่เปิด',pMinSub:'หน้าต่างที่ย่อไว้วาดภาพน้อยลง',unknownWin:'ไม่รู้ไอดี (PID {p})',noWin:'ยังไม่มีหน้าต่าง Roblox เปิดอยู่',
  pHint:'"ประหยัดในเกม" ปิดได้รายไอดี เช่น ไอดีที่ใช้สแกนเกมใหม่ · การคืน RAM และย่อหน้าต่างใช้ได้บน Windows',
- hLog:'บันทึกการทำงาน',noLog:'ยังไม่มีบันทึก',
+ hLog:'บันทึกการทำงาน',quit:'ปิดโปรแกรม',quitAsk:'ปิดตัวเปิดเกม? รีจอยอัตโนมัติจะหยุดจนกว่าจะเปิด launcher.bat ใหม่\n(ปิดแค่หน้าต่างนี้ = ยังทำงานเบื้องหลังต่อ)',quitDone:'ปิดโปรแกรมแล้ว · ดับเบิลคลิก launcher.bat เพื่อเปิดใหม่',bg:'ปิดหน้าต่างนี้ได้ ยังรีจอยเบื้องหลังต่อ',noLog:'ยังไม่มีบันทึก',
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
  steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
@@ -335,7 +338,7 @@ en:{connecting:'Connecting…',connOk:'Shop server v',connBad:'Cannot reach serv
  pPc:'On this PC (launcher)',pPcSub:'Manages Roblox windows from outside the game',pTrim:'Free RAM automatically',pTrimSub:'Moves memory Roblox is not using out of RAM · helps most when RAM is nearly full',trimOff:'Off',every:'Every {n} min',
  pMin:'Minimise game windows on launch',pMinSub:'Minimised windows draw less',unknownWin:'Unknown account (PID {p})',noWin:'No Roblox windows open',
  pHint:'"In-game saving" can be turned off per account, e.g. one used to scan a new game · Freeing RAM and minimising work on Windows',
- hLog:'Logs',noLog:'No log entries yet',
+ hLog:'Logs',quit:'Quit launcher',quitAsk:'Quit the launcher? Auto rejoin stops until you run launcher.bat again.\n(Closing just this window keeps it running in the background.)',quitDone:'Launcher closed · double-click launcher.bat to start it again',bg:'You can close this window; rejoin keeps running in the background',noLog:'No log entries yet',
  addTitle:'Add account',cancel:'Cancel',saveAcc:'Save account',safe:'The cookie is the key to the account — never share it · stored encrypted on this PC only, never sent to the shop site',
  steps:['Open a <b>private</b> browser window and log in to roblox.com with that account','Press <b>F12</b> → Application → Cookies → https://www.roblox.com','Copy the <b>.ROBLOSECURITY</b> value and paste it below · <b>one per line for several accounts</b>','Close the browser window — <b>do not log out</b> (the cookie would stop working)'],
  qOn:'Online',qOff:'Dropped',qBusy:'Launching',qNo:'No cookie',threads:'{n} threads',usedOf:'{a} / {b} GB',rbSub:'{g} GB RAM in total',onSub:'of {n} accounts',saved:'Saved'}};
@@ -358,7 +361,7 @@ $$('[data-lang]').forEach(b=>b.onclick=()=>{LANG=b.dataset.lang;store.set('fl-la
 const cm=n=>n==null?'–':Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(n/1e3).toFixed(1)+'K':String(Math.round(n));
 const ago=s=>s==null?'–':(s<60?Math.round(s)+t('s'):s<3600?Math.round(s/60)+t('m'):s<86400?Math.round(s/3600)+t('hr'):Math.round(s/86400)+t('d'))+(LANG==='th'?' '+t('ago'):t('ago'));
 const gb=b=>(b/1073741824).toFixed(1);
-let S=null,flt='all',q='',view=store.get('fl-view')||'acc';
+let stopped=false,S=null,flt='all',q='',view=store.get('fl-view')||'acc';
 function toast(m,bad){const e=$('#toast');e.textContent=m;e.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>e.className='toast',3200)}
 async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('error '+r.status));return j}
 async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
@@ -490,9 +493,10 @@ $('#placeSave').onclick=e=>act(e.currentTarget,'/ui/settings',{placeId:Number($(
 $('#no3d').onchange=e=>setP({no3d:e.target.checked});$('#lowGfx').onchange=e=>setP({lowGfx:e.target.checked});$('#minimize').onchange=e=>setP({minimize:e.target.checked});
 $('#fps').onchange=e=>setP({fps:Number(e.target.value)});$('#trimMin').onchange=e=>setP({trimMin:Number(e.target.value)});
 $('#trim').onclick=e=>act(e.currentTarget,'/ui/trim',{});$('#minAll').onclick=e=>act(e.currentTarget,'/ui/minimize',{});
+$('#quit').onclick=async()=>{if(!confirm(t('quitAsk')))return;try{await api('/ui/quit',{})}catch(e){}stopped=true;document.body.innerHTML='';document.body.append(h('div',{class:'empty',style:'padding:80px 20px;font-size:15px'},t('quitDone')))};
 $('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
 applyLang();setView(view);load();
-setInterval(()=>{if(!document.hidden&&$('#modal').hidden)load()},3000);
+setInterval(()=>{if(!stopped&&!document.hidden&&$('#modal').hidden)load()},3000);
 </script>
 </body>
 </html>
