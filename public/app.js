@@ -47,7 +47,8 @@ function bossRate(a){const p=a.hist.filter(x=>x.t>=now()-3600&&x.b!=null);if(p.l
 const ORB_ALIAS={Pyrokinesis:'Pyrokenesis'},BREATH_ICON={Water:'Water Katana',Flame:'Flame Katana',Thunder:'Thunder Katana',Wind:'Wind Katana',Insect:'Insect Katana',Stone:'Stone Haori',Sound:'Sound Katanas',Mist:'Mist Kumo Sodenashi',Serpent:'Serpent Katana',Beast:'Beast Core',Moon:'Moonlit Kata-Aki'};
 function pwIcon(name,demon,glyph){const key=demon?(ORB_ALIAS[name]||name)+' Orb':BREATH_ICON[name]||name+' Katana',u=ICONS[key];
  if(u){const im=new Image(18,18);im.src=u;im.alt='';im.className='pwi';im.onerror=()=>im.replaceWith(h('b',{},glyph));return im}return h('b',{},glyph)}
-function power(s){if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},pwIcon(s.demonArt,true,'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},pwIcon(s.breathing,false,'息'),s.breathing);return null}
+const realPow=v=>typeof v==='string'&&v&&!/^CustomPower:/i.test(v)?v:null;
+function power(s){s=Object.assign({},s,{demonArt:realPow(s.demonArt),breathing:realPow(s.breathing)});if(s.demonArt)return h('span',{class:'pw demon',title:'Demon Art (มนต์อสูรโลหิต)'},pwIcon(s.demonArt,true,'鬼'),s.demonArt);if(s.breathing)return h('span',{class:'pw',title:'Breathing'},pwIcon(s.breathing,false,'息'),s.breathing);return null}
 function fight(s,st,big){if(!s.boss||st==='off')return null;return h('span',{class:'fight'+(big?' big':''),title:'บอสที่อยู่ใกล้ตัวละครที่สุด'},bossPic(s.boss.name,big?30:18),isLive(s)?h('span',{class:'livetag'},'LIVE'):null,'กำลังสู้ ',h('b',{},bossName(s.boss.name)),s.boss.hp!=null?h('span',{class:'hp'},h('i',{style:`width:${Math.max(0,Math.min(100,s.boss.hp))}%`})):null)}
 function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.get(el.dataset.cd);if(!a)return;const st=stat(a);el.textContent=cdText(a,st);el.classList.toggle('late',st!=='off'&&nextIn(a)<=-30);el.classList.toggle('rj',st==='off'&&!!a.rejoin&&now()-a.rejoin.at<600)});
  const on=[...A.values()].filter(a=>stat(a)!=='off');const el=$('#t-next');if(!el)return;
@@ -154,7 +155,7 @@ function renderGoals(L){const box=$('#goals');if(!box)return;const G=L.filter(x=
  box.replaceChildren(h('div',{class:'gh'},h('h2',{},'ความคืบหน้าออเดอร์'),h('span',{class:'mu'},'อัปเดตสดจากในเกม')),h('div',{class:'gcards'},G.map(({a,st})=>{const s=a.s,pct=goalPct(a);
   return h('div',{class:'gcard'+(pct>=100?' fin':''),role:'button',tabindex:'0',onclick:()=>show(s.name),onkeydown:e=>{if(e.key==='Enter'){show(s.name)}}},
    h('div',{class:'gc-top'},ring(pct,96,'c:'+s.name),h('div',{class:'gc-t'},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},s.display||s.name),h('span',{class:'gc-st'},h('i',{class:'dot',style:'--c:'+ST[st][1]}),pct>=100?'เสร็จแล้ว 🎉':ST[st][0]),fight(s,st))),
-   usingNow(s),goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
+   goalMeta(a),goalList(a,true),h('span',{class:'gc-more'},'ดูรายละเอียดไอดี ›'))})))}
 // หน้าหลัก: เควสที่ทุกไอดีกำลังทำ (อัปเดตสดทุก 20 วิ) แถบเลื่อนนุ่ม ๆ เมื่อเลขขึ้น
 function qPct(qa){const ts=(qa.tasks||[]).filter(t=>t.max>0);if(!ts.length)return null;return Math.round(ts.reduce((t,x)=>t+Math.min(1,x.v/x.max),0)/ts.length*100)}
 function questChip(s){const qa=((s.quests||{}).active||[])[0];if(!qa)return null;const t=(qa.tasks||[])[0];return h('span',{class:'qchip',title:'เควสที่กำลังทำ'},'📜 ',qa.name,t&&t.max?h('b',{},' '+t.v+'/'+t.max):null)}
@@ -290,7 +291,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
  d.replaceChildren(h('button',{class:'btn x',onclick:hide,'aria-label':'ปิด'},'ปิด'),
   h('div',{class:'dh'},lvSeal(s),h('div',{},h('h2',{},s.display||s.name),h('p',{class:'us'},s.name+(s.userId?'  ·  ID '+s.userId:'')))),
   h('p',{style:'margin-top:14px'},h('span',{class:'pill',style:'--c:'+ST[st][1]},h('i',{class:'dot',style:'--c:'+ST[st][1]}),ST[st][0]+' · อัปเดตเมื่อ '+ago(now()-s.time)+'ที่แล้ว'),' ',h('span',{class:'pill cdp','data-cd':s.name,style:'--c:var(--mu)'},cdText(a,st))),
-  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),usingNow(s),goalMeta(a),spark(a,320,64),goalList(a,false)):'',
+  a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),goalMeta(a),spark(a,320,64),goalList(a,false)):'',
   fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):'',
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),
@@ -301,7 +302,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
   ...questSection(s),
   ...rogueSection(a),
   h('h3',{},'เลเวล '+(s.level??'–')+' · EXP '+full(s.expCurrent)+' / '+full(s.expGoal)),h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`})),
-  h('h3',{},'ตัวละคร'),h('div',{class:'kv'},kv('Race',s.race||'–'),kv('Clan',s.clan||'–'),kv('Demon Art',s.demonArt||'–'),kv('Breathing',s.breathing||'–'),kv('Fighting Style',s.fightingStyle||'–'),kv('Slayer / Demon',(s.slayerRank||'–')+' / '+(s.demonRank||'–')),kv('Skill Points',s.skillPoints??'–'),kv('Kills',cm(p.kills)),kv('Boss kills',cm(p.boss_kills)),kv('Deaths',cm(p.deaths)),kv('Tower',p.tower_floor!=null?'ชั้น '+p.tower_floor:'–')),
+  h('h3',{},'ตัวละคร'),h('div',{class:'kv'},kv('Race',s.race||'–'),kv('Clan',s.clan||'–'),kv('Demon Art',realPow(s.demonArt)||'–'),kv('Breathing',realPow(s.breathing)||'–'),kv('Fighting Style',s.fightingStyle||'–'),kv('Slayer / Demon',(s.slayerRank||'–')+' / '+(s.demonRank||'–')),kv('Skill Points',s.skillPoints??'–'),kv('Kills',cm(p.kills)),kv('Boss kills',cm(p.boss_kills)),kv('Deaths',cm(p.deaths)),kv('Tower',p.tower_floor!=null?'ชั้น '+p.tower_floor:'–')),
   ...(Object.keys(s.mastery||{}).length?[h('h3',{},'Mastery'),h('div',{class:'mg'},Object.entries(s.mastery).sort((x,y)=>mPrec(y[1])-mPrec(x[1])).map(([k,m])=>{const lv=mLv(m),mx=lv>=400,r=mx?1:(m.goal>0?Math.max(0,Math.min(1,m.current/m.goal)):0);return h('div',{class:'mc'+(mx?' max':''),title:'EXP '+full(m.current)+' / '+full(m.goal)},h('div',{class:'mh'},h('span',{class:'mn'},k),mx?h('span',{class:'mx'},'MAX'):h('span',{class:'mp'},Math.round(lv/4)+'% ของ 400')),h('div',{class:'mv'},h('b',{},'Lv '+lv),h('span',{},' / 400')),h('div',{class:'mb'},h('i',{style:`width:${(mx?100:r*100).toFixed(1)}%`})),mx?null:h('small',{class:'mu'},'EXP '+full(m.current)+' / '+full(m.goal)+' → Lv '+(lv+1)))}))]:[]),
   ...bag(s))}
 document.querySelectorAll('.fl').forEach(b=>b.onclick=()=>{flt=b.dataset.f;document.querySelectorAll('.fl').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
