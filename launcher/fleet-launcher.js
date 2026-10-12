@@ -341,7 +341,9 @@ function writeRejoin(c) { const t = REJOIN_FILE + '.tmp'; fs.writeFileSync(t, JS
 async function uiState() {
   const acc = loadAccounts(), cfg = readRejoin();
   let fleet = null, fleetErr = '';
-  try {
+  // ตัวขาย: ผู้ซื้อไม่มีเซิร์ฟเวอร์ Fleet (และบนคอมร้าน 127.0.0.1:8800 คือเซิร์ฟเวอร์ของร้าน ห้ามแตะ) → ใช้เปิดเกม/รีจอยด้วยมือได้อย่างเดียว
+  if (LIC.enabled) fleetErr = 'โหมดตัวเปิดเกม: เปิดเกมและรีจอยด้วยปุ่มได้ · สถานะในเกมและรีจอยอัตโนมัติยังไม่มีในเวอร์ชันนี้';
+  else try {
     const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
     if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' · รหัสไม่ตรงกัน: แอปนี้ใช้โฟลเดอร์ ' + APP + ' ต้องเปิด start-cloud.bat จากโฟลเดอร์เดียวกัน (ถ้าเพิ่งเปิดแอป ปิดหน้าต่างเซิร์ฟเวอร์แล้วเปิด start-cloud.bat ใหม่)' : '');
   } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
