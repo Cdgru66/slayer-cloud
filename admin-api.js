@@ -101,7 +101,7 @@ module.exports = function createAdmin(ctx) {
       const seen = Object.keys(pool).sort().map((n) => {
         const a = pool[n], o = owners.get(n.toLowerCase()), r = ctx.rejoinState(n);
         return { name: n, display: a.s && a.s.display, level: a.s && a.s.level, last: a.s ? Math.round(t - a.s.time) : null,
-          interval: a.s && a.s.interval, mastery: a.s && a.s.mastery ? Object.fromEntries(Object.entries(a.s.mastery).slice(0, 40).map(([k, v]) => [k, v ? Math.round(((Number.isFinite(v.lv) ? v.lv : Math.round((Number(v.goal) || 0) / 30)) + (v.goal > 0 ? Math.min(1, v.current / v.goal) : 0)) * 10) / 10 : 0])) : {}, goal: ctx.orders.goalOf(n), owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
+          interval: a.s && a.s.interval, mastery: a.s && a.s.mastery ? Object.fromEntries(Object.entries(a.s.mastery).slice(0, 40).map(([k, v]) => [k, v ? Math.round(((Number.isFinite(v.lv) ? v.lv : Math.round((Number(v.goal) || 0) / 30)) + (v.goal > 0 ? Math.min(1, v.current / v.goal) : 0)) * 10) / 10 : 0])) : {}, goal: ctx.orders.goalOf(n), amt: a.s && Array.isArray(a.s.items) ? Object.fromEntries(a.s.items.filter((i) => i && (i.name === 'Ore' || i.name === 'Ouwigahara Token')).map((i) => [i.name, i.amount])) : {}, owner: o || null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
       });
       const st = readJson(SETTINGS_FILE, {});
       send(res, 200, {
@@ -185,6 +185,11 @@ module.exports = function createAdmin(ctx) {
         const name = String(j.account || ''), a = ctx.pool()[name];
         const keys = a && a.s && a.s.mastery ? Object.keys(a.s.mastery) : [];
         if (j.remove) { ctx.orders.delGoal(name); return send(res, 200, { ok: true }); }
+        // เป้าฟาร์มของ (Ore/Token): จดจำนวนตอนเริ่มไว้ นับเฉพาะที่ได้เพิ่มหลังจากนี้
+        if (Array.isArray(j.items)) for (const it of j.items) if (it && it.k === 'item' && !Number.isFinite(it.base)) {
+          const f = a && a.s && Array.isArray(a.s.items) ? a.s.items.find((i) => i && i.name === it.key) : null;
+          if (a && a.s) it.base = f && Number.isFinite(f.amount) ? f.amount : 0;
+        }
         send(res, 200, j.order ? ctx.orders.linkOrder(String(j.order), name, keys) : j.set ? ctx.orders.goalFromSet(String(j.set), name, keys) : ctx.orders.setGoal(name, j));
       });
       return true;

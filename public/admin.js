@@ -257,7 +257,8 @@ function renderSets() {
 function goalPct(goal, seenAcc) {
   if (!goal || !goal.items || !goal.items.length) return null;
   const m = (seenAcc && seenAcc.mastery) || {};
-  const parts = goal.items.map((it) => it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
+  const am = (seenAcc && seenAcc.amt) || {};
+  const parts = goal.items.map((it) => it.k === 'item' ? Math.min(1, Math.max(0, (Number(am[it.key]) || 0) - (it.base || 0)) / (it.target || 1)) : it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
   return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length * 100);
 }
 const goalDraft = {};
@@ -300,7 +301,9 @@ function custGoals(c) {
     return h('div', { class: 'cgoal' }, h('div', { class: 'rowb' }, h('b', { class: 'cgn' }, n), acc ? null : h('span', { class: 'mu' }, '(ยังไม่ส่งข้อมูลเข้ามา)'),
       sel,
       h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกเซทก่อน', true); act(() => api('goal', { method: 'POST', body: { account: n, set: sel.value } }), 'เริ่มติดตาม ' + n + ' แล้ว ลูกค้าเห็นทันที'); } }, 'เริ่มติดตามจากเซท'),
-      h('button', { class: 'btn', onclick: () => { goalDraft[dk] = { title: '', items: [] }; render(); } }, 'ตั้งเป้าเอง')));
+      h('button', { class: 'btn', onclick: () => { goalDraft[dk] = { title: '', items: [] }; render(); } }, 'ตั้งเป้าเอง')),
+      h('div', { class: 'rowb' }, h('span', { class: 'mu' }, 'หรือรับฟาร์ม:'), [['Ore', 'Ore', '5000'], ['Ouwigahara Token', 'Token', '100']].map(([key, lab, def]) =>
+        h('button', { class: 'btn primary', onclick: () => { const v = Number(String(prompt('ฟาร์ม ' + lab + ' ให้ ' + n + ' เพิ่มอีกกี่ชิ้น? (นับจากตอนนี้)', def) || '').replace(/,/g, '')); if (v > 0) act(() => api('goal', { method: 'POST', body: { account: n, title: 'ฟาร์ม ' + lab, items: [{ k: 'item', label: 'ฟาร์ม ' + lab, key, target: Math.floor(v) }] } }), 'เริ่มติดตามการฟาร์ม ' + lab + ' แล้ว'); } }, '⛏ ฟาร์ม ' + lab))));
   });
   const anyNew = c.accounts.some((n) => { const a = D.seen.find((x) => x.name.toLowerCase() === n.toLowerCase()); return !(a && a.goal) && !goalDraft['c:' + n.toLowerCase()]; });
   return h('div', { class: 'sec' }, anyNew ? [h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'เลือกเซทที่กำลังทำให้ไอดีนี้ ลูกค้าจะเห็น % และวันที่คาดว่าจะเสร็จในหน้าของเขาแบบเรียลไทม์')] : null, blocks);
@@ -315,6 +318,12 @@ function goalEditor(account, dk) {
   const rows = g.items.map((it, i) => {
     const del = h('button', { class: 'btn', 'aria-label': 'ลบ', onclick: () => { g.items.splice(i, 1); render(); } }, '✕');
     if (it.k === 'manual') return h('div', { class: 'gi' }, h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !!it.done, onchange: (e) => { it.done = e.target.checked; render(); } }), h('span', { class: 'tgk' }), h('span', {}, it.label)), del);
+    if (it.k === 'item') {
+      const have = Number(((acc && acc.amt) || {})[it.key]) || 0, got = Math.max(0, have - (it.base != null ? it.base : have));
+      return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || ('ฟาร์ม ' + it.key)),
+        h('input', { class: 'f num', type: 'number', value: it.target, 'aria-label': 'จำนวนที่ต้องฟาร์มเพิ่ม', oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
+        h('span', { class: 'mu' }, '+' + got.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + ' · มี ' + have.toLocaleString()), del);
+    }
     const cur = it.k === 'mastery' ? Number((acc && acc.mastery || {})[it.key]) || 0 : Number(acc && acc.level) || 0;
     const ks = h('select', { class: 'f', onchange: (e) => { it.key = e.target.value; render(); } }, h('option', { value: it.key }, (it.key || '— เลือก —') + (it.key && !keys.includes(it.key) ? ' (ยังไม่มีในไอดี)' : '')), keys.filter((k) => k !== it.key).map((k) => h('option', { value: k }, k)));
     return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || (it.k === 'level' ? 'เลเวล' : 'Mastery'), it.need ? h('small', { class: 'mu' }, ' (นับเมื่อมี ' + it.need + ')') : null), it.k === 'mastery' ? ks : null,
@@ -323,13 +332,15 @@ function goalEditor(account, dk) {
   });
   const addM = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'mastery', label: 'Mastery', key: keys[0] || '', target: 400 }); render(); } }, '+ Mastery');
   const addL = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'level', label: 'เลเวล', target: 225 }); render(); } }, '+ เลเวล');
+  const addFarm = (key, lab) => h('button', { class: 'btn', onclick: () => { const n = Number(String(prompt('ฟาร์ม ' + lab + ' เพิ่มอีกกี่ชิ้น? (นับจากตอนนี้)', key === 'Ore' ? '5000' : '100') || '').replace(/,/g, '')); if (n > 0) { g.items.push({ k: 'item', label: 'ฟาร์ม ' + lab, key, target: Math.floor(n) }); render(); } } }, '+ ฟาร์ม ' + lab);
+  const addO = addFarm('Ore', 'Ore'), addT = addFarm('Ouwigahara Token', 'Token');
   const addX = h('button', { class: 'btn', onclick: () => { const t = prompt('รายการที่ต้องทำ (ติ๊กเองเมื่อเสร็จ)'); if (t) { g.items.push({ k: 'manual', label: t.slice(0, 80) }); render(); } } }, '+ รายการติ๊กเอง');
   const save = h('button', { class: 'btn primary', onclick: () => act(() => api('goal', { method: 'POST', body: { account: account, title: g.title, order: undefined, items: g.items } }), 'บันทึกเป้าหมายแล้ว ลูกค้าเห็นทันที').then(() => { delete goalDraft[dk]; }) }, 'บันทึกเป้าหมาย');
   const unlink = h('button', { class: 'btn bad', onclick: () => { if (confirm('เลิกติดตามไอดี ' + account + '?')) { delete goalDraft[dk]; act(() => api('goal', { method: 'POST', body: { account: account, remove: true } }), 'เลิกติดตามแล้ว'); } } }, 'เลิกติดตาม');
   return h('div', { class: 'sec' }, h('h4', {}, 'ติดตามความคืบหน้า · ' + account + (pct != null ? ' · ' + pct + '%' : '')),
     h('div', { class: 'gbar' }, h('i', { style: 'width:' + (pct || 0) + '%' })),
     h('div', { class: 'glist' }, rows.length ? rows : h('p', { class: 'note' }, 'ยังไม่มีเป้าหมาย')),
-    h('div', { class: 'rowb' }, addM, addL, addX, save, unlink),
+    h('div', { class: 'rowb' }, addO, addT, addM, addL, addX, save, unlink),
     keys.length ? null : h('p', { class: 'note' }, 'ไอดีนี้ยังไม่ส่งข้อมูล Mastery เข้ามา ชื่อ Mastery จะเลือกได้เมื่อสคริปต์ส่งข้อมูลรอบถัดไป'));
 }
 
