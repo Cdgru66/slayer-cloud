@@ -10,7 +10,7 @@
 //  - รับคำสั่งเฉพาะจากเครื่องตัวเอง (127.0.0.1) และต้องมีรหัส (สร้างให้อัตโนมัติ เขียนลง data\rejoin.json ให้เซิร์ฟเวอร์ใช้)
 //  - ส่ง cookie ไปที่ roblox.com เท่านั้น ไม่พิมพ์ลงหน้าจอ ไม่เขียนลง log
 //
-// ใช้งาน: ดับเบิลคลิก launcher.bat (เมนูภาษาไทย)
+// ใช้งาน: ดับเบิลคลิก launcher.bat → เปิดหน้าจอควบคุม (launcher.bat menu = เมนูตัวอักษร)
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -146,13 +146,87 @@ function ensureRejoinCfg() {
   return c;
 }
 function safeEq(a, b) { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); }
+// ---------- หน้าจอควบคุม (เปิดเป็นหน้าต่างบนคอม เฉพาะเครื่องนี้) ----------
+const UI_TOKEN = crypto.randomBytes(24).toString('hex'); // สุ่มใหม่ทุกครั้งที่เปิดโปรแกรม
+const FLEET = process.env.FLEET_URL || 'http://127.0.0.1:8800';
+let cpuPrev = os.cpus(), cpuPct = 0;
+setInterval(() => { const c = os.cpus(); let idle = 0, tot = 0; c.forEach((x, i) => { const p = cpuPrev[i] && cpuPrev[i].times; if (!p) return; for (const k in x.times) tot += x.times[k] - p[k]; idle += x.times.idle - p.idle; }); cpuPct = tot ? Math.round((1 - idle / tot) * 100) : 0; cpuPrev = c; }, 3000).unref();
+function tail(file, n) { try { return fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).slice(-n).reverse(); } catch (e) { return []; } }
+function readRejoin() { try { return JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')); } catch (e) { return {}; } }
+function writeRejoin(c) { const t = REJOIN_FILE + '.tmp'; fs.writeFileSync(t, JSON.stringify(c, null, 2)); fs.renameSync(t, REJOIN_FILE); }
+async function uiState() {
+  const acc = loadAccounts(), cfg = readRejoin();
+  let fleet = null, fleetErr = '';
+  try {
+    const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
+    if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' (อัปเดตเซิร์ฟเวอร์เป็นเวอร์ชันล่าสุดหรือยัง)' : '');
+  } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
+  const pids = robloxPids();
+  return {
+    launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
+    fleet, fleetErr, cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [] },
+    sys: { cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length },
+    log: tail(LOG, 40).concat(tail(path.join(DATA_DIR, 'rejoin.log'), 40).map((l) => l + '  [เซิร์ฟเวอร์]')).sort().reverse().slice(0, 50),
+  };
+}
+async function uiAction(p, j) {
+  const name = typeof j.name === 'string' ? j.name : '';
+  if (p === '/ui/rejoin') { await launch(name, Number(j.placeId) || DEFAULT_PLACE); return { ok: true, msg: 'กำลังเปิด ' + name }; }
+  if (p === '/ui/rejoin-offline') {
+    const st = await uiState(), have = new Set(st.launcher.map((x) => x.name.toLowerCase())), after = st.cfg.afterMin * 60;
+    const off = ((st.fleet && st.fleet.accounts) || []).filter((a) => a.last > after && have.has(a.name.toLowerCase())).map((a) => a.name);
+    (async () => { for (const n of off) { try { await launch(n, DEFAULT_PLACE); } catch (e) { log(n + ': ' + e.message); } await new Promise((r) => setTimeout(r, 20000)); } })();
+    return { ok: true, msg: off.length ? `กำลังเปิดใหม่ ${off.length} ไอดี (ห่างกันตัวละ 20 วิ)` : 'ไม่มีไอดีที่หลุดอยู่' };
+  }
+  if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
+  if (p === '/ui/add') {
+    const c = String(j.cookie || '').trim().replace(/^\.ROBLOSECURITY=/, '').replace(/^"|"$/g, '');
+    if (c.length < 100) throw new Error('cookie สั้นเกินไป ก๊อปมาไม่ครบหรือเปล่า');
+    const me = await whoAmI(c), acc = loadAccounts();
+    for (const k of Object.keys(acc)) if (k.toLowerCase() === me.name.toLowerCase()) delete acc[k];
+    acc[me.name] = { cookie: c, id: me.id, added: Date.now() }; saveAccounts(acc);
+    log('เพิ่มไอดี ' + me.name); return { ok: true, msg: `เพิ่ม ${me.name} (${me.display}) แล้ว` };
+  }
+  if (p === '/ui/remove') { const acc = loadAccounts(), k = Object.keys(acc).find((x) => x.toLowerCase() === name.toLowerCase()); if (!k) throw new Error('ไม่มีไอดีนี้'); delete acc[k]; saveAccounts(acc); log('ลบไอดี ' + k); return { ok: true, msg: 'ลบ ' + k + ' แล้ว' }; }
+  if (p === '/ui/check') { const acc = loadAccounts(), out = {}; for (const [n, a] of Object.entries(acc)) { try { await whoAmI(a.cookie); out[n] = 'ok'; } catch (e) { out[n] = e.message; } } return { ok: true, result: out }; }
+  if (p === '/ui/settings') {
+    const c = readRejoin();
+    if ('enabled' in j) c.enabled = !!j.enabled;
+    if ('afterMin' in j) { const n = Number(j.afterMin); if (!(n >= 2 && n <= 120)) throw new Error('นาทีต้องอยู่ระหว่าง 2-120'); c.afterMin = n; }
+    if ('auto' in j && /^[A-Za-z0-9_]{3,20}$/.test(name)) { const ex = new Set((c.exclude || []).map((x) => x.toLowerCase())); if (j.auto) ex.delete(name.toLowerCase()); else ex.add(name.toLowerCase()); c.exclude = [...ex]; }
+    writeRejoin(c); return { ok: true, msg: 'บันทึกแล้ว' };
+  }
+  throw new Error('not found');
+}
+function openWindow(url) {
+  if (!IS_WIN) { console.log('เปิดหน้าจอที่: ' + url); return; }
+  const edge = ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'].find((f) => fs.existsSync(f));
+  if (edge) spawn(edge, ['--app=' + url, '--window-size=1320,860'], { detached: true, stdio: 'ignore' }).unref(); // หน้าต่างแยก ไม่มีแถบเบราว์เซอร์
+  else spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+}
 function serve() {
   const cfg = ensureRejoinCfg();
-  const names = Object.keys(loadAccounts());
+  const UI_FILE = path.join(__dirname, 'ui.html');
   const srv = http.createServer(async (req, res) => {
-    const send = (code, text) => { res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end(text); };
+    const send = (code, text, type) => { res.writeHead(code, { 'Content-Type': type || 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' }); res.end(text); };
     try {
       const u = new URL(req.url, 'http://127.0.0.1');
+      // หน้าจอควบคุม: ต้องเปิดจากเครื่องนี้ (Host) + มีโทเคนที่สุ่มตอนเปิดโปรแกรม (กันเว็บอื่นแอบสั่ง)
+      if (u.pathname === '/' || u.pathname.startsWith('/ui/')) {
+        if (!/^(127\.0\.0\.1|localhost):7963$/.test(req.headers.host || '')) return send(403, 'forbidden');
+        if (u.pathname === '/') {
+          if (!safeEq(u.searchParams.get('t') || '', UI_TOKEN)) return send(401, 'เปิดหน้าจอจากหน้าต่าง launcher.bat เท่านั้น');
+          return send(200, fs.readFileSync(UI_FILE, 'utf8'), 'text/html; charset=utf-8');
+        }
+        if (!safeEq(req.headers['x-fleet-token'] || '', UI_TOKEN)) return send(401, '{"error":"unauthorized"}', 'application/json');
+        if (u.pathname === '/ui/state' && req.method === 'GET') return send(200, JSON.stringify(await uiState()), 'application/json');
+        if (req.method !== 'POST') return send(405, '{}', 'application/json');
+        let body = ''; for await (const ch of req) { body += ch; if (body.length > 20000) return send(413, '{}', 'application/json'); }
+        let j = {}; try { j = JSON.parse(body || '{}'); } catch (e) { return send(400, '{"error":"bad json"}', 'application/json'); }
+        try { return send(200, JSON.stringify(await uiAction(u.pathname, j && typeof j === 'object' ? j : {})), 'application/json'); }
+        catch (e) { return send(400, JSON.stringify({ ok: false, error: e.message }), 'application/json'); }
+      }
+      // คำสั่งจากเซิร์ฟเวอร์ Fleet (แบบเดียวกับ RAM)
       const pw = rejoinPw();
       if (!pw || !safeEq(u.searchParams.get('Password') || '', pw)) return send(401, 'รหัสไม่ถูกต้อง');
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
@@ -168,9 +242,11 @@ function serve() {
   });
   srv.on('error', (e) => { console.log(e.code === 'EADDRINUSE' ? `พอร์ต ${PORT} ถูกใช้อยู่ (เปิด Roblox Account Manager หรือหน้าต่างนี้ซ้ำอยู่หรือเปล่า) ปิดตัวอื่นก่อน` : e.message); process.exit(1); });
   srv.listen(PORT, '127.0.0.1', () => {
+    const url = `http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`;
     console.log(`\n===== Fleet Launcher ทำงานแล้ว (ปิดหน้าต่างนี้ = หยุดรีจอย) =====`);
-    console.log(`ไอดีที่รีจอยได้ ${names.length} ตัว: ${names.join(', ') || '(ยังไม่มี เพิ่มที่เมนู 1)'}`);
-    console.log(`เซิร์ฟเวอร์ Fleet จะสั่งเปิดไอดีที่เงียบเกิน ${cfg.afterMin || 5} นาทีให้เอง (ตั้งค่าใน data\\rejoin.json แล้ว)\n`);
+    console.log(`ไอดีที่รีจอยได้ ${Object.keys(loadAccounts()).length} ตัว · รีจอยเมื่อเงียบเกิน ${cfg.afterMin || 5} นาที`);
+    console.log('หน้าจอควบคุมเปิดให้แล้ว (ถ้าปิดไป ก๊อปลิงก์นี้ไปเปิดในเบราว์เซอร์): ' + url + '\n');
+    if (!process.env.FLEET_NO_WINDOW) openWindow(url);
   });
 }
 const rejoinPw = () => { try { return JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')).password; } catch (e) { return ''; } };
@@ -230,6 +306,6 @@ async function menu() {
 
 if (require.main === module) {
   const a = process.argv[2];
-  if (a === 'serve') serve(); else menu();
+  if (a === 'menu') menu(); else serve(); // ปกติเปิดหน้าจอควบคุมเลย · launcher.bat menu = เมนูตัวอักษรแบบเดิม
 }
-module.exports = { launchUri, authTicket, whoAmI, launch, loadAccounts, saveAccounts, serve };
+module.exports = { launchUri, authTicket, whoAmI, launch, loadAccounts, saveAccounts, serve, UI_TOKEN };

@@ -507,6 +507,24 @@ function handleReq(req, res) {
   }
 
   // สคริปต์ล่าสุดสำหรับตัวโหลดอัตโนมัติ (ไม่มีคีย์ในไฟล์ คีย์อยู่ในตัวโหลดของเจ้าของ) เติมที่อยู่เซิร์ฟเวอร์จากลิงก์ที่เปิดเข้ามา
+  // สถานะทุกไอดีสำหรับ Fleet Launcher บนคอมเครื่องเดียวกัน (ใช้รหัสใน data/rejoin.json · ไม่มี cookie/คีย์ใด ๆ)
+  if (req.method === 'GET' && url.pathname === '/api/v1/launcher/status') {
+    const pw = rejoinCfg().password, m = /^Bearer\s+(\S+)$/.exec(req.headers.authorization || '');
+    const ok = pw && m && m[1].length === pw.length && crypto.timingSafeEqual(Buffer.from(m[1]), Buffer.from(pw));
+    if (!ok) { recordFail(ip); return send(res, 401, { error: 'unauthorized' }); }
+    if (!rate('launcher:' + ip, 120)) return send(res, 429, { error: 'rate limited' });
+    const pool = accounts[OWNER] || {}, t = now(), cfg = rejoinCfg();
+    const amt = (s, n) => { const it = (s.items || []).find((i) => i && i.name === n); return it ? it.amount : null; };
+    return send(res, 200, { serverTime: t, version: VERSION, afterMin: cfg.afterMin || 5, enabled: !!cfg.enabled, exclude: cfg.exclude || [],
+      accounts: Object.entries(pool).filter(([, a]) => a.s).map(([n, a]) => {
+        const s = a.s, r = rjState.get(n), q = s.quests && Array.isArray(s.quests.active) && s.quests.active[0], g = orders && orders.goalOf(n);
+        return { name: n, display: s.display, level: s.level, last: Math.round(t - s.time), liveAgo: s.liveAt ? Math.round(t - s.liveAt) : null,
+          wen: s.wen, ore: amt(s, 'Ore'), token: amt(s, 'Ouwigahara Token'), boss: s.boss && s.boss.name, holding: s.holding,
+          quest: q ? { name: q.name, v: q.tasks && q.tasks[0] ? q.tasks[0].v : null, max: q.tasks && q.tasks[0] ? q.tasks[0].max : null } : null,
+          goal: g ? g.title || 'เป้าหมาย' : null, rejoin: r && r.n ? { n: r.n, ago: Math.round(t - r.at) } : null };
+      }) });
+  }
+
   if (req.method === 'GET' && url.pathname === '/script.lua') {
     if (!rate('script:' + ip, 120)) return send(res, 429, '-- rate limited', 'text/plain; charset=utf-8');
     const host = String(req.headers.host || '');

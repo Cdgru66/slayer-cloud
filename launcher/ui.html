@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fleet Launcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lac:#140c0e;--lac2:#1c1215;--lac3:#251a1d;--edge:#3a2a2c;--hair:rgba(241,233,221,.07);
+  --tx:#f1e9dd;--mu:#9d9088;--dim:#6d625c;
+  --gold:#e2b65c;--gold-hi:#f6dd9c;--gold-lo:#8f6c2c;--steel:#9db8c9;
+  --seal:#d8432c;--seal-lo:#8e2416;--ok:#5fd0a0;--warn:#e9a24a;--red:#e2574b;
+  --serif:'Noto Serif Thai','Noto Serif',Georgia,serif;
+  --sans:'IBM Plex Sans Thai','Noto Sans Thai',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--lac);color:var(--tx);font:14px/1.55 var(--sans);min-height:100vh;font-variant-numeric:tabular-nums;
+  background-image:radial-gradient(60rem 30rem at 85% -15%,rgba(216,67,44,.12),transparent 60%),radial-gradient(40rem 28rem at -10% 110%,rgba(226,182,92,.06),transparent 60%);background-attachment:fixed}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.serif{font-family:var(--serif)}
+.app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+/* แถบซ้าย */
+aside{position:sticky;top:0;height:100vh;padding:22px 14px 18px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--hair);background:linear-gradient(180deg,rgba(28,18,21,.85),rgba(20,12,14,.6))}
+.brand{display:flex;align-items:center;gap:11px;margin:0 6px 22px}
+.seal{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:16px;color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),0 6px 18px rgba(216,67,44,.35)}
+.brand b{font:600 17px var(--serif);display:block;line-height:1.15}.brand small{color:var(--mu);font-size:11.5px}
+.sect{font-size:11px;letter-spacing:.08em;color:var(--dim);margin:14px 10px 4px}
+.fl{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:9px;color:var(--mu)}
+.fl:hover{color:var(--tx);background:rgba(241,233,221,.04)}
+.fl[aria-pressed=true]{color:var(--tx);background:rgba(241,233,221,.06);box-shadow:inset 0 0 0 1px var(--edge)}
+.fl .n{margin-left:auto;font-size:12px;color:var(--dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c,var(--dim));flex:none}
+.dot.pulse{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 60%,transparent);animation:pl 2s infinite}
+@keyframes pl{70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.auto{margin-top:auto;padding:13px;border-radius:12px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:10px}
+.auto .row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.auto .row span{font-size:13px}
+.minput{width:54px;padding:4px 6px;border-radius:7px;border:0;background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge);text-align:center}
+.conn{font-size:12px;color:var(--mu);display:flex;align-items:center;gap:7px;padding:0 4px}
+/* สวิตช์ */
+.sw{position:relative;width:38px;height:22px;flex:none;cursor:pointer}
+.sw input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--lac3);box-shadow:inset 0 0 0 1px var(--edge);transition:.2s}
+.sw i::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--mu);transition:.2s}
+.sw input:checked+i{background:rgba(95,208,160,.25);box-shadow:inset 0 0 0 1px rgba(95,208,160,.5)}
+.sw input:checked+i::after{left:19px;background:var(--ok)}
+.sw input:focus-visible+i{outline:2px solid var(--gold);outline-offset:2px}
+/* เนื้อหา */
+main{padding:24px 28px 40px;min-width:0}
+.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+h1{font:700 24px/1.2 var(--serif)}
+.sub{color:var(--mu);font-size:13px;margin-top:3px}
+.acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.btn{cursor:pointer;border:0;padding:9px 14px;border-radius:10px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);font-size:13px;display:inline-flex;align-items:center;gap:7px;transition:.15s}
+.btn:hover{background:var(--lac3)}
+.btn.gold{background:linear-gradient(180deg,#3a2b17,#2a1f12);box-shadow:inset 0 0 0 1px rgba(226,182,92,.45);color:var(--gold-hi)}
+.btn.gold:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.75)}
+.btn.red{background:linear-gradient(135deg,rgba(216,67,44,.9),rgba(142,36,22,.9));box-shadow:inset 0 0 0 1px rgba(255,214,150,.3);color:#fff3e6}
+.btn.sm{padding:6px 10px;font-size:12.5px;border-radius:8px}
+.btn[disabled]{opacity:.55;cursor:wait}
+.tiles{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.tile{padding:14px 16px;border-radius:14px;background:linear-gradient(170deg,var(--lac2),#170f11);box-shadow:inset 0 0 0 1px var(--edge)}
+.tile .l{font-size:12px;color:var(--mu)}
+.tile .v{font:700 26px/1.2 var(--serif);margin-top:2px}
+.tile .v small{font-size:14px;color:var(--mu);font-weight:500}
+.tile.hero{background:linear-gradient(135deg,rgba(226,182,92,.13),rgba(216,67,44,.08)),var(--lac2);box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
+.tile.hero .v{color:var(--gold-hi)}
+.meter{height:5px;border-radius:9px;background:var(--lac3);margin-top:9px;overflow:hidden}
+.meter i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--steel),#c7dbe7);transition:width .8s}
+.meter.hot i{background:linear-gradient(90deg,var(--warn),var(--red))}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.search{flex:1;padding:10px 14px;border-radius:11px;border:0;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge)}
+.wrap{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+/* การ์ดไอดี */
+.card{position:relative;border-radius:15px;padding:14px 15px 12px;background:linear-gradient(170deg,#21161a,#170f11);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:10px;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.3)}
+.card.on{box-shadow:inset 0 0 0 1px rgba(95,208,160,.28)}
+.card.off{box-shadow:inset 0 0 0 1px rgba(226,87,75,.35);background:linear-gradient(170deg,#261518,#170f11)}
+.card.nocookie{box-shadow:inset 0 0 0 1px var(--edge);border:1px dashed rgba(241,233,221,.12);opacity:.85}
+.card.busy::after{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:sl 1.4s linear infinite}
+@keyframes sl{0%{transform:translateX(-40%)}100%{transform:translateX(40%)}}
+.ch{display:flex;align-items:center;gap:10px}
+.av{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font:700 15px var(--serif);color:#fff3e6;background:linear-gradient(145deg,var(--seal),var(--seal-lo));flex:none;position:relative}
+.av small{position:absolute;bottom:-5px;right:-6px;font:600 10px var(--sans);padding:1px 5px;border-radius:6px;background:var(--lac);box-shadow:inset 0 0 0 1px var(--edge);color:var(--gold-hi)}
+.nm{min-width:0}.nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm span{font-size:12px;color:var(--mu)}
+.pill{margin-left:auto;font-size:11.5px;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--c);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.now{font-size:12.5px;color:var(--mu);display:grid;gap:3px;min-height:38px}
+.now b{color:var(--tx);font-weight:500}
+.mini{display:flex;gap:14px;font-size:12px;color:var(--mu)}
+.mini b{font:600 14px var(--serif);color:var(--gold-hi)}.mini .o b{color:var(--steel)}
+.cf{display:flex;align-items:center;gap:6px;padding-top:9px;border-top:1px solid var(--hair)}
+.cf .sw{width:32px;height:19px}.cf .sw i::after{width:13px;height:13px}.cf .sw input:checked+i::after{left:16px}
+.cf label.al{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mu);margin-left:auto;cursor:pointer}
+.x{all:unset;cursor:pointer;color:var(--dim);font-size:12px;padding:2px 4px}.x:hover{color:var(--red)}
+.empty{grid-column:1/-1;padding:46px 20px;text-align:center;color:var(--mu);border-radius:15px;box-shadow:inset 0 0 0 1px var(--edge)}
+/* บันทึก */
+.logbox{border-radius:15px;background:var(--lac2);box-shadow:inset 0 0 0 1px var(--edge);padding:14px 14px 6px;position:sticky;top:20px}
+.logbox h3{font:600 14px var(--serif);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.logs{list-style:none;padding:0;max-height:calc(100vh - 120px);overflow:auto;display:grid;gap:2px}
+.logs li{font-size:12px;color:var(--mu);padding:6px 4px;border-bottom:1px solid var(--hair);line-height:1.45}
+.logs li time{display:block;color:var(--dim);font-size:11px}
+.logs li.bad{color:#f0a49b}.logs li.good{color:#a7e4c8}
+.banner{padding:10px 14px;border-radius:11px;margin-bottom:14px;font-size:13px;background:rgba(233,162,74,.1);box-shadow:inset 0 0 0 1px rgba(233,162,74,.35);color:#f2c88c}
+/* หน้าต่างเพิ่มไอดี */
+.modal{position:fixed;inset:0;background:rgba(8,4,5,.7);backdrop-filter:blur(4px);display:grid;place-items:center;padding:20px;z-index:20}
+.sheet{width:min(520px,100%);border-radius:18px;padding:22px;background:linear-gradient(170deg,#24171a,#170e11);box-shadow:inset 0 0 0 1px rgba(226,182,92,.25),0 40px 90px -30px #000;display:grid;gap:12px}
+.sheet h2{font:700 19px var(--serif)}
+.steps{margin:0;padding-left:20px;color:var(--mu);font-size:13px;display:grid;gap:4px}.steps b{color:var(--tx)}
+textarea{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:11px;border:0;background:var(--lac);box-shadow:inset 0 0 0 1px var(--edge);font:12px/1.4 ui-monospace,Consolas,monospace;word-break:break-all}
+.warn{font-size:12px;color:#f2c88c}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:10px 16px;border-radius:11px;background:#1f3a2e;box-shadow:inset 0 0 0 1px rgba(95,208,160,.45);transition:.25s;z-index:30;font-size:13px}
+.toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#3a1f1f;box-shadow:inset 0 0 0 1px rgba(226,87,75,.5)}
+@media (max-width:1100px){.wrap{grid-template-columns:1fr}.logbox{position:static}.tiles{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.app{grid-template-columns:1fr}aside{position:static;height:auto}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand"><span class="seal" aria-hidden="true">艦</span><span><b>Fleet Launcher</b><small>ตัวเปิดเกม · รีจอยอัตโนมัติ</small></span></div>
+    <div class="sect">ไอดี</div>
+    <nav id="filters" aria-label="กรองไอดี"></nav>
+    <div class="auto">
+      <div class="row"><span>รีจอยอัตโนมัติ</span><label class="sw" title="เปิด/ปิดรีจอยอัตโนมัติ"><input type="checkbox" id="auto" aria-label="รีจอยอัตโนมัติ"><i></i></label></div>
+      <div class="row"><span style="color:var(--mu)">เมื่อเงียบเกิน</span><span><input class="minput" id="after" type="number" min="2" max="120" aria-label="นาที"> นาที</span></div>
+    </div>
+    <div class="conn" id="conn"><span class="dot"></span>กำลังต่อ…</div>
+  </aside>
+  <main>
+    <div class="top">
+      <div><h1>ไอดีทั้งหมด</h1><p class="sub" id="sub">ดูทุกไอดีพร้อมกัน · อัปเดตทุก 3 วินาที</p></div>
+      <div class="acts">
+        <button class="btn" id="check">ตรวจ cookie</button>
+        <button class="btn red" id="rjall">⟳ รีจอยไอดีที่หลุด</button>
+        <button class="btn gold" id="add">+ เพิ่มไอดี</button>
+      </div>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+    <div class="tiles">
+      <div class="tile hero"><p class="l">ออนไลน์</p><p class="v" id="t-on">–</p></div>
+      <div class="tile"><p class="l">หน้าต่าง Roblox</p><p class="v" id="t-rb">–</p></div>
+      <div class="tile"><p class="l">CPU</p><p class="v" id="t-cpu">–</p><div class="meter" id="m-cpu"><i></i></div></div>
+      <div class="tile"><p class="l">RAM</p><p class="v" id="t-ram">–</p><div class="meter" id="m-ram"><i></i></div></div>
+    </div>
+    <div class="bar"><input class="search" id="q" placeholder="ค้นหาไอดี…" aria-label="ค้นหาไอดี"></div>
+    <div class="wrap">
+      <section class="grid" id="grid" aria-label="ไอดี"></section>
+      <aside class="logbox" aria-label="บันทึก"><h3><span class="dot pulse" style="--c:var(--ok)"></span>บันทึกล่าสุด</h3><ul class="logs" id="logs"></ul></aside>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <form class="sheet" id="addf">
+    <h2>เพิ่มไอดี</h2>
+    <ol class="steps">
+      <li>เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น</li>
+      <li>กด <b>F12</b> → Application → Cookies → https://www.roblox.com</li>
+      <li>ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง</li>
+      <li>ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)</li>
+    </ol>
+    <textarea id="ck" placeholder="_|WARNING:-DO-NOT-SHARE-THIS…" spellcheck="false" autocomplete="off" aria-label="cookie"></textarea>
+    <p class="warn">cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บแบบเข้ารหัสบนคอมเครื่องนี้เท่านั้น</p>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn" id="cancel">ยกเลิก</button><button class="btn gold" id="save">บันทึก</button></div>
+  </form>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+'use strict';
+const TOKEN=new URLSearchParams(location.search).get('t')||'';
+history.replaceState(null,'','/'); // ไม่ทิ้งโทเคนไว้ในแถบที่อยู่
+const $=s=>document.querySelector(s);
+const h=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(v==null||v===false)continue;if(x==='class')e.className=v;else if(x.startsWith('on'))e[x]=v;else e.setAttribute(x,v===true?'':v)}for(const c of k.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e};
+const cm=n=>n==null?'–':Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1e3?(n/1e3).toFixed(1)+'K':String(Math.round(n));
+const ago=s=>s==null?'–':s<60?Math.round(s)+' วิ':s<3600?Math.round(s/60)+' นาที':s<86400?Math.round(s/3600)+' ชม.':Math.round(s/86400)+' วัน';
+let S=null,flt='all',q='';
+function toast(m,bad){const t=$('#toast');t.textContent=m;t.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>t.className='toast',3200)}
+async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('ผิดพลาด '+r.status));return j}
+async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
+
+// รวมไอดีจากเซิร์ฟเวอร์ Fleet (สถานะในเกม) + ไอดีที่มี cookie ในโปรแกรม
+function rows(){
+  const after=(S.cfg.afterMin||5)*60,ex=new Set(S.cfg.exclude.map(x=>x.toLowerCase())),m=new Map();
+  for(const a of (S.fleet&&S.fleet.accounts)||[])m.set(a.name.toLowerCase(),{name:a.name,f:a});
+  for(const l of S.launcher){const k=l.name.toLowerCase();m.set(k,Object.assign(m.get(k)||{name:l.name},{l}))}
+  return[...m.values()].map(r=>{const f=r.f,l=r.l;let st;
+    if(l&&l.busy)st='busy';else if(!f)st='never';else if(f.last<150||(f.liveAgo!=null&&f.liveAgo<60))st='on';else if(f.last<after)st='late';else st='off';
+    return Object.assign(r,{st,auto:!ex.has(r.name.toLowerCase())})}).sort((a,b)=>({off:0,busy:1,late:2,never:3,on:4})[a.st]-({off:0,busy:1,late:2,never:3,on:4})[b.st]||a.name.localeCompare(b.name))}
+const ST={on:['ออนไลน์','var(--ok)'],late:['ไม่มีข้อมูลสักพัก','var(--warn)'],off:['หลุด','var(--red)'],busy:['กำลังเปิดเกม','var(--gold)'],never:['ยังไม่เคยส่งข้อมูล','var(--dim)']};
+
+function render(){
+  if(!S)return;const R=rows(),cnt={all:R.length,on:0,off:0,busy:0,nocookie:0};
+  R.forEach(r=>{if(r.st==='on')cnt.on++;if(r.st==='off'||r.st==='late')cnt.off++;if(r.st==='busy')cnt.busy++;if(!r.l)cnt.nocookie++});
+  $('#filters').replaceChildren(...[['all','ทั้งหมด','var(--mu)'],['on','ออนไลน์','var(--ok)'],['off','หลุด / เงียบ','var(--red)'],['busy','กำลังเปิดเกม','var(--gold)'],['nocookie','ยังไม่มี cookie','var(--dim)']].map(([k,l,c])=>h('button',{class:'fl','aria-pressed':String(flt===k),onclick:()=>{flt=k;render()}},h('span',{class:'dot',style:'--c:'+c}),l,h('span',{class:'n'},cnt[k]))));
+  $('#t-on').replaceChildren(String(cnt.on),h('small',{},' / '+cnt.all));
+  $('#t-rb').textContent=S.sys.roblox;
+  $('#t-cpu').textContent=S.sys.cpu+'%';$('#m-cpu i').style.width=S.sys.cpu+'%';$('#m-cpu').classList.toggle('hot',S.sys.cpu>85);
+  const rp=Math.round(S.sys.ramUsed/S.sys.ramTotal*100);$('#t-ram').replaceChildren(rp+'%',h('small',{},' '+(S.sys.ramUsed/1073741824).toFixed(1)+' / '+(S.sys.ramTotal/1073741824).toFixed(0)+' GB'));$('#m-ram i').style.width=rp+'%';$('#m-ram').classList.toggle('hot',rp>90);
+  const c=$('#conn');c.replaceChildren(h('span',{class:'dot'+(S.fleet?' pulse':''),style:'--c:'+(S.fleet?'var(--ok)':'var(--red)')}),S.fleet?'ต่อเซิร์ฟเวอร์ Fleet แล้ว · v'+S.fleet.version:'ต่อเซิร์ฟเวอร์ไม่ได้');
+  $('#banner').hidden=!S.fleetErr;$('#banner').textContent=S.fleetErr||'';
+  if(document.activeElement!==$('#auto'))$('#auto').checked=S.cfg.enabled;
+  if(document.activeElement!==$('#after'))$('#after').value=S.cfg.afterMin;
+  const F=R.filter(r=>(flt==='all'||(flt==='off'?(r.st==='off'||r.st==='late'):flt==='nocookie'?!r.l:r.st===flt))&&r.name.toLowerCase().includes(q));
+  $('#grid').replaceChildren(...(F.length?F.map(card):[h('div',{class:'empty'},R.length?'ไม่มีไอดีในตัวกรองนี้':'ยังไม่มีไอดี กด "+ เพิ่มไอดี" เพื่อเริ่ม')]));
+  $('#logs').replaceChildren(...(S.log.length?S.log.map(l=>{const m=l.match(/^(\S+\s+\S+)\s+(.*)$/)||[0,'',l];return h('li',{class:/ไม่สำเร็จ|ผิดพลาด|ใช้ไม่ได้|ต่อ.*ไม่ได้/.test(m[2])?'bad':/กลับมาออนไลน์|เพิ่มไอดี|กำลังเข้าเกม/.test(m[2])?'good':''},h('time',{},m[1]),m[2])}):[h('li',{},'ยังไม่มีบันทึก')]));
+}
+function card(r){const f=r.f||{},l=r.l,[stt,col]=ST[r.st];
+  const now=[];
+  if(f.boss)now.push(h('span',{},'⚔ กำลังสู้ ',h('b',{},f.boss)));
+  if(f.quest)now.push(h('span',{},'📜 ',h('b',{},f.quest.name),f.quest.max?' '+f.quest.v+'/'+f.quest.max:''));
+  if(!now.length&&f.holding)now.push(h('span',{},'🗡 ',h('b',{},f.holding)));
+  if(!now.length)now.push(h('span',{},r.st==='never'?'ยังไม่มีข้อมูลจากในเกม':f.goal?'เป้าหมาย: '+f.goal:'—'));
+  return h('article',{class:'card '+(r.st==='on'?'on':r.st==='off'?'off':'')+(r.st==='busy'?' busy':'')+(l?'':' nocookie')},
+    h('div',{class:'ch'},h('div',{class:'av'},(r.name[0]||'?').toUpperCase(),f.level?h('small',{},'Lv '+f.level):null),
+      h('div',{class:'nm'},h('b',{},f.display||r.name),h('span',{},'@'+r.name)),
+      h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),stt+(r.st==='off'||r.st==='late'?' '+ago(f.last):''))),
+    h('div',{class:'now'},now),
+    h('div',{class:'mini'},h('span',{},'Token ',h('b',{},cm(f.token))),h('span',{class:'o'},'Ore ',h('b',{},cm(f.ore))),f.rejoin?h('span',{},'รีจอย ',h('b',{style:'color:var(--tx)'},f.rejoin.n),' ครั้ง'):null),
+    h('div',{class:'cf'},
+      l?h('button',{class:'btn sm gold',onclick:e=>{if(r.st==='on'&&!confirm(r.name+' ออนไลน์อยู่ จะปิดแล้วเข้าเกมใหม่?'))return;act(e.currentTarget,'/ui/rejoin',{name:r.name})}},'⟳ รีจอย'):h('button',{class:'btn sm gold',onclick:openAdd},'+ เพิ่ม cookie'),
+      l&&l.window?h('button',{class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},'ปิดเกม'):null,
+      l?h('label',{class:'al',title:'รีจอยไอดีนี้อัตโนมัติ'},'อัตโนมัติ',h('span',{class:'sw'},h('input',{type:'checkbox',checked:r.auto,'aria-label':'รีจอยอัตโนมัติ '+r.name,onchange:e=>act(null,'/ui/settings',{name:r.name,auto:e.target.checked})}),h('i'))):null,
+      l?h('button',{class:'x',title:'ลบไอดีออกจากโปรแกรม','aria-label':'ลบ '+r.name,onclick:()=>{if(confirm('ลบ '+r.name+' ออกจากตัวเปิดเกม? (ต้องวาง cookie ใหม่ถ้าจะใช้อีก)'))act(null,'/ui/remove',{name:r.name})}},'✕'):null))}
+
+async function load(){try{S=await api('/ui/state');render()}catch(e){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--red)'}),'โปรแกรมหยุดทำงาน')}}
+function openAdd(){$('#modal').hidden=false;$('#ck').value='';setTimeout(()=>$('#ck').focus(),50)}
+$('#add').onclick=openAdd;$('#cancel').onclick=()=>{$('#modal').hidden=true;$('#ck').value=''};
+$('#modal').onclick=e=>{if(e.target.id==='modal'){$('#modal').hidden=true;$('#ck').value=''}};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden){$('#modal').hidden=true;$('#ck').value=''}});
+$('#addf').onsubmit=async e=>{e.preventDefault();const r=await act($('#save'),'/ui/add',{cookie:$('#ck').value});$('#ck').value='';if(r&&r.ok)$('#modal').hidden=true};
+$('#rjall').onclick=e=>act(e.currentTarget,'/ui/rejoin-offline',{});
+$('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});if(r&&r.result){const bad=Object.entries(r.result).filter(([,v])=>v!=='ok');toast(bad.length?'ใช้ไม่ได้: '+bad.map(([n])=>n).join(', ')+' (เพิ่ม cookie ใหม่)':'cookie ใช้ได้ทุกไอดี ✓',bad.length>0)}};
+$('#auto').onchange=e=>act(null,'/ui/settings',{enabled:e.target.checked});
+$('#after').onchange=e=>act(null,'/ui/settings',{afterMin:Number(e.target.value)});
+$('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
+load();setInterval(()=>{if(!document.hidden&&$('#modal').hidden)load()},3000);
+</script>
+</body>
+</html>

@@ -18,7 +18,7 @@
 | `script_template.lua` | สคริปต์ในเกม (เสิร์ฟผ่าน `/script.lua`): ส่งข้อมูลเต็มทุก 120 วิ + ข้อมูลสด (บอส/Wen/แร่/Mastery/อาวุธในมือ) ทุก 20 วิ |
 | `tools/scan_*.lua` | สคริปต์สแกนหาข้อมูลในเกม (ใช้ตอนเริ่มเกมใหม่/หาไอคอน) |
 | `icons-seed.json` | ไอคอนไอเทม/บอส (ชื่อ → ลิงก์ tr.rbxcdn.com) |
-| `launcher.bat` + `launcher/fleet-launcher.js` | ตัวเปิดเกม/รีจอยแทน RAM: เก็บ cookie แต่ละไอดี (DPAPI ที่ %LOCALAPPDATA%\FleetLauncher\accounts.dat นอกโฟลเดอร์ร้าน) ฟัง 127.0.0.1:7963 แบบ API เดียวกับ RAM (`/LaunchAccount`, `/GetAccounts` + Password) ขอ auth ticket แล้วเปิด `roblox-player:` · ตั้ง data/rejoin.json ให้เอง |
+| `launcher.bat` + `launcher/fleet-launcher.js` | ตัวเปิดเกม/รีจอยแทน RAM: เก็บ cookie แต่ละไอดี (DPAPI ที่ %LOCALAPPDATA%\FleetLauncher\accounts.dat นอกโฟลเดอร์ร้าน) ฟัง 127.0.0.1:7963 แบบ API เดียวกับ RAM (`/LaunchAccount`, `/GetAccounts` + Password) ขอ auth ticket แล้วเปิด `roblox-player:` · ตั้ง data/rejoin.json ให้เอง · หน้าจอควบคุม `launcher/ui.html` เปิดเป็นหน้าต่าง Edge app ที่ `http://127.0.0.1:7963/?t=<โทเคนสุ่มต่อรอบ>` (เช็ค Host + X-Fleet-Token) อ่านสถานะจาก `GET /api/v1/launcher/status` ของเซิร์ฟเวอร์ (Bearer = รหัสใน rejoin.json) · `launcher.bat menu` = เมนูตัวอักษร |
 | `update.bat` / `update.ps1` | อัปเดตจาก GitHub (ถ้าติด SSL ใช้ zip ใน Downloads แทน) |
 | `data/` | ข้อมูลร้าน (ไม่อยู่ใน git): customers, settings, orders, sets, goals, accounts, icons |
 
