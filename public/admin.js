@@ -258,7 +258,7 @@ function goalPct(goal, seenAcc) {
   if (!goal || !goal.items || !goal.items.length) return null;
   const m = (seenAcc && seenAcc.mastery) || {};
   const am = (seenAcc && seenAcc.amt) || {};
-  const parts = goal.items.map((it) => it.k === 'item' ? (it.base == null ? 0 : Math.min(1, Math.max(0, (Number(am[it.key]) || 0) - it.base) / (it.target || 1))) : it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
+  const parts = goal.items.map((it) => it.k === 'item' ? (it.mode !== 'gain' ? Math.min(1, (Number(am[it.key]) || 0) / (it.target || 1)) : it.base == null ? 0 : Math.min(1, Math.max(0, (Number(am[it.key]) || 0) - it.base) / (it.target || 1))) : it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
   return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length * 100);
 }
 const goalDraft = {};
@@ -302,8 +302,8 @@ function custGoals(c) {
       sel,
       h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกเซทก่อน', true); act(() => api('goal', { method: 'POST', body: { account: n, set: sel.value } }), 'เริ่มติดตาม ' + n + ' แล้ว ลูกค้าเห็นทันที'); } }, 'เริ่มติดตามจากเซท'),
       h('button', { class: 'btn', onclick: () => { goalDraft[dk] = { title: '', items: [] }; render(); } }, 'ตั้งเป้าเอง')),
-      h('div', { class: 'rowb' }, h('span', { class: 'mu' }, 'หรือรับฟาร์ม:'), [['Ore', 'Ore', '5000'], ['Ouwigahara Token', 'Token', '100']].map(([key, lab, def]) =>
-        h('button', { class: 'btn primary', onclick: () => { const v = Number(String(prompt('ฟาร์ม ' + lab + ' ให้ ' + n + ' เพิ่มอีกกี่ชิ้น? (นับจากตอนนี้)', def) || '').replace(/,/g, '')); if (v > 0) act(() => api('goal', { method: 'POST', body: { account: n, title: 'ฟาร์ม ' + lab, items: [{ k: 'item', label: 'ฟาร์ม ' + lab, key, target: Math.floor(v) }] } }), 'เริ่มติดตามการฟาร์ม ' + lab + ' แล้ว'); } }, '⛏ ฟาร์ม ' + lab))));
+      h('div', { class: 'rowb' }, h('span', { class: 'mu' }, 'หรือรับฟาร์ม:'), [['Ore', 'Ore', '10000'], ['Ouwigahara Token', 'Token', '220']].map(([key, lab, def]) =>
+        h('button', { class: 'btn primary', onclick: () => { const have = Number(((acc && acc.amt) || {})[key]) || 0; const v = Number(String(prompt('ฟาร์ม ' + lab + ' ให้ ' + n + ' มีครบกี่ชิ้น? (ยอดรวม · ตอนนี้มี ' + have.toLocaleString() + ')', def) || '').replace(/,/g, '')); if (v > 0) act(() => api('goal', { method: 'POST', body: { account: n, title: 'ฟาร์ม ' + lab + ' ถึง ' + Math.floor(v).toLocaleString(), items: [{ k: 'item', mode: 'total', label: 'ฟาร์ม ' + lab, key, target: Math.floor(v) }] } }), 'เริ่มติดตามการฟาร์ม ' + lab + ' แล้ว'); } }, '⛏ ฟาร์ม ' + lab))));
   });
   const anyNew = c.accounts.some((n) => { const a = D.seen.find((x) => x.name.toLowerCase() === n.toLowerCase()); return !(a && a.goal) && !goalDraft['c:' + n.toLowerCase()]; });
   return h('div', { class: 'sec' }, anyNew ? [h('h4', {}, 'ติดตามความคืบหน้า'), h('p', { class: 'note' }, 'เลือกเซทที่กำลังทำให้ไอดีนี้ ลูกค้าจะเห็น % และวันที่คาดว่าจะเสร็จในหน้าของเขาแบบเรียลไทม์')] : null, blocks);
@@ -319,10 +319,10 @@ function goalEditor(account, dk) {
     const del = h('button', { class: 'btn', 'aria-label': 'ลบ', onclick: () => { g.items.splice(i, 1); render(); } }, '✕');
     if (it.k === 'manual') return h('div', { class: 'gi' }, h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !!it.done, onchange: (e) => { it.done = e.target.checked; render(); } }), h('span', { class: 'tgk' }), h('span', {}, it.label)), del);
     if (it.k === 'item') {
-      const have = Number(((acc && acc.amt) || {})[it.key]) || 0, got = it.base != null ? Math.max(0, have - it.base) : 0;
+      const have = Number(((acc && acc.amt) || {})[it.key]) || 0, total = it.mode !== 'gain', got = total ? have : it.base != null ? Math.max(0, have - it.base) : 0;
       return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || ('ฟาร์ม ' + it.key)),
-        h('input', { class: 'f num', type: 'number', value: it.target, 'aria-label': 'จำนวนที่ต้องฟาร์มเพิ่ม', oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
-        h('span', { class: 'mu' }, it.base != null ? '+' + got.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + ' · เริ่มที่ ' + Number(it.base).toLocaleString() + ' · มี ' + have.toLocaleString() : 'รอข้อมูลจากในเกมเพื่อเริ่มนับ'), del);
+        h('input', { class: 'f num', type: 'number', value: it.target, 'aria-label': 'เป้าหมาย', oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
+        h('span', { class: 'mu' }, total ? have.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + (have >= it.target ? ' · ครบแล้ว' : ' · ขาดอีก ' + (it.target - have).toLocaleString()) : it.base != null ? '+' + got.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + ' · เริ่มที่ ' + Number(it.base).toLocaleString() + ' · มี ' + have.toLocaleString() : 'รอข้อมูลจากในเกมเพื่อเริ่มนับ'), del);
     }
     const cur = it.k === 'mastery' ? Number((acc && acc.mastery || {})[it.key]) || 0 : Number(acc && acc.level) || 0;
     const ks = h('select', { class: 'f', onchange: (e) => { it.key = e.target.value; render(); } }, h('option', { value: it.key }, (it.key || '— เลือก —') + (it.key && !keys.includes(it.key) ? ' (ยังไม่มีในไอดี)' : '')), keys.filter((k) => k !== it.key).map((k) => h('option', { value: k }, k)));
@@ -332,7 +332,7 @@ function goalEditor(account, dk) {
   });
   const addM = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'mastery', label: 'Mastery', key: keys[0] || '', target: 400 }); render(); } }, '+ Mastery');
   const addL = h('button', { class: 'btn', onclick: () => { g.items.push({ k: 'level', label: 'เลเวล', target: 225 }); render(); } }, '+ เลเวล');
-  const addFarm = (key, lab) => h('button', { class: 'btn', onclick: () => { const n = Number(String(prompt('ฟาร์ม ' + lab + ' เพิ่มอีกกี่ชิ้น? (นับจากตอนนี้)', key === 'Ore' ? '5000' : '100') || '').replace(/,/g, '')); if (n > 0) { g.items.push({ k: 'item', label: 'ฟาร์ม ' + lab, key, target: Math.floor(n) }); render(); } } }, '+ ฟาร์ม ' + lab);
+  const addFarm = (key, lab) => h('button', { class: 'btn', onclick: () => { const have = Number(((acc && acc.amt) || {})[key]) || 0; const n = Number(String(prompt('ฟาร์ม ' + lab + ' ให้มีครบกี่ชิ้น? (ยอดรวม · ตอนนี้มี ' + have.toLocaleString() + ')', key === 'Ore' ? '10000' : '220') || '').replace(/,/g, '')); if (n > 0) { g.items.push({ k: 'item', mode: 'total', label: 'ฟาร์ม ' + lab, key, target: Math.floor(n) }); render(); } } }, '+ ฟาร์ม ' + lab);
   const addO = addFarm('Ore', 'Ore'), addT = addFarm('Ouwigahara Token', 'Token');
   const addX = h('button', { class: 'btn', onclick: () => { const t = prompt('รายการที่ต้องทำ (ติ๊กเองเมื่อเสร็จ)'); if (t) { g.items.push({ k: 'manual', label: t.slice(0, 80) }); render(); } } }, '+ รายการติ๊กเอง');
   const save = h('button', { class: 'btn primary', onclick: () => act(() => api('goal', { method: 'POST', body: { account: account, title: g.title, order: undefined, items: g.items } }), 'บันทึกเป้าหมายแล้ว ลูกค้าเห็นทันที').then(() => { delete goalDraft[dk]; }) }, 'บันทึกเป้าหมาย');

@@ -276,7 +276,7 @@ module.exports = function createOrders(ctx) {
     const items = (Array.isArray(j.items) ? j.items : []).slice(0, 20).map((x) => {
       const k = ['mastery', 'level', 'manual', 'item'].includes(x && x.k) ? x.k : 'manual';
       const o = { k, label: str(x.label, 80), key: str(x.key, 60), need: str(x.need, 40), target: k === 'manual' ? null : int(x.target, 1, k === 'item' ? 1e12 : 100000), done: !!x.done };
-      if (k === 'item' && Number.isFinite(x.base) && x.base >= 0) o.base = Math.floor(x.base); // จำนวนตอนเริ่มฟาร์ม (นับเฉพาะที่ได้เพิ่ม)
+      if (k === 'item') { o.mode = x.mode === 'gain' ? 'gain' : 'total'; if (o.mode === 'gain' && Number.isFinite(x.base) && x.base >= 0) o.base = Math.floor(x.base); } // total = ฟาร์มให้มีครบ target · gain = นับเฉพาะที่ได้เพิ่มจาก base
       return o;
     }).filter((x) => x.label || x.key);
     return { title: str(j.title, 80), order: str(j.order, 20), items, created: Math.floor(ctx.now()) };
@@ -334,8 +334,8 @@ module.exports = function createOrders(ctx) {
       const mlv = (x) => { if (!x) return 0; const lv = Number.isFinite(x.lv) ? x.lv : Math.round((Number(x.goal) || 0) / 30); const fr = x.goal > 0 ? Math.min(1, Math.max(0, x.current / x.goal)) : 0; return Math.min(400, Math.round((lv + (lv >= 400 ? 0 : fr)) * 100) / 100); };
       const owns = (n) => !n || (typeof s.holding === 'string' && s.holding.toLowerCase().includes(n.toLowerCase())) || (s.items || []).some((i) => i && typeof i.name === 'string' && i.name.toLowerCase().includes(n.toLowerCase()));
       const amt = (n) => { const it = (s.items || []).find((i) => i && i.name === n); return it && Number.isFinite(it.amount) ? it.amount : 0; };
-      for (const it of g.items) if (it.k === 'item' && !Number.isFinite(it.base) && (s.items || []).some((i) => i && i.name === it.key)) { it.base = amt(it.key); goalsDirty = true; } // เริ่มนับเมื่อเห็นของชิ้นนี้ครั้งแรก // เริ่มนับจากตอนนี้
-      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? (owns(it.need) ? mlv(m[it.key]) : 0) : it.k === 'level' ? Number(s.level) || 0 : it.k === 'item' ? (Number.isFinite(it.base) ? Math.max(0, amt(it.key) - it.base) : 0) : it.done ? 1 : 0));
+      for (const it of g.items) if (it.k === 'item' && it.mode === 'gain' && !Number.isFinite(it.base) && (s.items || []).some((i) => i && i.name === it.key)) { it.base = amt(it.key); goalsDirty = true; } // เริ่มนับเมื่อเห็นของชิ้นนี้ครั้งแรก // เริ่มนับจากตอนนี้
+      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? (owns(it.need) ? mlv(m[it.key]) : 0) : it.k === 'level' ? Number(s.level) || 0 : it.k === 'item' ? (it.mode !== 'gain' ? amt(it.key) : Number.isFinite(it.base) ? Math.max(0, amt(it.key) - it.base) : 0) : it.done ? 1 : 0));
       const h = g.hist || (g.hist = []), last = h[h.length - 1], t = Math.floor(ctx.now());
       const same = last && last.v.length === v.length && last.v.every((x, i) => x === v[i]);
       if (last && (t - last.t < 60 || (same && t - last.t < 1800))) return;

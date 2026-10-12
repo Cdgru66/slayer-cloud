@@ -40,7 +40,7 @@
 - มนต์อสูร (Orb): Blood Manipulation, Cryokinesis, Pyrokinesis(ไอคอน "Pyrokenesis Orb"), Shockwave, Reaper, Dream, Tamari, Obi Manipulation
 - ไอคอนบอส: มินิแมพ `PinsHolder.Bosses.<ชื่อ>.Plate.Icon` (เก็บเป็น `boss:<ชื่อ>`) · ไอคอนไอเทมในกระเป๋า: `ActualHolder.<ชื่อ>.Img`
 - เควส: `slots.SlotN.Quests.Holder.<ชื่อเควส>.Tasks.<งาน>.{Value,Max,Code}` + `QuestString` ("Ill put out the blaze(Lv 115)") · ที่จบแล้ว `Quests.Completed.<QuestString>.At` · ตัวนับ `PlayerTitles.Progress.quests` / `crow_quests` · รายชื่อเควสทั้งเกม `ReplicatedStorage.QuestStates` (23 อัน)
-- เป้าฟาร์มของ: goal item `{k:"item", key:"Ore"|"Ouwigahara Token", target, base}` นับเฉพาะที่ได้เพิ่มจาก base (จดตอนสร้าง) · ปุ่ม "⛏ ฟาร์ม Ore/Token" ในการ์ดลูกค้า
+- เป้าฟาร์มของ: goal item `{k:"item", key:"Ore"|"Ouwigahara Token", target, mode}` mode "total" (ค่าเริ่มต้น) = ฟาร์มให้มีครบ target · "gain" = นับที่ได้เพิ่มจาก base · ปุ่ม "⛏ ฟาร์ม Ore/Token" ในการ์ดลูกค้า
 - ของทั้งบัญชี (Account Wide): `Data.<ชื่อ>.AccountItems.Inventory.<ชื่อของ>` (Attribute `Amount`) เช่น Ouwigahara Token · สถิติ Roguelike ใน `PlayerTitles.Progress` (roguelike_runs/bosses/kills/flawless_floor, tokens_earned, series_*) · หน้าหลักแสดงแค่ Token + Ore (เอาถุงเงินและ Refinement Ore ออกตามที่เจ้าของขอ)
 - เซทเริ่มต้น: Akaza, Douma + เสาหลัก (Giyu, Rengoku, Sanemi, Shinobu, Tengen, Gyomei, Obanai)
 

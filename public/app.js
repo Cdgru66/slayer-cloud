@@ -94,7 +94,7 @@ const mPrec=m=>{if(!m)return 0;const lv=mLv(m);return Math.min(400,lv+(lv>=400||
 const needOf=it=>it.need||(/gauntlet/i.test(it.label||'')?'Gauntlet':'');
 const owns=(s,n)=>!n||(typeof s.holding==='string'&&s.holding.toLowerCase().includes(n.toLowerCase()))||(s.items||[]).some(i=>i&&typeof i.name==='string'&&i.name.toLowerCase().includes(n.toLowerCase()));
 const haveOf=(s,n)=>((s.items||[]).find(i=>i.name===n)||{}).amount||0;
-const curOf=(it,s)=>it.k==='item'?(Number.isFinite(it.base)?Math.max(0,haveOf(s,it.key)-it.base):0):it.k==='mastery'?(owns(s,needOf(it))?mPrec((s.mastery||{})[it.key]):0):it.k==='level'?Number(s.level)||0:it.done?1:0;
+const curOf=(it,s)=>it.k==='item'?(it.mode!=='gain'?haveOf(s,it.key):Number.isFinite(it.base)?Math.max(0,haveOf(s,it.key)-it.base):0):it.k==='mastery'?(owns(s,needOf(it))?mPrec((s.mastery||{})[it.key]):0):it.k==='level'?Number(s.level)||0:it.done?1:0;
 const fracOf=(it,v)=>it.k==='manual'?(v?1:0):Math.max(0,Math.min(1,v/(it.target||(it.k==='mastery'?400:1))));
 const pctOfVals=(items,vals)=>items.length?items.reduce((t,it,i)=>t+fracOf(it,vals[i]),0)/items.length*100:0;
 const r1=x=>Math.floor(x*10)/10;
@@ -103,7 +103,7 @@ function goalParts(a){const g=a.goal;if(!g||!g.items||!g.items.length)return nul
   if(it.k==='mastery'&&(!(a.s.mastery||{})[it.key]||!owns(a.s,needOf(it))))return{label:it.label||('Mastery '+it.key),cur:0,t:it.target||400,f:0,txt:'ยังไม่มี',missing:true};
   const t=it.target||(it.k==='mastery'?400:1),x=st&&st.items[i];
   const active=it.k==='mastery'&&(a.s.activeMastery||[]).includes(it.key);
-  if(it.k==='item'){const x=st&&st.items[i];return{label:it.label||('ฟาร์ม '+it.key),cur,t,f:fracOf(it,cur),txt:'+'+cm(Math.min(cur,t))+' / '+cm(t),sub:Number.isFinite(it.base)?'เริ่มที่ '+cm(it.base)+' · มีตอนนี้ '+cm(haveOf(a.s,it.key)):'รอข้อมูลจากในเกมเพื่อเริ่มนับ',rate:x&&x.rate,eta:x&&x.eta}}
+  if(it.k==='item'){const x=st&&st.items[i];return{label:it.label||('ฟาร์ม '+it.key),cur,t,f:fracOf(it,cur),txt:it.mode!=='gain'?cm(cur)+' / '+cm(t):'+'+cm(Math.min(cur,t))+' / '+cm(t),sub:it.mode!=='gain'?(cur>=t?'ครบเป้าแล้ว':'ขาดอีก '+cm(t-cur)):Number.isFinite(it.base)?'เริ่มที่ '+cm(it.base)+' · มีตอนนี้ '+cm(haveOf(a.s,it.key)):'รอข้อมูลจากในเกมเพื่อเริ่มนับ',rate:x&&x.rate,eta:x&&x.eta}}
   return{label:it.label||(it.k==='level'?'เลเวล':'Mastery '+it.key),active,idle:it.k==='mastery'&&!active&&(a.s.activeMastery||[]).length>0,cur,t,f:fracOf(it,cur),txt:it.k==='mastery'?'Lv '+Math.floor(Math.min(cur,t))+' / '+t:cm(Math.min(cur,t))+' / '+cm(t),rate:x&&x.rate,eta:x&&x.eta,mexp:it.k==='mastery'?(a.s.mastery||{})[it.key]:null}})}
 function goalPct(a){const g=a.goal;if(!g||!g.items||!g.items.length)return null;return r1(pctOfVals(g.items,g.items.map(it=>curOf(it,a.s))))}
 const dur=h=>{if(!(h>0))return'';if(h<1)return'~'+Math.max(1,Math.round(h*60))+' นาที';if(h<48){const H=Math.floor(h),M=Math.round((h-H)*60);return'~'+H+' ชม.'+(M?' '+M+' นาที':'')}const D=Math.floor(h/24),H=Math.round(h-D*24);return'~'+D+' วัน'+(H?' '+H+' ชม.':'')};
