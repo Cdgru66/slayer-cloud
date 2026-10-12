@@ -14,8 +14,17 @@ Menu.setApplicationMenu(null);
 const ICON = path.join(__dirname, process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 let win = null, tray = null, uiUrl = null, quitting = false, hintShown = false;
 
-// หาโค้ดตัวเปิดเกม: ไล่ขึ้นจากโฟลเดอร์ของ .exe (เช่น slayer-cloud\FleetLauncher\FleetLauncher.exe → slayer-cloud\launcher)
+// หาโค้ดตัวเปิดเกม:
+//  1) แอปที่ขาย (แพ็กด้วย build-sell.bat): โค้ดอยู่ในตัวแอป resources\app\launcher → ข้อมูลเก็บที่ %LOCALAPPDATA%\FleetLauncher\app
+//  2) ตัวของร้าน: ไล่ขึ้นจากโฟลเดอร์ของ .exe (เช่น slayer-cloud\FleetLauncher\FleetLauncher.exe → slayer-cloud\launcher)
 function findLauncher() {
+  const own = path.join(__dirname, 'launcher', 'fleet-launcher.js');
+  if (fs.existsSync(own)) {
+    const dir = path.join(process.env.LOCALAPPDATA || app.getPath('userData'), 'FleetLauncher', 'app');
+    try { fs.mkdirSync(path.join(dir, 'data'), { recursive: true }); } catch (e) {}
+    process.env.FLEET_APP_DIR = dir;
+    return own;
+  }
   const starts = [path.dirname(process.execPath), process.cwd(), path.join(__dirname, '..')];
   for (const s of starts) {
     let d = s;

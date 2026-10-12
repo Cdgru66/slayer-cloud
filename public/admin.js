@@ -37,19 +37,19 @@ function logout(expired) {
 }
 $('#logout').onclick = () => logout(false);
 // แท็บ: จำแท็บไว้ใน # ของลิงก์ (/admin#ord) กดย้อนกลับ/รีเฟรชแล้วอยู่แท็บเดิม
-const TABS = ['cust', 'ord', 'sets', 'acc', 'ops', 'bak'];
+const TABS = ['cust', 'ord', 'sets', 'acc', 'lic', 'ops', 'bak'];
 function showTab(t, push) {
   tab = TABS.includes(t) ? t : 'cust';
   document.querySelectorAll('.tabs button').forEach((x) => x.setAttribute('aria-selected', String(x.dataset.tab === tab)));
   document.querySelectorAll('.tabp').forEach((p) => (p.hidden = p.id !== 'tab-' + tab));
   if (push && location.hash !== '#' + tab) history.pushState(null, '', '#' + tab);
-  if (D) render();
+  if (D) { render(); if (tab === 'lic' && !LIC) loadLic(); }
 }
 document.querySelectorAll('.tabs button').forEach((b) => (b.onclick = () => showTab(b.dataset.tab, true)));
 window.addEventListener('popstate', () => showTab(location.hash.slice(1)));
 showTab(location.hash.slice(1));
 
-async function load() { D = await api('overview'); render(); }
+async function load() { D = await api('overview'); if (tab === 'lic') await loadLic(true); render(); }
 function start() { $('#gate').hidden = true; $('#app').hidden = false; load().catch((e) => toast(e.message, true)); clearInterval(start.t); start.t = setInterval(() => { if (!document.hidden && !document.querySelector('.adm-main input:focus, .adm-main textarea:focus')) load().catch(() => {}); }, 15000); }
 
 /* ---------- แสดงผล ---------- */
@@ -61,7 +61,7 @@ function render() {
   $('#c-acc').textContent = D.seen.length + (un ? ' · ' + un + ' ว่าง' : '');
   const nw = (D.orders || []).filter((o) => o.status === 'ใหม่').length;
   $('#c-ord').textContent = nw ? nw + ' ใหม่' : (D.orders || []).length || '';
-  ({ cust: renderCust, ord: renderOrd, sets: renderSets, acc: renderAcc, ops: renderOps, bak: renderBak })[tab]();
+  ({ cust: renderCust, ord: renderOrd, sets: renderSets, acc: renderAcc, lic: renderLic, ops: renderOps, bak: renderBak })[tab]();
 }
 
 function statusOf(c) {
@@ -355,4 +355,66 @@ function goalSec(o) {
       h('div', { class: 'rowb' }, sel, h('button', { class: 'btn primary', onclick: () => { if (!sel.value) return toast('เลือกไอดีก่อน', true); const ex = D.seen.find((x) => x.name === sel.value && x.goal); if (ex && !confirm(sel.value + ' มีเป้าหมายอยู่แล้ว (' + (ex.goal.title || '') + ') จะแทนที่ด้วยออเดอร์นี้?')) return; act(() => api('goal', { method: 'POST', body: { account: sel.value, order: o.id } }), 'ผูกแล้ว สร้างเป้าหมายจากออเดอร์ให้แล้ว'); } }, 'ผูก + สร้างเป้าหมาย')));
   }
   return goalEditor(o.account, o.id);
+}
+
+// ===== แท็บ คีย์แอป: ออกคีย์ให้คนที่ซื้อ Fleet Launcher (แอปตัวขายแพ็กด้วย build-sell.bat) =====
+let LIC = null, licNew = null; const licOpen = new Set();
+async function loadLic(silent) { try { LIC = await api('licenses'); } catch (e) { if (!silent) toast(e.message, true); } if (!silent && tab === 'lic') render(); }
+async function licAct(fn, okMsg) { try { const r = await fn(); if (okMsg) toast(okMsg); await loadLic(true); render(); return r; } catch (e) { toast(e.message, true); } }
+const licApi = (id, body) => api('license/' + id, { method: 'POST', body });
+function licStatus(l) {
+  const left = l.expires ? (l.expires - LIC.serverTime) / 86400 : null;
+  if (l.revoked) return ['ถูกระงับ', 'var(--red)'];
+  if (left != null && left < 0) return ['หมดอายุ', 'var(--red)'];
+  if (left != null && left < 3) return ['เหลือ ' + Math.max(0, Math.ceil(left)) + ' วัน', 'var(--warn)'];
+  return ['ใช้งานได้', 'var(--ok)'];
+}
+function licShare(l, key) {
+  return `คีย์ Fleet Launcher: ${key}\nใช้ได้ถึง: ${l.expires ? fmtDate(l.expires) : 'ถาวร'} · ใช้ได้ ${l.maxDevices} เครื่อง\nวิธีใช้: เปิด FleetLauncher.exe → วางคีย์ → ยืนยัน\nเช็คคีย์/ย้ายเครื่อง: ${D.base}/license`;
+}
+function renderLic() {
+  const p = $('#tab-lic');
+  if (!LIC) { p.replaceChildren(h('p', { class: 'empty' }, 'กำลังโหลด…')); return; }
+  $('#c-lic').textContent = LIC.licenses.length || '';
+  const nm = h('input', { class: 'f', placeholder: 'ชื่อผู้ซื้อ / ชื่อร้าน', maxlength: '60' });
+  const ct = h('input', { class: 'f', placeholder: 'เฟซ / Discord / LINE (ไม่ใส่ก็ได้)', maxlength: '80' });
+  const dy = h('select', { class: 'f', 'aria-label': 'อายุคีย์' }, [['30', '30 วัน'], ['7', '7 วัน'], ['90', '90 วัน'], ['365', '1 ปี'], ['0', 'ถาวร']].map(([v, l]) => h('option', { value: v }, l)));
+  const mx = h('input', { class: 'f', type: 'number', min: '1', max: '20', value: '1', 'aria-label': 'จำนวนเครื่อง' });
+  const add = h('form', { class: 'card addc', onsubmit: async (e) => {
+    e.preventDefault();
+    const r = await licAct(() => api('licenses', { method: 'POST', body: { label: nm.value, contact: ct.value, days: Number(dy.value), maxDevices: Number(mx.value) } }), 'ออกคีย์แล้ว');
+    if (r) { licNew = { id: r.id, key: r.key }; licOpen.add(r.id); render(); }
+  } },
+    h('h3', {}, 'ออกคีย์ใหม่'),
+    h('div', { class: 'grid3' }, h('label', {}, 'ผู้ซื้อ', nm), h('label', {}, 'ติดต่อ', ct), h('label', {}, 'อายุคีย์', dy)),
+    h('div', { class: 'grid3' }, h('label', {}, 'ใช้ได้กี่เครื่อง', mx)),
+    h('p', { class: 'note' }, 'แอปตัวขายสร้างด้วย build-sell.bat บนคอมเซิร์ฟเวอร์ (ได้ไฟล์ dist\\FleetLauncher-sell.zip) · คีย์ผูกกับเครื่อง ผู้ซื้อย้ายเครื่องเองได้ที่ ' + D.base + '/license'),
+    h('button', { class: 'btn primary', type: 'submit' }, 'ออกคีย์'));
+  const list = LIC.licenses.map(licCard);
+  p.replaceChildren(add, list.length ? h('div', { class: 'clist' }, list) : h('p', { class: 'empty' }, 'ยังไม่มีคีย์ ออกคีย์แรกด้านบน'));
+}
+function licCard(l) {
+  const [st, col] = licStatus(l), isOpen = licOpen.has(l.id), fresh = licNew && licNew.id === l.id ? licNew.key : null;
+  const head = h('button', { class: 'chead', 'aria-expanded': isOpen, onclick: () => { isOpen ? licOpen.delete(l.id) : licOpen.add(l.id); render(); } },
+    h('span', { class: 'cname' }, l.label), h('span', { class: 'pill', style: '--c:' + col }, st),
+    h('span', { class: 'cmeta' }, '••••' + l.hint + ' · ' + l.devices.length + '/' + l.maxDevices + ' เครื่อง · ถึง ' + (l.expires ? fmtDate(l.expires) : 'ถาวร')));
+  if (!isOpen) return h('div', { class: 'card cc' }, head);
+  const note = h('input', { class: 'f', value: l.note, placeholder: 'โน้ต (เห็นแค่แอดมิน)', maxlength: '300' });
+  return h('div', { class: 'card cc open' }, head,
+    fresh ? h('div', { class: 'newpw' }, h('p', {}, 'คีย์ของผู้ซื้อคนนี้ (แสดงครั้งเดียว ก๊อปส่งเลย):'), h('b', { style: 'font-family:ui-monospace,Consolas,monospace;letter-spacing:.03em' }, fresh),
+      h('div', { class: 'rowb' }, h('button', { class: 'btn primary', onclick: () => copy(licShare(l, fresh), 'ข้อความส่งผู้ซื้อ') }, 'ก๊อปข้อความส่งผู้ซื้อ'), h('button', { class: 'btn', onclick: () => copy(fresh, 'คีย์') }, 'ก๊อปคีย์'), h('button', { class: 'btn', onclick: () => { licNew = null; render(); } }, 'ส่งแล้ว ซ่อนคีย์'))) : null,
+    l.contact ? h('p', { class: 'note' }, 'ติดต่อ: ' + l.contact) : null,
+    h('div', { class: 'sec' }, h('h4', {}, 'เครื่องที่ใช้ (' + l.devices.length + '/' + l.maxDevices + ')'),
+      l.devices.length ? h('div', { class: 'chips2' }, l.devices.map((d) => h('span', { class: 'chip2 on', title: (d.os || '') + (d.ver ? ' · v' + d.ver : '') }, d.name + ' · ' + ago(LIC.serverTime - d.last),
+        h('button', { class: 'x2', 'aria-label': 'ถอด ' + d.name, onclick: () => { if (confirm('ถอด "' + d.name + '" ออกจากคีย์? เครื่องนั้นจะล็อกในรอบเช็คถัดไป (ไม่เกิน 6 ชม.)')) licAct(() => licApi(l.id, { removeDevice: d.id }), 'ถอดเครื่องแล้ว'); } }, '×')))) : h('p', { class: 'mu' }, 'ยังไม่มีเครื่องใส่คีย์'),
+      h('div', { class: 'rowb' }, h('button', { class: 'btn', onclick: () => licAct(() => licApi(l.id, { maxDevices: Math.max(1, l.maxDevices - 1) }), 'ลดจำนวนเครื่องแล้ว') }, '− เครื่อง'), h('button', { class: 'btn', onclick: () => licAct(() => licApi(l.id, { maxDevices: Math.min(20, l.maxDevices + 1) }), 'เพิ่มจำนวนเครื่องแล้ว') }, '+ เครื่อง'))),
+    h('div', { class: 'sec' }, h('h4', {}, 'อายุคีย์ · ถึง ' + (l.expires ? fmtDate(l.expires) : 'ถาวร')),
+      h('div', { class: 'rowb' }, [7, 30, 90].map((d) => h('button', { class: 'btn', onclick: () => licAct(() => licApi(l.id, { addDays: d }), 'ต่ออายุ ' + d + ' วันแล้ว') }, '+' + d + ' วัน')),
+        l.expires ? h('button', { class: 'btn', onclick: () => licAct(() => licApi(l.id, { lifetime: true }), 'เปลี่ยนเป็นถาวรแล้ว') }, 'ถาวร') : null,
+        h('button', { class: 'btn', onclick: () => licAct(() => licApi(l.id, { revoked: !l.revoked }), l.revoked ? 'เปิดใช้งานแล้ว' : 'ระงับแล้ว') }, l.revoked ? 'เปิดใช้งาน' : 'ระงับ'))),
+    h('div', { class: 'sec' }, h('h4', {}, 'โน้ต'),
+      h('form', { class: 'rowb', onsubmit: (e) => { e.preventDefault(); licAct(() => licApi(l.id, { note: note.value }), 'บันทึกแล้ว'); } }, note, h('button', { class: 'btn', type: 'submit' }, 'บันทึก'))),
+    h('div', { class: 'sec danger' }, h('div', { class: 'rowb' },
+      h('button', { class: 'btn', onclick: async () => { if (!confirm('ออกคีย์ใหม่แทนคีย์เดิม? คีย์เดิมใช้ไม่ได้ทันที และทุกเครื่องต้องใส่คีย์ใหม่')) return; const r = await licAct(() => licApi(l.id, { rotate: true }), 'ออกคีย์ใหม่แล้ว'); if (r && r.key) { licNew = { id: l.id, key: r.key }; render(); } } }, 'ออกคีย์ใหม่ (คีย์หลุด)'),
+      h('button', { class: 'btn bad', onclick: () => { if (prompt('ลบคีย์ของ "' + l.label + '" ถาวร? พิมพ์ YES เพื่อยืนยัน') === 'YES') { licOpen.delete(l.id); licAct(() => api('license/' + l.id, { method: 'DELETE' }), 'ลบแล้ว'); } } }, 'ลบคีย์'))));
 }

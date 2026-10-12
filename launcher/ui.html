@@ -57,6 +57,23 @@ button{cursor:pointer}
 /* ในแอป: แถบบนลากย้ายหน้าต่างได้ เว้นที่ให้ปุ่มย่อ/ขยาย/ปิดของ Windows */
 html.app .topbar{-webkit-app-region:drag;padding-right:152px;background:#110a0c;backdrop-filter:none}
 html.app .topbar button,html.app .topbar .chip,html.app .topbar .lang{-webkit-app-region:no-drag}
+/* ---------- คีย์ใช้งาน (แอปที่ขาย) ---------- */
+.lic{position:fixed;inset:52px 0 0 0;z-index:4;display:grid;place-items:center;padding:24px;background:var(--bg);
+  background-image:radial-gradient(900px 420px at 50% 0,rgba(226,182,92,.07),transparent 70%)}
+.lic-card{width:min(460px,100%);display:grid;gap:12px}
+.lic-card h1{font:700 24px/1.25 var(--serif);color:var(--tx)}
+.lic-card p{color:var(--mu);font-size:13.5px}
+.lic-row{display:flex;gap:8px}
+.lic-in{flex:1;min-width:0;height:44px;padding:0 14px;border-radius:10px;border:0;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line2);font:500 15px var(--mono);letter-spacing:.04em;color:var(--tx);text-transform:uppercase}
+.lic-in::placeholder{color:var(--dim);text-transform:none}
+.lic-in:focus{box-shadow:inset 0 0 0 1.5px rgba(226,182,92,.7)}
+.lic-row .btn{height:44px;padding:0 18px}
+.lic-err{min-height:1.3em;color:var(--red)!important;font-size:13px}
+.lic-foot{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--dim)}
+.lic-foot a{color:var(--gold);text-decoration:none}.lic-foot a:hover{text-decoration:underline}
+.licrow{display:flex;align-items:center;gap:6px;margin:6px 2px 0;padding:7px 9px;border-radius:9px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line);font-size:11.5px;color:var(--mu2)}
+.licrow span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.licrow button{border:0;background:transparent;color:var(--mu);font-size:11.5px;padding:2px 4px;border-radius:6px}.licrow button:hover{color:var(--red)}
 /* ---------- layout ---------- */
 .shell{display:flex;flex-wrap:wrap;min-height:calc(100vh - 52px)}
 nav.side{flex:1 1 220px;max-width:236px;padding:18px 12px 14px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(26,17,20,.6),rgba(17,10,12,.2))}
@@ -189,7 +206,7 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);opacity:0;padding:11px 16px;border-radius:12px;background:#17261f;box-shadow:inset 0 0 0 1px rgba(95,208,160,.35),0 20px 40px -12px rgba(0,0,0,.6);transition:.22s;z-index:30;font-size:13px;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1;transform:translateX(-50%)}.toast.bad{background:#2a1515;box-shadow:inset 0 0 0 1px rgba(239,123,108,.4),0 20px 40px -12px rgba(0,0,0,.6)}
 @media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
-@media (max-width:760px){nav.side{max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}.nv{width:auto}.sect,.qs,.foot{display:none}.go{width:100%;margin-bottom:6px}main{padding:16px}.chip{display:none}}
+@media (max-width:760px){nav.side{max-width:none;flex-basis:100%;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line)}.nv{width:auto}.sect,.qs,.foot,.licrow{display:none!important}.go{width:100%;margin-bottom:6px}main{padding:16px}.chip{display:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -201,6 +218,15 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
     <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="th">ไทย</button><button type="button" data-lang="en">EN</button></div>
   </div>
 </header>
+<section class="lic" id="lic" hidden aria-labelledby="licT">
+  <form class="lic-card" id="licf" autocomplete="off">
+    <h1 id="licT" data-i="licT"></h1>
+    <p data-i="licSub"></p>
+    <div class="lic-row"><input class="lic-in" id="lick" placeholder="FLEET-XXXX-XXXX-XXXX-XXXX" maxlength="40" spellcheck="false" aria-labelledby="licT"><button class="btn gold" id="licgo" data-i="licGo"></button></div>
+    <p class="lic-err" id="licerr" role="alert"></p>
+    <div class="lic-foot"><a id="licdash" href="#" target="_blank" rel="noopener" data-i="licDash"></a><span data-i="licHelp"></span></div>
+  </form>
+</section>
 <div class="shell">
   <nav class="side" aria-label="menu">
     <button type="button" class="go" id="rjall"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span data-i="rejoinOff"></span></button>
@@ -211,6 +237,7 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
     <button type="button" class="nv" data-v="perf"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span data-i="nPerf"></span></span></button>
     <button type="button" class="nv" data-v="log"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i="nLog"></span></span></button>
     <div class="qs" id="qs"></div>
+    <div class="licrow" id="licrow" hidden><span id="licinfo"></span><button type="button" id="licout" data-i="licOut"></button></div>
     <div class="foot"><span class="ver" id="ver"></span><button type="button" class="nv quit" id="quit"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v9"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg><span data-i="quit"></span></span></button></div>
   </nav>
 
@@ -330,7 +357,8 @@ const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s
 
 // ---------- ภาษา ----------
 const I18N={
-th:{connecting:'กำลังต่อ…',connOk:'เชื่อมเซิร์ฟเวอร์ร้านแล้ว',connBad:'ต่อเซิร์ฟเวอร์ไม่ได้',stopped:'โปรแกรมหยุดทำงาน',
+th:{licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์ที่ได้จากร้านเพื่อเริ่มใช้ Fleet Launcher (คีย์ผูกกับเครื่องนี้)',licGo:'ยืนยัน',licDash:'เช็คคีย์ / ย้ายเครื่อง',licHelp:'ยังไม่มีคีย์? ติดต่อร้านที่ซื้อแอป',licWait:'กำลังตรวจคีย์…',licOut:'ถอดคีย์',licOutAsk:'ถอดคีย์ออกจากเครื่องนี้?\nรีจอยจะหยุดจนกว่าจะใส่คีย์ใหม่ และคีย์จะว่างให้ใช้กับเครื่องอื่นได้',licUntil:'คีย์ {k} · ถึง {d}',licLife:'คีย์ {k} · ถาวร',
+ connecting:'กำลังต่อ…',connOk:'เชื่อมเซิร์ฟเวอร์ร้านแล้ว',connBad:'ต่อเซิร์ฟเวอร์ไม่ได้',stopped:'โปรแกรมหยุดทำงาน',
  rejoinOff:'รีจอยตัวที่หลุด',sGeneral:'ทั่วไป',sPc:'เครื่อง',nAcc:'ไอดี',nGame:'เกม & รีจอย',nPerf:'ประหยัดเครื่อง',nLog:'บันทึกการทำงาน',
  tOnline:'ออนไลน์',tRoblox:'หน้าต่าง Roblox',hAcc:'ไอดีทั้งหมด',checkCk:'ตรวจ cookie',addAcc:'+ เพิ่มไอดี',search:'ค้นหาไอดี…',
  cAcc:'ไอดี',cStatus:'สถานะ',cNow:'ตอนนี้',cLast:'ข้อมูลล่าสุด',cAuto:'รีจอยเอง',cAct:'จัดการ',c3d:'ประหยัดในเกม',
@@ -354,7 +382,8 @@ th:{connecting:'กำลังต่อ…',connOk:'เชื่อมเซิ
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
  steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
-en:{connecting:'Connecting…',connOk:'Connected to shop server',connBad:'Cannot reach server',stopped:'Launcher stopped',
+en:{licT:'Enter your key',licSub:'Paste the key from your shop to start Fleet Launcher (the key is tied to this PC)',licGo:'Continue',licDash:'Check key / move PC',licHelp:'No key yet? Contact the shop you bought from',licWait:'Checking key…',licOut:'Remove',licOutAsk:'Remove the key from this PC?\nRejoin stops until a key is entered again, and the key is freed for another PC',licUntil:'Key {k} · until {d}',licLife:'Key {k} · lifetime',
+ connecting:'Connecting…',connOk:'Connected to shop server',connBad:'Cannot reach server',stopped:'Launcher stopped',
  rejoinOff:'Rejoin dropped',sGeneral:'General',sPc:'This PC',nAcc:'Accounts',nGame:'Game & rejoin',nPerf:'Performance',nLog:'Logs',
  tOnline:'Online',tRoblox:'Roblox windows',hAcc:'All accounts',checkCk:'Check cookies',addAcc:'+ Add account',search:'Search accounts…',
  cAcc:'Account',cStatus:'Status',cNow:'Now',cLast:'Last data',cAuto:'Auto rejoin',cAct:'Actions',c3d:'In-game saving',
@@ -431,8 +460,18 @@ function setView(v){view=['acc','game','perf','log'].includes(v)?v:'acc';store.s
   $$('.view').forEach(s=>s.hidden=s.id!=='v-'+view);$$('.nv').forEach(b=>{if(b.dataset.v===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});render()}
 $$('.nv').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
+function renderLic(){
+  const L=S.license,lock=!!S.locked;
+  $('#lic').hidden=!lock;$('.shell').hidden=lock;
+  if(L&&L.dashboard)$('#licdash').href=L.dashboard;
+  if(lock){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--warn)'}),t('licT'));if(L&&L.reason&&!$('#licerr').textContent)$('#licerr').textContent=L.reason;if(document.activeElement!==$('#lick'))setTimeout(()=>$('#lick').focus(),30);}
+  $('#licrow').hidden=lock||!(L&&L.ok);
+  if(L&&L.ok)$('#licinfo').textContent=L.expires?t('licUntil',{k:L.hint,d:new Date(L.expires*1000).toLocaleDateString(LANG==='th'?'th-TH':'en-GB',{day:'numeric',month:'short',year:'numeric'})}):t('licLife',{k:L.hint});
+  return lock;
+}
 function render(){
   if(!S)return;
+  if(renderLic())return;
   document.body.classList.toggle('per',S.cfg.gameMode==='per');
   const R=rows(),cnt={all:R.length,on:0,off:0,busy:0,nocookie:0};
   R.forEach(r=>{if(r.st==='on')cnt.on++;if(r.st==='off'||r.st==='late')cnt.off++;if(r.st==='busy')cnt.busy++;if(!r.l)cnt.nocookie++});
@@ -529,6 +568,9 @@ $('#addf').onsubmit=async e=>{e.preventDefault();$('#ckres').hidden=true;const r
   if(r&&r.bad&&r.bad.length){$('#ckres').replaceChildren(...r.bad.map(b=>h('div',{},b)));$('#ckres').hidden=false;$('#ck').value='';$('#ckn').textContent=''}
   else if(r&&r.ok)closeAdd()};
 $$('[data-gm]').forEach(b=>b.onclick=()=>act(b,'/ui/settings',{gameMode:b.dataset.gm}));
+$('#licf').onsubmit=async e=>{e.preventDefault();const b=$('#licgo');b.disabled=true;$('#licerr').textContent=t('licWait');
+  try{const r=await api('/ui/license',{key:$('#lick').value});$('#licerr').textContent='';$('#lick').value='';toast(r.msg||'OK');await load()}catch(x){$('#licerr').textContent=x.message}finally{b.disabled=false}};
+$('#licout').onclick=async()=>{if(!await ask(t('licOutAsk'),t('licOut'),true))return;$('#licerr').textContent='';await act(null,'/ui/license-out',{})};
 $('#rjall').onclick=e=>act(e.currentTarget,'/ui/rejoin-offline',{});
 $('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});if(r&&r.result){const bad=Object.entries(r.result).filter(([,v])=>v!=='ok');toast(bad.length?t('ckBad',{l:bad.map(([n])=>n).join(', ')}):t('ckOk'),bad.length>0)}};
 $('#auto').onchange=e=>act(null,'/ui/settings',{enabled:e.target.checked});

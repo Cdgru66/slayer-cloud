@@ -5,3 +5,4 @@ cloudflared.exe
 FleetLauncher/
 desktop/node_modules/
 dist/
+launcher/license.json

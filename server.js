@@ -35,7 +35,9 @@ const STATIC = {
   '/admin.js': ['admin.js', 'application/javascript; charset=utf-8'],
   '/order': ['order.html', 'text/html; charset=utf-8'],
   '/order.js': ['order.js', 'application/javascript; charset=utf-8'],
-  '/pay-qr.jpg': ['pay-qr.jpg', 'image/jpeg'], // QR พร้อมเพย์ของร้าน (เปลี่ยนรูปได้ที่ public/pay-qr.jpg)
+  '/pay-qr.jpg': ['pay-qr.jpg', 'image/jpeg'],
+  '/license': ['license.html', 'text/html; charset=utf-8'],   // ผู้ซื้อแอปเช็คคีย์/ย้ายเครื่อง
+  '/license.js': ['license.js', 'application/javascript; charset=utf-8'], // QR พร้อมเพย์ของร้าน (เปลี่ยนรูปได้ที่ public/pay-qr.jpg)
 };
 const CSP = [
   "default-src 'none'", "script-src 'self'",
@@ -399,6 +401,8 @@ const admin = require('./admin-api.js')({
   rejoinPublic, setRejoin, notifyPublic: notify.publicCfg, setNotify: notify.setCfg, notifyTest: notify.test,
   listBackups, backupNow, orders,
 });
+// คีย์ใช้งานแอป Fleet Launcher ที่ขายให้ร้านอื่น (licenses.js)
+const licenses = require('./licenses.js')({ DATA_DIR, send, readBody, rate, failBlocked, recordFail, now, isAdmin: (req) => admin.isAdmin(req) });
 
 const server = http.createServer((req, res) => {
   try { handleReq(req, res); } catch (e) {
@@ -482,6 +486,7 @@ function handleReq(req, res) {
   }
 
   if (orders.handle(req, res, url, ip)) return;
+  if (licenses.handle(req, res, url, ip)) return;
   if (admin.handle(req, res, url, ip)) return;
 
   if (req.method === 'GET' && url.pathname === '/api/v1/state' && admin.isAdmin(req)) { // แอดมินดูแดชบอร์ดรวมทุกไอดี

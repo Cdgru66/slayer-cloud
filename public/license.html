@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#140c0e">
+<meta name="robots" content="noindex">
+<title>เช็คคีย์ · Fleet Launcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Noto+Serif+Thai:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.lk-in{font-family:'JetBrains Mono',ui-monospace,monospace!important;letter-spacing:.04em;text-transform:uppercase}
+.lk-in::placeholder{text-transform:none;color:var(--dim)}
+.lk{width:min(520px,100%);margin:0 auto;padding:28px 16px 48px;display:grid;gap:14px}
+#body{display:grid;gap:14px}
+.lk-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lk-top .brand{margin:0}
+.lk-card{padding:20px;border-radius:16px;background:linear-gradient(170deg,#24171a,#170e11);box-shadow:inset 0 0 0 1px var(--edge);display:grid;gap:14px}
+.lk-card h2{font:600 20px/1.3 var(--serif);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lk-stat{padding:12px;border-radius:11px;background:var(--lac);box-shadow:inset 0 0 0 1px var(--hair)}
+.lk-stat small{display:block;color:var(--mu);font-size:12px}
+.lk-stat b{font:600 16px var(--serif)}
+.lk-dev{display:flex;align-items:center;gap:12px;padding:12px;border-radius:11px;background:var(--lac);box-shadow:inset 0 0 0 1px var(--hair)}
+.lk-dev div{flex:1;min-width:0}
+.lk-dev b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lk-dev small{color:var(--mu);font-size:12px}
+.lk-note{color:var(--mu);font-size:13px;line-height:1.6}
+.lk-key{font-family:'JetBrains Mono',monospace;color:var(--mu);font-size:13px}
+@media (max-width:480px){.lk-grid{grid-template-columns:1fr 1fr}.lk-grid .lk-stat:last-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<section class="gate" id="gate">
+  <form class="gate-card" id="kf" autocomplete="off">
+    <span class="seal-mark big" aria-hidden="true">艦</span>
+    <h1>เช็คคีย์</h1>
+    <p class="gate-sub">Fleet Launcher · ดูวันหมดอายุและเครื่องที่ใช้คีย์</p>
+    <label class="fld"><span>คีย์ของคุณ</span><input id="key" class="lk-in" placeholder="FLEET-XXXX-XXXX-XXXX-XXXX" maxlength="40" spellcheck="false" required></label>
+    <p class="gate-err" id="err" role="alert"></p>
+    <button class="btn primary gate-go" id="go" type="submit">ดูสถานะคีย์</button>
+    <p class="gate-note">คีย์ได้จากร้านที่ซื้อแอป · ไม่ต้องใส่รหัส Roblox ใด ๆ</p>
+  </form>
+</section>
+
+<main class="lk" id="app" hidden>
+  <div class="lk-top">
+    <div class="brand"><span class="seal-mark" aria-hidden="true">艦</span><span>Fleet Launcher</span></div>
+    <button class="btn" id="out" type="button">ใส่คีย์อื่น</button>
+  </div>
+  <div id="body"></div>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="license.js"></script>
+</body>
+</html>

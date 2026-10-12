@@ -21,7 +21,7 @@ const crypto = require('crypto');
 const readline = require('readline');
 const { spawnSync, spawn, execFile } = require('child_process');
 
-const APP = path.join(__dirname, '..');
+const APP = process.env.FLEET_APP_DIR || path.join(__dirname, '..'); // แอปที่ขาย (โค้ดอยู่ในตัว exe) ตั้ง FLEET_APP_DIR ไปที่โฟลเดอร์ของผู้ใช้
 const DATA_DIR = path.join(APP, 'data');
 const REJOIN_FILE = path.join(DATA_DIR, 'rejoin.json');
 const STORE_DIR = process.env.FLEET_LAUNCHER_DIR || path.join(process.env.LOCALAPPDATA || os.homedir(), 'FleetLauncher');
@@ -59,6 +59,13 @@ function log(line) {
   console.log(l);
   try { fs.mkdirSync(STORE_DIR, { recursive: true }); fs.appendFileSync(LOG, l + '\n'); } catch (e) {}
 }
+const appVersion = () => { for (const f of [path.join(APP, 'version.txt'), path.join(__dirname, 'version.txt')]) { try { return fs.readFileSync(f, 'utf8').trim(); } catch (e) {} } return ''; };
+// ---------- คีย์ใช้งาน (เฉพาะแอปที่ขาย: มี launcher/license.json · ตัวของร้านเองไม่ต้องใส่คีย์) ----------
+const LIC = require('./license-client.js')({
+  cfgFile: path.join(__dirname, 'license.json'), dir: STORE_DIR, log, version: appVersion(),
+  protect: (t) => (IS_WIN || TEST_PLAIN ? dpapi('protect', t) : t), unprotect: (t) => (IS_WIN || TEST_PLAIN ? dpapi('unprotect', t) : t),
+});
+const LOCKED_MSG = 'ต้องใส่คีย์ใช้งานก่อน';
 
 // ---------- คุยกับ Roblox ----------
 const cookieHdr = (c) => '.ROBLOSECURITY=' + c;
@@ -255,6 +262,7 @@ function placeFor(name) {
 
 const busy = new Set();
 async function launch(name, placeId) {
+  if (!LIC.ok()) throw new Error(LOCKED_MSG);
   const acc = loadAccounts();
   const key = Object.keys(acc).find((k) => k.toLowerCase() === String(name).toLowerCase());
   if (!key) throw new Error('ไม่มีไอดี ' + name + ' ในโปรแกรม (เพิ่มที่เมนู 1)');
@@ -344,7 +352,7 @@ async function uiState() {
   const avatars = {}; for (const n of names) { const c = avatarCache.get(n.toLowerCase()); if (c && c.url) avatars[n.toLowerCase()] = c.url; }
   return {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
-    fleet, fleetErr, avatars, version: (() => { try { return fs.readFileSync(path.join(APP, 'version.txt'), 'utf8').trim(); } catch (e) { return ''; } })(),
+    fleet, fleetErr, avatars, version: appVersion(), license: LIC.enabled ? LIC.state() : null,
     cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, gameMode: cfg.gameMode === 'per' ? 'per' : 'shared', places: cfg.places || {}, perf: perfCfg() },
     sys: { multi: multiOk, cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
       procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
@@ -408,6 +416,7 @@ let EMBED = null;
 function serve(opts) {
   EMBED = opts && opts.embedded ? opts : null;
   const cfg = ensureRejoinCfg();
+  LIC.start();
   holdMultiRoblox();
   const UI_FILE = path.join(__dirname, 'ui.html');
   const srv = http.createServer(async (req, res) => {
@@ -422,10 +431,15 @@ function serve(opts) {
           return send(200, fs.readFileSync(UI_FILE, 'utf8'), 'text/html; charset=utf-8');
         }
         if (!safeEq(req.headers['x-fleet-token'] || '', UI_TOKEN)) return send(401, '{"error":"unauthorized"}', 'application/json');
-        if (u.pathname === '/ui/state' && req.method === 'GET') return send(200, JSON.stringify(await uiState()), 'application/json');
+        const locked = LIC.enabled && !LIC.ok();
+        if (u.pathname === '/ui/state' && req.method === 'GET') return send(200, JSON.stringify(locked ? { locked: true, license: LIC.state(), version: appVersion() } : await uiState()), 'application/json');
         if (req.method !== 'POST') return send(405, '{}', 'application/json');
         let body = ''; for await (const ch of req) { body += ch; if (body.length > 400000) return send(413, '{}', 'application/json'); }
         let j = {}; try { j = JSON.parse(body || '{}'); } catch (e) { return send(400, '{"error":"bad json"}', 'application/json'); }
+        // คีย์ใช้งาน: ใส่คีย์ / ถอดคีย์ออกจากเครื่องนี้ · ระหว่างยังไม่มีคีย์ใช้ได้แค่ปุ่มปิดโปรแกรม
+        if (u.pathname === '/ui/license') { const r = await LIC.activate(String(j.key || '')); return send(r.ok ? 200 : 400, JSON.stringify(r), 'application/json'); }
+        if (u.pathname === '/ui/license-out') return send(200, JSON.stringify(await LIC.deactivate()), 'application/json');
+        if (locked && u.pathname !== '/ui/quit') return send(403, JSON.stringify({ ok: false, error: LOCKED_MSG, locked: true }), 'application/json');
         try { return send(200, JSON.stringify(await uiAction(u.pathname, j && typeof j === 'object' ? j : {})), 'application/json'); }
         catch (e) { return send(400, JSON.stringify({ ok: false, error: e.message }), 'application/json'); }
       }
@@ -435,6 +449,7 @@ function serve(opts) {
       if (u.pathname === '/OpenUI') { if (EMBED && EMBED.onOpenUI) EMBED.onOpenUI(); else openWindow(`http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`); return send(200, 'ok'); } // กด launcher.bat ซ้ำ
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
       if (u.pathname === '/LaunchAccount') {
+        if (!LIC.ok()) return send(403, LOCKED_MSG);
         const name = u.searchParams.get('Account') || '';
         const place = readRejoin().gameMode === 'per' ? placeFor(name) : (Number(u.searchParams.get('PlaceId')) || placeOf());
         if (!/^[A-Za-z0-9_]{3,20}$/.test(name) || !(place > 0)) return send(400, 'ข้อมูลไม่ถูกต้อง');
