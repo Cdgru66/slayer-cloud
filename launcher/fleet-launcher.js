@@ -397,7 +397,10 @@ async function uiAction(p, j) {
 function openWindow(url) {
   if (!IS_WIN) { console.log('เปิดหน้าจอที่: ' + url); return; }
   const edge = ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe', 'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'].find((f) => fs.existsSync(f));
-  if (edge) spawn(edge, ['--app=' + url, '--window-size=1340,880'], { detached: true, stdio: 'ignore' }).unref(); // หน้าต่างแยก ไม่มีแถบเบราว์เซอร์
+  // หน้าต่างแอปแยก ใช้โปรไฟล์ Edge ของตัวเอง: ไม่มีส่วนขยาย/แถบแปลภาษา/ป๊อปอัปของ Edge ปกติ และมีไอคอนแยกบน taskbar
+  const prof = path.join(STORE_DIR, 'ui-profile');
+  if (edge) spawn(edge, ['--app=' + url, '--user-data-dir=' + prof, '--window-size=1360,880', '--no-first-run', '--no-default-browser-check', '--disable-sync',
+    '--hide-crash-restore-bubble', '--disable-features=Translate,msEdgeTranslate,msUndersideButton,msEdgeSidebarV2,EdgeShoppingAssistant,msShowSidebar', '--lang=th'], { detached: true, stdio: 'ignore' }).unref();
   else spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
 function serve() {
