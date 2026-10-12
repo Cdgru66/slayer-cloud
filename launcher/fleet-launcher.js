@@ -343,7 +343,7 @@ async function uiState() {
   let fleet = null, fleetErr = '';
   try {
     const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
-    if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' (อัปเดตเซิร์ฟเวอร์เป็นเวอร์ชันล่าสุดหรือยัง)' : '');
+    if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' · รหัสไม่ตรงกัน: แอปนี้ใช้โฟลเดอร์ ' + APP + ' ต้องเปิด start-cloud.bat จากโฟลเดอร์เดียวกัน (ถ้าเพิ่งเปิดแอป ปิดหน้าต่างเซิร์ฟเวอร์แล้วเปิด start-cloud.bat ใหม่)' : '');
   } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
   const procs = robloxProcs(), pids = procs.map((p) => p.pid), owner = new Map([...pidOf].map(([n, p]) => [p, n]));
   const known = Object.fromEntries(Object.entries(acc).map(([n, a]) => [n, a.id]));
