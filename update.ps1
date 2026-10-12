@@ -97,6 +97,11 @@ try {
     Copy-Item $_.FullName $App -Recurse -Force
   }
   Remove-Item $tmp -Recurse -Force
+  # แอปเดสก์ท็อปติดตั้งไว้: อัปเดตโค้ดแอป (desktop -> FleetLauncher\resources\app) ให้ด้วย
+  $fa = Join-Path $App 'FleetLauncher\resources\app'
+  if ((Test-Path $fa) -and (Test-Path (Join-Path $App 'desktop\main.js'))) {
+    try { Copy-Item (Join-Path $App 'desktop\*') $fa -Recurse -Force; Say 'อัปเดตแอป Fleet Launcher แล้ว (ปิดแล้วเปิดแอปใหม่ให้มีผล)' } catch { Say 'อัปเดตแอปไม่ได้ (ปิด Fleet Launcher ก่อนแล้วรัน update.bat ใหม่)' 'Yellow' }
+  }
   $newVer = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { '(ไม่ทราบ)' }
   if ($newVer -eq $oldVer) { Say "อัปเดตไฟล์เรียบร้อย (เวอร์ชัน $newVer เป็นตัวล่าสุดอยู่แล้ว)" 'Green' }
   else { Say "อัปเดตเรียบร้อย: $oldVer -> $newVer" 'Green' }
