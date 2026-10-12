@@ -180,6 +180,29 @@ tbody tr{transition:background .12s}tbody tr:hover{background:rgba(241,225,205,.
 .game[aria-pressed=true]{box-shadow:inset 0 0 0 1px rgba(226,182,92,.6),0 10px 24px -16px rgba(226,182,92,.6)}
 .game .gi{width:46px;height:46px;border-radius:11px;background:var(--s2);display:grid;place-items:center;font:600 14px var(--mono);color:var(--c)}
 .game b{display:block;font-weight:600}.game .gid{font:11.5px var(--mono);color:var(--dim)}
+.game{position:relative}.game .gi{position:relative;overflow:hidden}.game .gi img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}.game .gi.has img{opacity:1}.game .gi.has span{visibility:hidden}
+.game .gx{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:7px;border:0;background:transparent;color:var(--dim);font-size:12px;opacity:0;transition:opacity .12s}
+.game:hover .gx,.game .gx:focus-visible{opacity:1}.game .gx:hover{color:var(--red);background:var(--s2)}
+.gb b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+/* ไอคอนของ (Token/Ore) ในตาราง */
+.amt{display:inline-flex;align-items:center;gap:5px;margin-right:12px;white-space:nowrap}.amt:last-child{margin-right:0}
+.amt img,.amt .ico{width:18px;height:18px;border-radius:5px;object-fit:cover;flex:none}
+.amt .ico{display:inline-grid;place-items:center;font-size:11px;background:var(--s3);color:var(--gold)}
+/* ปุ่มลดแรมแบบกดทีเดียว */
+.boost{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.bbtn{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;border:0;text-align:left;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line2);color:var(--tx);transition:box-shadow .15s,background .15s}
+.bbtn:hover{box-shadow:inset 0 0 0 1px rgba(226,182,92,.45)}
+.bbtn .bi{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--s3);color:var(--gold-hi);font-size:19px}
+.bbtn b{display:block;font-size:15px}.bbtn small{display:block;color:var(--mu);font-size:12px;margin-top:2px}
+.bbtn.main{background:linear-gradient(180deg,#2a1d12,#1f150e);box-shadow:inset 0 0 0 1px rgba(226,182,92,.45)}
+.bbtn[aria-pressed=true]{box-shadow:inset 0 0 0 1.5px var(--ok);background:rgba(95,208,160,.07)}.bbtn[aria-pressed=true] .bi{color:var(--ok)}
+.bbtn .st{margin-left:auto;font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--s3);color:var(--mu)}.bbtn[aria-pressed=true] .st{color:var(--ok);background:rgba(95,208,160,.12)}
+.bbtn[disabled]{opacity:.6;cursor:wait}
+@media (max-width:760px){.boost{grid-template-columns:1fr}}
+/* ซ่อนชื่อ (ไว้แคปหน้าจอ) */
+.cen{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:999px;border:0;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line);color:var(--mu2);font-size:12px}
+.cen[aria-pressed=true]{color:var(--gold-hi);box-shadow:inset 0 0 0 1px rgba(226,182,92,.45)}
+body.censor .av img{filter:blur(6px) saturate(.6)}
 .ram{display:flex;align-items:center;gap:12px;min-width:200px}
 .ram .meter{flex:1;margin:0}
 .ram span{width:72px;text-align:right;font-family:var(--mono);color:var(--tx2)}
@@ -215,6 +238,7 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
   <div class="brand"><span class="mark" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 64 64"><defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6dd9c"/><stop offset="1" stop-color="#c8913a"/></linearGradient></defs><path d="M6 50 24 12l12 22 9-12 13 28z" fill="url(#mg)"/></svg></span><b>Fleet Launcher</b></div>
   <div class="tr">
     <span class="chip" id="conn"><span class="dot"></span><span data-i="connecting"></span></span>
+    <button type="button" class="cen" id="cen" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7-.4 1-1.2 2.3-2.4 3.6M6.6 6.6C4.4 8 2.8 10.2 2 12c1 2.5 5 7 10 7 1.6 0 3.1-.4 4.4-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg><span data-i="cen"></span></button>
     <div class="lang" role="group" aria-label="Language"><button type="button" data-lang="th">ไทย</button><button type="button" data-lang="en">EN</button></div>
   </div>
 </header>
@@ -284,7 +308,7 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
         <div class="seg" id="gmode" role="group" style="align-self:flex-start;margin-bottom:12px"><button type="button" data-gm="shared" data-i="gmShared"></button><button type="button" data-gm="per" data-i="gmPer"></button></div>
         <p class="hint" id="gmHint" style="margin:-4px 0 12px"></p>
         <div class="games" id="games"></div>
-        <label class="opt" style="justify-content:flex-start;flex-wrap:wrap"><span style="min-width:120px"><b>Place ID</b><small data-i="gCustom"></small></span><input class="txt" id="place" inputmode="numeric" autocomplete="off"><button type="button" class="btn gold sm" id="placeSave" data-i="save"></button></label>
+        <form class="opt" id="gaddf" style="justify-content:flex-start;flex-wrap:wrap"><span style="min-width:120px"><b data-i="gAdd"></b><small data-i="gAddSub"></small></span><input class="txt" id="place" autocomplete="off" spellcheck="false" data-ip="gAddPh" style="max-width:360px"><button class="btn gold sm" id="placeSave" data-i="gAddBtn"></button></form>
       </div>
       <div class="box card">
         <h2 data-i="gAuto"></h2><p class="sub" data-i="gAutoSub"></p>
@@ -298,7 +322,10 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
     <section class="view" id="v-perf" hidden>
       <div class="head">
         <h1 data-i="hPerf"></h1>
-        <div class="acts"><button type="button" class="btn" id="minAll" data-i="minAll"></button><button type="button" class="btn gold" id="trim" data-i="trimNow"></button></div>
+      </div>
+      <div class="boost">
+        <button type="button" class="bbtn main" id="boostNow"><span class="bi">⚡</span><span><b data-i="bNow"></b><small data-i="bNowSub"></small></span></button>
+        <button type="button" class="bbtn" id="ecoBtn" aria-pressed="false"><span class="bi">🌙</span><span><b data-i="bEco"></b><small data-i="bEcoSub"></small></span><span class="st" id="ecoSt"></span></button>
       </div>
       <div class="tiles" style="grid-template-columns:repeat(3,minmax(0,1fr))">
         <div class="tile"><p class="l" data-i="pTotal"></p><p class="v" id="p-total">–</p><p class="s" id="p-total-s"></p></div>
@@ -362,7 +389,7 @@ const store={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},s
 
 // ---------- ภาษา ----------
 const I18N={
-th:{scT:'สคริปต์ใส่ executor',scSub:'รันสคริปต์นี้ในทุกไอดีที่ฟาร์ม ข้อมูลในเกมจะขึ้นในแอปนี้และใช้รีจอยอัตโนมัติ · สคริปต์อัปเดตตัวเอง',scCopy:'ก๊อปสคริปต์',scNote:'ห้ามแชร์ให้คนอื่น (มีรหัสของคีย์คุณ) · ไอดีได้สูงสุด {n} ตัว',scDone:'ก๊อปสคริปต์แล้ว',licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์ที่ได้จากร้านเพื่อเริ่มใช้ Fleet Launcher (คีย์ผูกกับเครื่องนี้)',licGo:'ยืนยัน',licDash:'เช็คคีย์ / ย้ายเครื่อง',licHelp:'ยังไม่มีคีย์? ติดต่อร้านที่ซื้อแอป',licWait:'กำลังตรวจคีย์…',licOut:'ถอดคีย์',licOutAsk:'ถอดคีย์ออกจากเครื่องนี้?\nรีจอยจะหยุดจนกว่าจะใส่คีย์ใหม่ และคีย์จะว่างให้ใช้กับเครื่องอื่นได้',licUntil:'คีย์ {k} · ถึง {d}',licLife:'คีย์ {k} · ถาวร',
+th:{cen:'ซ่อนชื่อ',bNow:'ลดแรมเดี๋ยวนี้',bNowSub:'ย่อหน้าต่าง Roblox ทั้งหมด + คืน RAM ทันที',bEco:'โหมดประหยัดสุด',bEcoSub:'ปิดภาพ 3D · กราฟิกต่ำ · 15 FPS · คืน RAM ทุก 10 นาที',ecoOn:'เปิดอยู่',ecoOff:'ปิด',gAdd:'เพิ่มเกม',gAddSub:'ใส่เลข Place ID หรือวางลิงก์เกม',gAddPh:'เช่น 16205713724 หรือ roblox.com/games/…',gAddBtn:'เพิ่ม',gDel:'ลบเกมนี้',gDelAsk:'ลบ {n} ออกจากรายการเกม?',scT:'สคริปต์ใส่ executor',scSub:'รันสคริปต์นี้ในทุกไอดีที่ฟาร์ม ข้อมูลในเกมจะขึ้นในแอปนี้และใช้รีจอยอัตโนมัติ · สคริปต์อัปเดตตัวเอง',scCopy:'ก๊อปสคริปต์',scNote:'ห้ามแชร์ให้คนอื่น (มีรหัสของคีย์คุณ) · ไอดีได้สูงสุด {n} ตัว',scDone:'ก๊อปสคริปต์แล้ว',licT:'ใส่คีย์ของคุณ',licSub:'วางคีย์ที่ได้จากร้านเพื่อเริ่มใช้ Fleet Launcher (คีย์ผูกกับเครื่องนี้)',licGo:'ยืนยัน',licDash:'เช็คคีย์ / ย้ายเครื่อง',licHelp:'ยังไม่มีคีย์? ติดต่อร้านที่ซื้อแอป',licWait:'กำลังตรวจคีย์…',licOut:'ถอดคีย์',licOutAsk:'ถอดคีย์ออกจากเครื่องนี้?\nรีจอยจะหยุดจนกว่าจะใส่คีย์ใหม่ และคีย์จะว่างให้ใช้กับเครื่องอื่นได้',licUntil:'คีย์ {k} · ถึง {d}',licLife:'คีย์ {k} · ถาวร',
  connecting:'กำลังต่อ…',connOk:'เชื่อมเซิร์ฟเวอร์ร้านแล้ว',connBad:'ต่อเซิร์ฟเวอร์ไม่ได้',stopped:'โปรแกรมหยุดทำงาน',
  rejoinOff:'รีจอยตัวที่หลุด',sGeneral:'ทั่วไป',sPc:'เครื่อง',nAcc:'ไอดี',nGame:'เกม & รีจอย',nPerf:'ประหยัดเครื่อง',nLog:'บันทึกการทำงาน',
  tOnline:'ออนไลน์',tRoblox:'หน้าต่าง Roblox',hAcc:'ไอดีทั้งหมด',checkCk:'ตรวจ cookie',addAcc:'+ เพิ่มไอดี',search:'ค้นหาไอดี…',
@@ -387,7 +414,7 @@ th:{scT:'สคริปต์ใส่ executor',scSub:'รันสคริ�
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
  steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
-en:{scT:'Executor script',scSub:'Run this in every farming account; in-game data shows up here and drives auto rejoin · the script updates itself',scCopy:'Copy script',scNote:'Do not share it (contains your key\'s token) · up to {n} accounts',scDone:'Script copied',licT:'Enter your key',licSub:'Paste the key from your shop to start Fleet Launcher (the key is tied to this PC)',licGo:'Continue',licDash:'Check key / move PC',licHelp:'No key yet? Contact the shop you bought from',licWait:'Checking key…',licOut:'Remove',licOutAsk:'Remove the key from this PC?\nRejoin stops until a key is entered again, and the key is freed for another PC',licUntil:'Key {k} · until {d}',licLife:'Key {k} · lifetime',
+en:{cen:'Hide names',bNow:'Free RAM now',bNowSub:'Minimise every Roblox window + free RAM right away',bEco:'Max saving mode',bEcoSub:'No 3D · lowest graphics · 15 FPS · free RAM every 10 min',ecoOn:'On',ecoOff:'Off',gAdd:'Add game',gAddSub:'Enter a Place ID or paste a game link',gAddPh:'e.g. 16205713724 or roblox.com/games/…',gAddBtn:'Add',gDel:'Remove game',gDelAsk:'Remove {n} from the list?',scT:'Executor script',scSub:'Run this in every farming account; in-game data shows up here and drives auto rejoin · the script updates itself',scCopy:'Copy script',scNote:'Do not share it (contains your key\'s token) · up to {n} accounts',scDone:'Script copied',licT:'Enter your key',licSub:'Paste the key from your shop to start Fleet Launcher (the key is tied to this PC)',licGo:'Continue',licDash:'Check key / move PC',licHelp:'No key yet? Contact the shop you bought from',licWait:'Checking key…',licOut:'Remove',licOutAsk:'Remove the key from this PC?\nRejoin stops until a key is entered again, and the key is freed for another PC',licUntil:'Key {k} · until {d}',licLife:'Key {k} · lifetime',
  connecting:'Connecting…',connOk:'Connected to shop server',connBad:'Cannot reach server',stopped:'Launcher stopped',
  rejoinOff:'Rejoin dropped',sGeneral:'General',sPc:'This PC',nAcc:'Accounts',nGame:'Game & rejoin',nPerf:'Performance',nLog:'Logs',
  tOnline:'Online',tRoblox:'Roblox windows',hAcc:'All accounts',checkCk:'Check cookies',addAcc:'+ Add account',search:'Search accounts…',
@@ -443,7 +470,7 @@ function ask(msg,okLabel,danger){return new Promise(res=>{
   document.body.append(wrap);document.addEventListener('keydown',kd);setTimeout(()=>ok.focus(),30)})}
 function toast(m,bad){const e=$('#toast');e.textContent=m;e.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>e.className='toast',3200)}
 async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('error '+r.status));return j}
-async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
+async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(maskText(r.msg),r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
 const setP=(o,name)=>act(null,'/ui/settings',Object.assign({perf:o},name?{name}:{}));
 
 // รวมไอดีจากเซิร์ฟเวอร์ร้าน (สถานะในเกม) + ไอดีที่มี cookie ในโปรแกรม
@@ -465,6 +492,13 @@ function setView(v){view=['acc','game','perf','log'].includes(v)?v:'acc';store.s
   $$('.view').forEach(s=>s.hidden=s.id!=='v-'+view);$$('.nv').forEach(b=>{if(b.dataset.v===view)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});render()}
 $$('.nv').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 
+// ซ่อนชื่อไอดีบางส่วน (ไว้แคปหน้าจอ) · จำค่าไว้ในเครื่อง
+let CEN=store.get('fl-censor')==='1';
+const mask=n=>{n=String(n||'');if(!CEN||!n)return n;const a=[...n];if(a.length<=3)return a[0]+'••';return a.slice(0,2).join('')+'•'.repeat(Math.min(4,a.length-3))+a[a.length-1]};
+const maskText=txt=>{if(!CEN||!S)return txt;let o=String(txt);const ns=new Set();for(const l of S.launcher||[])ns.add(l.name);for(const a of (S.fleet&&S.fleet.accounts)||[]){ns.add(a.name);if(a.display)ns.add(a.display)}
+  for(const n of [...ns].filter(Boolean).sort((a,b)=>b.length-a.length))o=o.split(n).join(mask(n));return o};
+function applyCen(){document.body.classList.toggle('censor',CEN);$('#cen').setAttribute('aria-pressed',String(CEN))}
+$('#cen').onclick=()=>{CEN=!CEN;store.set('fl-censor',CEN?'1':'0');applyCen();render()};applyCen();
 function renderLic(){
   const L=S.license,lock=!!S.locked;
   $('#lic').hidden=!lock;$('.shell').hidden=lock;
@@ -514,32 +548,44 @@ function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
   if(l&&l.window)acts.push(h('button',{type:'button',class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},t('closeG')));
   if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:async()=>{if(await ask(t('confirmDel',{n:r.name}),t('del'),true))act(null,'/ui/remove',{name:r.name})}},'✕'));
   return h('tr',{},
-    h('td',{},h('div',{class:'who'},avatar(r.name,col),h('div',{},h('b',{},f.display||r.name),h('span',{},'@'+r.name)))),
+    h('td',{},h('div',{class:'who'},avatar(r.name,col),h('div',{},h('b',{},mask(f.display||r.name)),h('span',{},'@'+mask(r.name))))),
     h('td',{},h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),t(sk))),
     h('td',{},h('div',{class:'now'},now)),
     h('td',{class:'mono'},f.level!=null?String(f.level):'–'),
-    h('td',{class:'mono mut'},cm(f.token)+' · '+cm(f.ore)),
+    h('td',{class:'mono mut'},amtCell(f)),
     h('td',{class:'mut'},f.last!=null?ago(f.last):'–',f.rejoin?h('div',{class:'dim',style:'font-size:11.5px'},t('rejoin')+' ×'+f.rejoin.n):null),
     h('td',{class:'pcol'},gameSel(r.name)),
     h('td',{},l?sw(r.auto,t('cAuto')+' '+r.name,v=>act(null,'/ui/settings',{name:r.name,auto:v})):h('span',{class:'dim'},'—')),
     h('td',{},h('div',{class:'rowacts'},acts)))}
 
-function gameSel(name){const cur=Number((S.cfg.places||{})[name.toLowerCase()])||0,opts=[h('option',{value:0},t('gMain'))].concat(GAMES.map(g=>h('option',{value:g.id},g.name)));
-  if(cur&&!GAMES.some(g=>g.id===cur))opts.push(h('option',{value:cur},String(cur)));
+// Token / Ore พร้อมไอคอนจริงจากเกม (โหลดไม่ขึ้น = ไอคอนสำรอง) แสดงเฉพาะค่าที่มี
+function itemIco(url,fb){const sp=h('span',{class:'ico'},fb);if(!url)return sp;const i=h('img',{src:url,alt:'',referrerpolicy:'no-referrer'});i.onerror=()=>i.replaceWith(sp);return i}
+function amtCell(f){const I=S.icons||{},out=[];
+  if(f.token!=null)out.push(h('span',{class:'amt',title:'Ouwigahara Token'},itemIco(I.token,'◆'),cm(f.token)));
+  if(f.ore!=null)out.push(h('span',{class:'amt',title:'Ore'},itemIco(I.ore,'⛏'),cm(f.ore)));
+  return out.length?out:h('span',{class:'dim'},'—')}
+function gameSel(name){const G=S.games||[],cur=Number((S.cfg.places||{})[name.toLowerCase()])||0,opts=[h('option',{value:0},t('gMain'))].concat(G.map(g=>h('option',{value:g.id},g.name||String(g.id))));
+  if(cur&&!G.some(g=>g.id===cur))opts.push(h('option',{value:cur},String(cur)));
   const s=h('select',{class:'sel','aria-label':t('cGame')+' '+name},opts);s.value=String(cur);s.onchange=()=>act(null,'/ui/settings',{name,accPlace:Number(s.value)||0});return s}
-const GAMES=[{name:'Slayers 2',id:16205713724,ini:'S2',c:'var(--red)'},{name:'Steal An Egg',id:107778070777162,ini:'EG',c:'var(--gold)'}];
+const ini=n=>{const w=String(n||'?').replace(/\[[^\]]*\]|\([^)]*\)/g,' ').replace(/[^A-Za-z0-9ก-๙ ]/g,' ').trim().split(/\s+/);return ((w[0]||'?')[0]+((w[1]||'')[0]||(w[0]||'')[1]||'')).toUpperCase()};
+function gameCard(g,pid){const nm=g.name||('Place '+g.id),gi=h('span',{class:'gi',style:'--c:var(--gold)'},h('span',{},ini(nm)));
+  if(g.icon){const i=h('img',{src:g.icon,alt:'',referrerpolicy:'no-referrer'});i.onload=()=>gi.classList.add('has');i.onerror=()=>i.remove();gi.append(i)}
+  const sel=pid===g.id;
+  return h('div',{class:'game','aria-pressed':String(sel),role:'button',tabindex:'0',onclick:e=>{if(e.target.closest('.gx'))return;act(null,'/ui/settings',{placeId:g.id})},onkeydown:e=>{if(e.key==='Enter')act(null,'/ui/settings',{placeId:g.id})}},
+    gi,h('span',{class:'gb'},h('b',{title:nm},nm),h('span',{class:'gid'},String(g.id))),
+    sel?null:h('button',{type:'button',class:'gx','aria-label':t('gDel'),title:t('gDel'),onclick:async()=>{if(await ask(t('gDelAsk',{n:nm}),t('gDel'),true))act(null,'/ui/game-remove',{place:g.id})}},'✕'))}
 function renderGame(){
   $('#scriptBox').hidden=!S.script;
-  if(S.script){if($('#scLoader').value!==S.script.loader)$('#scLoader').value=S.script.loader;$('#scNote').textContent=t('scNote',{n:S.script.max})}
+  if(S.script){const shown=CEN?S.script.loader.replace(/(sfl_[0-9a-f]{4})[0-9a-f]+/,'$1••••••••'):S.script.loader;if($('#scLoader').value!==shown)$('#scLoader').value=shown;$('#scNote').textContent=t('scNote',{n:S.script.max})}
   const pid=S.cfg.placeId,per=S.cfg.gameMode==='per';
   $$('[data-gm]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.gm==='per')===per)));$('#gmHint').textContent=t(per?'gmHintP':'gmHintS');
-  $('#games').replaceChildren(...GAMES.map(g=>h('button',{type:'button',class:'game','aria-pressed':String(pid===g.id),onclick:e=>act(e.currentTarget,'/ui/settings',{placeId:g.id})},h('span',{class:'gi',style:'--c:'+g.c},g.ini),h('span',{},h('b',{},g.name),h('span',{class:'gid'},String(g.id))))));
-  if(document.activeElement!==$('#place'))$('#place').value=pid;
+  $('#games').replaceChildren(...(S.games||[]).map(g=>gameCard(g,pid)));
   if(document.activeElement!==$('#auto'))$('#auto').checked=S.cfg.enabled;
   if(document.activeElement!==$('#after'))$('#after').value=S.cfg.afterMin;
   if(document.activeElement!==$('#gap'))$('#gap').value=S.cfg.perf.staggerSec;
 }
 function renderPerf(){
+  $('#ecoBtn').setAttribute('aria-pressed',String(!!S.cfg.eco));$('#ecoSt').textContent=t(S.cfg.eco?'ecoOn':'ecoOff');
   const P=S.cfg.perf,sy=S.sys,pr=sy.procs||[],tot=pr.reduce((a,p)=>a+p.mb,0),ex=new Set(P.except.map(x=>x.toLowerCase()));
   $('#p-total').textContent=(tot/1024).toFixed(1)+' GB';$('#p-total-s').textContent=t('pWins',{n:pr.length})+' · '+t('pOfTotal',{g:gb(sy.ramTotal)});
   $('#p-avg').textContent=pr.length?Math.round(tot/pr.length)+' MB':'–';$('#p-avg-s').textContent='';
@@ -554,13 +600,13 @@ function renderPerf(){
   const unknown=[];for(const p of pr){if(p.name&&names.has(p.name.toLowerCase()))names.get(p.name.toLowerCase()).mb=p.mb;else if(p.name)names.set(p.name.toLowerCase(),{name:p.name,mb:p.mb});else unknown.push(p)}
   const max=Math.max(1500,...pr.map(p=>p.mb));
   const bar=mb=>h('div',{class:'ram'},h('div',{class:'meter'},h('i',{style:'width:'+(mb?Math.min(100,mb/max*100):0)+'%;--mc:'+(mb>1400?'var(--warn)':'var(--gold)')})),h('span',{},mb!=null?mb+' MB':'–'));
-  const list=[...names.values()].map(x=>h('tr',{},h('td',{},h('div',{class:'who'},avatar(x.name,x.mb!=null?'var(--gold-lo)':'var(--edge)'),h('b',{},x.name))),h('td',{},bar(x.mb)),
+  const list=[...names.values()].map(x=>h('tr',{},h('td',{},h('div',{class:'who'},avatar(x.name,x.mb!=null?'var(--gold-lo)':'var(--edge)'),h('b',{},mask(x.name)))),h('td',{},bar(x.mb)),
     h('td',{},sw(!ex.has(x.name.toLowerCase()),t('c3d')+' '+x.name,v=>setP({except:!v},x.name)))));
   for(const p of unknown)list.push(h('tr',{},h('td',{class:'mut'},t('unknownWin',{p:p.pid})),h('td',{},bar(p.mb)),h('td',{class:'dim'},'—')));
   $('#procs').replaceChildren(...(list.length?list:[h('tr',{},h('td',{colspan:3,class:'empty'},t('noWin')))]));
 }
 function renderLog(){
-  $('#logs').replaceChildren(...(S.log.length?S.log.map(l=>{const m=l.match(/^(\S+\s+\S+)\s+(.*)$/)||[0,'',l];return h('li',{class:/ไม่สำเร็จ|ผิดพลาด|ใช้ไม่ได้|ต่อ.*ไม่ได้/.test(m[2])?'bad':/กลับมาออนไลน์|เพิ่มไอดี|กำลังเข้าเกม|คืน RAM/.test(m[2])?'good':''},h('time',{},m[1]),h('span',{},m[2]))}):[h('li',{class:'mut'},t('noLog'))]));
+  $('#logs').replaceChildren(...(S.log.length?S.log.map(l=>{const m=l.match(/^(\S+\s+\S+)\s+(.*)$/)||[0,'',l];m[2]=maskText(m[2]);return h('li',{class:/ไม่สำเร็จ|ผิดพลาด|ใช้ไม่ได้|ต่อ.*ไม่ได้/.test(m[2])?'bad':/กลับมาออนไลน์|เพิ่มไอดี|กำลังเข้าเกม|คืน RAM/.test(m[2])?'good':''},h('time',{},m[1]),h('span',{},m[2]))}):[h('li',{class:'mut'},t('noLog'))]));
 }
 
 async function load(){try{S=await api('/ui/state');render()}catch(e){$('#conn').replaceChildren(h('span',{class:'dot',style:'--c:var(--red)'}),t('stopped'))}}
@@ -575,7 +621,7 @@ $('#addf').onsubmit=async e=>{e.preventDefault();$('#ckres').hidden=true;const r
   if(r&&r.bad&&r.bad.length){$('#ckres').replaceChildren(...r.bad.map(b=>h('div',{},b)));$('#ckres').hidden=false;$('#ck').value='';$('#ckn').textContent=''}
   else if(r&&r.ok)closeAdd()};
 $$('[data-gm]').forEach(b=>b.onclick=()=>act(b,'/ui/settings',{gameMode:b.dataset.gm}));
-$('#scCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('#scLoader').value);toast(t('scDone'))}catch(e){$('#scLoader').select();document.execCommand('copy');toast(t('scDone'))}};
+$('#scCopy').onclick=async()=>{const v=S&&S.script?S.script.loader:'';try{await navigator.clipboard.writeText(v);toast(t('scDone'))}catch(e){prompt('',v)}};
 $('#licf').onsubmit=async e=>{e.preventDefault();const b=$('#licgo');b.disabled=true;$('#licerr').textContent=t('licWait');
   try{const r=await api('/ui/license',{key:$('#lick').value});$('#licerr').textContent='';$('#lick').value='';toast(r.msg||'OK');await load()}catch(x){$('#licerr').textContent=x.message}finally{b.disabled=false}};
 $('#licout').onclick=async()=>{if(!await ask(t('licOutAsk'),t('licOut'),true))return;$('#licerr').textContent='';await act(null,'/ui/license-out',{})};
@@ -584,10 +630,11 @@ $('#check').onclick=async e=>{const r=await act(e.currentTarget,'/ui/check',{});
 $('#auto').onchange=e=>act(null,'/ui/settings',{enabled:e.target.checked});
 $('#after').onchange=e=>act(null,'/ui/settings',{afterMin:Number(e.target.value)});
 $('#gap').onchange=e=>setP({staggerSec:Number(e.target.value)});$('#gap2').onchange=e=>setP({staggerSec:Number(e.target.value)});
-$('#placeSave').onclick=e=>act(e.currentTarget,'/ui/settings',{placeId:Number($('#place').value.trim())});
+$('#gaddf').onsubmit=async e=>{e.preventDefault();const r=await act($('#placeSave'),'/ui/game-add',{place:$('#place').value.trim(),select:true});if(r&&r.ok)$('#place').value=''};
 $('#no3d').onchange=e=>setP({no3d:e.target.checked});$('#lowGfx').onchange=e=>setP({lowGfx:e.target.checked});$('#minimize').onchange=e=>setP({minimize:e.target.checked});
 $('#fps').onchange=e=>setP({fps:Number(e.target.value)});$('#trimMin').onchange=e=>setP({trimMin:Number(e.target.value)});
-$('#trim').onclick=e=>act(e.currentTarget,'/ui/trim',{});$('#minAll').onclick=e=>act(e.currentTarget,'/ui/minimize',{});
+$('#boostNow').onclick=e=>act(e.currentTarget,'/ui/boost',{});
+$('#ecoBtn').onclick=e=>act(e.currentTarget,'/ui/eco',{on:!(S&&S.cfg.eco)});
 $('#quit').onclick=async()=>{if(!await ask(t('quitAsk'),t('quit'),true))return;try{await api('/ui/quit',{})}catch(e){}stopped=true;document.body.innerHTML='';document.body.append(h('div',{class:'empty',style:'padding:80px 20px;font-size:15px'},t('quitDone')))};
 $('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea,.logs'))e.preventDefault()});

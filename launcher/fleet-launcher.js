@@ -170,6 +170,42 @@ async function refreshAvatars(known, names) {
     for (const [k, id] of all) avatarCache.set(k, { id, url: urls.get(id) || null, at: Date.now() });
   } catch (e) { /* ไม่มีเน็ต/Roblox ล่ม: ใช้ตัวอักษรแทนรูปไปก่อน */ } finally { avatarBusy = false; }
 }
+// ---------- เกมที่บันทึกไว้: ชื่อ + ไอคอนจริงจาก Roblox (เก็บแคชที่ %LOCALAPPDATA%\FleetLauncher\games.json) ----------
+const GAMES_DEF = [16205713724, 107778070777162]; // Slayers 2, Steal An Egg
+const GAME_CACHE = path.join(STORE_DIR, 'games.json');
+let gameCache = {}; try { gameCache = JSON.parse(fs.readFileSync(GAME_CACHE, 'utf8')) || {}; } catch (e) {}
+const RBX_IMG = /^https:\/\/[a-z0-9.-]+\.rbxcdn\.com\/[^\s"'<>]{1,400}$/;
+async function gameInfo(id, force) {
+  const c = gameCache[id];
+  if (c && !force && Date.now() - c.at < 24 * 3600e3) return c;
+  const get = async (u) => { const r = await fetch(u, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(10000) }); if (!r.ok) throw new Error('Roblox ตอบ ' + r.status); return r.json(); };
+  const uni = (await get(`https://apis.roblox.com/universes/v1/places/${id}/universe`)).universeId;
+  if (!uni) throw new Error('ไม่เจอเกมนี้ใน Roblox (เช็คเลข Place ID)');
+  const [g, ic] = await Promise.all([get('https://games.roblox.com/v1/games?universeIds=' + uni).catch(() => ({})), get(`https://thumbnails.roblox.com/v1/games/icons?universeIds=${uni}&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false`).catch(() => ({}))]);
+  const name = String(((g.data || [])[0] || {}).name || (c && c.name) || '').slice(0, 60);
+  const icon = String(((ic.data || [])[0] || {}).imageUrl || '');
+  gameCache[id] = { id, uni, name: name || 'Place ' + id, icon: RBX_IMG.test(icon) ? icon : (c && c.icon) || null, at: Date.now() };
+  try { fs.mkdirSync(STORE_DIR, { recursive: true }); fs.writeFileSync(GAME_CACHE, JSON.stringify(gameCache)); } catch (e) {}
+  return gameCache[id];
+}
+const savedGames = (cfg) => { const l = (Array.isArray(cfg.games) ? cfg.games : GAMES_DEF).map(Number).filter((n) => Number.isSafeInteger(n) && n > 0); const cur = Number(cfg.placeId) || DEFAULT_PLACE; if (!l.includes(cur)) l.push(cur); return [...new Set(l)].slice(0, 30); };
+let gamesBusy = false;
+function refreshGames(ids) { // เบื้องหลัง: เติมชื่อ/ไอคอนที่ยังไม่มีหรือเก่ากว่า 1 วัน
+  if (gamesBusy) return; const need = ids.filter((id) => !gameCache[id] || Date.now() - gameCache[id].at > 24 * 3600e3); if (!need.length) return;
+  gamesBusy = true; (async () => { for (const id of need) { try { await gameInfo(id); } catch (e) { gameCache[id] = Object.assign({ id, name: null, icon: null }, gameCache[id], { at: Date.now() - 23 * 3600e3 }); } } })().finally(() => { gamesBusy = false; });
+}
+// ---------- ไอคอน Token / Ore จากเซิร์ฟเวอร์ร้าน (/api/v1/icons) ----------
+let iconCache = { at: 0, v: {} };
+function itemIcons() {
+  if (Date.now() - iconCache.at > 3600e3) {
+    iconCache.at = Date.now();
+    fetch((LIC.enabled ? LIC.server : FLEET) + '/api/v1/icons', { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.json() : {})).then((m) => {
+      const pick = (n) => (typeof m[n] === 'string' && RBX_IMG.test(m[n]) ? m[n] : null);
+      iconCache.v = { token: pick('Ouwigahara Token'), ore: pick('Ore') };
+    }).catch(() => { iconCache.at = Date.now() - 3300e3; });
+  }
+  return iconCache.v;
+}
 const pidOf = new Map(); // ชื่อไอดี (ตัวเล็ก) -> PID ของ Roblox ที่โปรแกรมนี้เปิดให้
 // ปิด Roblox ที่ค้าง (Windows ขึ้น Not Responding) ทุกหน้าต่าง: ค้างแล้วไม่ส่งข้อมูล กิน RAM เปล่า ๆ
 function killHung() {
@@ -362,8 +398,9 @@ async function uiState() {
   const avatars = {}; for (const n of names) { const c = avatarCache.get(n.toLowerCase()); if (c && c.url) avatars[n.toLowerCase()] = c.url; }
   return {
     launcher: Object.entries(acc).map(([n, a]) => ({ name: n, id: a.id, lastLaunch: a.lastLaunch || null, window: pidOf.has(n.toLowerCase()) && pids.includes(pidOf.get(n.toLowerCase())), busy: busy.has(n.toLowerCase()) })),
-    fleet, fleetErr, avatars, script, version: appVersion(), license: LIC.enabled ? LIC.state() : null,
-    cfg: { enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, gameMode: cfg.gameMode === 'per' ? 'per' : 'shared', places: cfg.places || {}, perf: perfCfg() },
+    fleet, fleetErr, avatars, script, icons: itemIcons(),
+    games: (() => { const ids = savedGames(cfg); refreshGames(ids); return ids.map((id) => ({ id, name: (gameCache[id] && gameCache[id].name) || null, icon: (gameCache[id] && gameCache[id].icon) || null })); })(), version: appVersion(), license: LIC.enabled ? LIC.state() : null,
+    cfg: { eco: !!cfg.eco, enabled: !!cfg.enabled, afterMin: cfg.afterMin || 5, exclude: cfg.exclude || [], placeId: Number(cfg.placeId) || DEFAULT_PLACE, gameMode: cfg.gameMode === 'per' ? 'per' : 'shared', places: cfg.places || {}, perf: perfCfg() },
     sys: { multi: multiOk, cpu: cpuPct, ramUsed: os.totalmem() - os.freemem(), ramTotal: os.totalmem(), roblox: pids.length, win: IS_WIN,
       procs: procs.map((p) => ({ pid: p.pid, mb: p.mb, name: owner.get(p.pid) || null })), trim: { at: trimStat.at || null, freedMb: trimStat.freedMb, todayMb: trimStat.dayKey === new Date().toDateString() ? trimStat.dayMb : 0 } },
     log: tail(LOG, 40).concat(tail(path.join(DATA_DIR, 'rejoin.log'), 40).map((l) => l + '  [เซิร์ฟเวอร์]')).sort().reverse().slice(0, 50),
@@ -380,6 +417,35 @@ async function uiAction(p, j) {
     return { ok: true, msg: off.length ? `กำลังเปิดใหม่ ${off.length} ไอดี (ห่างกันตัวละ ${gap} วิ)` : 'ไม่มีไอดีที่หลุดอยู่' };
   }
   if (p === '/ui/trim') return trimRam();
+  // ปุ่มเดียวลดแรม: ย่อหน้าต่าง Roblox ทั้งหมด แล้วคืน RAM ทันที
+  if (p === '/ui/boost') {
+    if (!IS_WIN) return { ok: true, msg: 'ใช้ได้บน Windows เท่านั้น' };
+    const ps = robloxPids(); await minimizePids(ps); const r = await trimRam();
+    return { ok: true, msg: ps.length ? `ลดแรมแล้ว: ย่อ ${ps.length} หน้าต่าง · คืน RAM ได้ ${r.freed || 0} MB` : 'ไม่มีหน้าต่าง Roblox เปิดอยู่' };
+  }
+  // โหมดประหยัดสุด: ตั้งทุกอย่างให้กินเครื่องน้อยที่สุด (ปิดแล้วกลับเป็นค่าเดิม)
+  if (p === '/ui/eco') {
+    const c = readRejoin(), cur = Object.assign({}, PERF_DEF, c.perf || {});
+    if (j.on) {
+      if (!c.ecoPrev) c.ecoPrev = { no3d: cur.no3d, lowGfx: cur.lowGfx, fps: cur.fps, trimMin: cur.trimMin, minimize: cur.minimize };
+      c.perf = Object.assign(cur, { no3d: true, lowGfx: true, fps: 15, trimMin: 10, minimize: true }); c.eco = true;
+    } else { c.perf = Object.assign(cur, c.ecoPrev || {}); delete c.ecoPrev; c.eco = false; }
+    writeRejoin(c);
+    if (j.on && IS_WIN) { const ps = robloxPids(); await minimizePids(ps); trimRam().catch(() => {}); }
+    return { ok: true, msg: j.on ? 'เปิดโหมดประหยัดสุดแล้ว · ในเกมมีผลภายใน ~20 วิ' : 'ปิดโหมดประหยัดสุด กลับเป็นค่าเดิมแล้ว' };
+  }
+  if (p === '/ui/game-add') {
+    const m = String(j.place || '').match(/(?:games\/)?(\d{5,20})/), id = m ? Number(m[1]) : 0;
+    if (!Number.isSafeInteger(id) || id <= 0) throw new Error('ใส่เลข Place ID หรือวางลิงก์ roblox.com/games/...');
+    const g = await gameInfo(id, true).catch((e) => { throw new Error('หาเกมไม่เจอ: ' + e.message); });
+    const c = readRejoin(); c.games = savedGames(c); if (!c.games.includes(id)) c.games.push(id); if (j.select) c.placeId = id; writeRejoin(c);
+    return { ok: true, msg: 'เพิ่ม ' + g.name + ' แล้ว' };
+  }
+  if (p === '/ui/game-remove') {
+    const id = Number(j.place), c = readRejoin();
+    if (id === (Number(c.placeId) || DEFAULT_PLACE)) throw new Error('เกมนี้เลือกใช้อยู่ เลือกเกมอื่นก่อนแล้วค่อยลบ');
+    c.games = savedGames(c).filter((x) => x !== id); writeRejoin(c); return { ok: true, msg: 'ลบเกมแล้ว' };
+  }
   if (p === '/ui/minimize') { const ps = robloxPids(); await minimizePids(ps); return { ok: true, msg: IS_WIN ? `ย่อหน้าต่าง Roblox ${ps.length} อันแล้ว` : 'ใช้ได้บน Windows เท่านั้น' };
   }
   if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
