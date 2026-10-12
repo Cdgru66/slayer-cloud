@@ -258,7 +258,7 @@ function goalPct(goal, seenAcc) {
   if (!goal || !goal.items || !goal.items.length) return null;
   const m = (seenAcc && seenAcc.mastery) || {};
   const am = (seenAcc && seenAcc.amt) || {};
-  const parts = goal.items.map((it) => it.k === 'item' ? Math.min(1, Math.max(0, (Number(am[it.key]) || 0) - (it.base || 0)) / (it.target || 1)) : it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
+  const parts = goal.items.map((it) => it.k === 'item' ? (it.base == null ? 0 : Math.min(1, Math.max(0, (Number(am[it.key]) || 0) - it.base) / (it.target || 1))) : it.k === 'mastery' ? Math.min(1, (Number(m[it.key]) || 0) / (it.target || 400)) : it.k === 'level' ? Math.min(1, (Number(seenAcc && seenAcc.level) || 0) / (it.target || 1)) : it.done ? 1 : 0);
   return Math.round(parts.reduce((a, b) => a + b, 0) / parts.length * 100);
 }
 const goalDraft = {};
@@ -319,10 +319,10 @@ function goalEditor(account, dk) {
     const del = h('button', { class: 'btn', 'aria-label': 'ลบ', onclick: () => { g.items.splice(i, 1); render(); } }, '✕');
     if (it.k === 'manual') return h('div', { class: 'gi' }, h('label', { class: 'tg sm' }, h('input', { type: 'checkbox', checked: !!it.done, onchange: (e) => { it.done = e.target.checked; render(); } }), h('span', { class: 'tgk' }), h('span', {}, it.label)), del);
     if (it.k === 'item') {
-      const have = Number(((acc && acc.amt) || {})[it.key]) || 0, got = Math.max(0, have - (it.base != null ? it.base : have));
+      const have = Number(((acc && acc.amt) || {})[it.key]) || 0, got = it.base != null ? Math.max(0, have - it.base) : 0;
       return h('div', { class: 'gi' }, h('span', { class: 'gl' }, it.label || ('ฟาร์ม ' + it.key)),
         h('input', { class: 'f num', type: 'number', value: it.target, 'aria-label': 'จำนวนที่ต้องฟาร์มเพิ่ม', oninput: (e) => { it.target = Number(e.target.value) || 1; } }),
-        h('span', { class: 'mu' }, '+' + got.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + ' · มี ' + have.toLocaleString()), del);
+        h('span', { class: 'mu' }, it.base != null ? '+' + got.toLocaleString() + ' / ' + Number(it.target).toLocaleString() + ' · เริ่มที่ ' + Number(it.base).toLocaleString() + ' · มี ' + have.toLocaleString() : 'รอข้อมูลจากในเกมเพื่อเริ่มนับ'), del);
     }
     const cur = it.k === 'mastery' ? Number((acc && acc.mastery || {})[it.key]) || 0 : Number(acc && acc.level) || 0;
     const ks = h('select', { class: 'f', onchange: (e) => { it.key = e.target.value; render(); } }, h('option', { value: it.key }, (it.key || '— เลือก —') + (it.key && !keys.includes(it.key) ? ' (ยังไม่มีในไอดี)' : '')), keys.filter((k) => k !== it.key).map((k) => h('option', { value: k }, k)));

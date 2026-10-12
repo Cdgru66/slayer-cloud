@@ -334,8 +334,8 @@ module.exports = function createOrders(ctx) {
       const mlv = (x) => { if (!x) return 0; const lv = Number.isFinite(x.lv) ? x.lv : Math.round((Number(x.goal) || 0) / 30); const fr = x.goal > 0 ? Math.min(1, Math.max(0, x.current / x.goal)) : 0; return Math.min(400, Math.round((lv + (lv >= 400 ? 0 : fr)) * 100) / 100); };
       const owns = (n) => !n || (typeof s.holding === 'string' && s.holding.toLowerCase().includes(n.toLowerCase())) || (s.items || []).some((i) => i && typeof i.name === 'string' && i.name.toLowerCase().includes(n.toLowerCase()));
       const amt = (n) => { const it = (s.items || []).find((i) => i && i.name === n); return it && Number.isFinite(it.amount) ? it.amount : 0; };
-      for (const it of g.items) if (it.k === 'item' && !Number.isFinite(it.base) && Array.isArray(s.items)) { it.base = amt(it.key); goalsDirty = true; } // เริ่มนับจากตอนนี้
-      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? (owns(it.need) ? mlv(m[it.key]) : 0) : it.k === 'level' ? Number(s.level) || 0 : it.k === 'item' ? Math.max(0, amt(it.key) - (it.base || 0)) : it.done ? 1 : 0));
+      for (const it of g.items) if (it.k === 'item' && !Number.isFinite(it.base) && (s.items || []).some((i) => i && i.name === it.key)) { it.base = amt(it.key); goalsDirty = true; } // เริ่มนับเมื่อเห็นของชิ้นนี้ครั้งแรก // เริ่มนับจากตอนนี้
+      const m = s.mastery || {}, v = g.items.map((it) => (it.k === 'mastery' ? (owns(it.need) ? mlv(m[it.key]) : 0) : it.k === 'level' ? Number(s.level) || 0 : it.k === 'item' ? (Number.isFinite(it.base) ? Math.max(0, amt(it.key) - it.base) : 0) : it.done ? 1 : 0));
       const h = g.hist || (g.hist = []), last = h[h.length - 1], t = Math.floor(ctx.now());
       const same = last && last.v.length === v.length && last.v.every((x, i) => x === v[i]);
       if (last && (t - last.t < 60 || (same && t - last.t < 1800))) return;

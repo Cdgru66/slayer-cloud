@@ -188,7 +188,7 @@ module.exports = function createAdmin(ctx) {
         // เป้าฟาร์มของ (Ore/Token): จดจำนวนตอนเริ่มไว้ นับเฉพาะที่ได้เพิ่มหลังจากนี้
         if (Array.isArray(j.items)) for (const it of j.items) if (it && it.k === 'item' && !Number.isFinite(it.base)) {
           const f = a && a.s && Array.isArray(a.s.items) ? a.s.items.find((i) => i && i.name === it.key) : null;
-          if (a && a.s) it.base = f && Number.isFinite(f.amount) ? f.amount : 0;
+          if (f && Number.isFinite(f.amount)) it.base = f.amount; // ยังไม่เห็นของชิ้นนี้: รอจดตอนข้อมูลเข้ามา (ไม่นับของเดิมเป็นของที่ฟาร์มได้)
         }
         send(res, 200, j.order ? ctx.orders.linkOrder(String(j.order), name, keys) : j.set ? ctx.orders.goalFromSet(String(j.set), name, keys) : ctx.orders.setGoal(name, j));
       });
