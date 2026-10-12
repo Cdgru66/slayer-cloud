@@ -39,6 +39,8 @@ try {
       $full = Join-Path $d $name
       if (& $okZip $full) { Copy-Item $full $zip; $got = $true; Say "ใช้ไฟล์ที่มีอยู่แล้ว: $full"; break }
       $parts = @(Get-ChildItem -Path $d -Filter "$name.part*" -File -ErrorAction SilentlyContinue | Sort-Object { [int]($_.Name -replace '.*\.part', '') })
+      # ชื่อที่ร้านส่งในแชท: slayer-cloud-app.part1, .part2, ... (ไม่มี .zip ในชื่อ จะได้ไม่สับสนกับไฟล์อัปเดต slayer-cloud*.zip)
+      if ($parts.Count -eq 0) { $parts = @(Get-ChildItem -Path $d -Filter 'slayer-cloud-app.part*' -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '\.part\d+$' } | Sort-Object { [int]($_.Name -replace '.*\.part', '') }) }
       if ($parts.Count -gt 0) {
         $out = [IO.File]::Create($zip)
         try { foreach ($pt in $parts) { $in = [IO.File]::OpenRead($pt.FullName); try { $in.CopyTo($out) } finally { $in.Close() } } } finally { $out.Close() }
