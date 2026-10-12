@@ -16,7 +16,7 @@ const KEY_RE = /^[A-Z0-9]{16}$/;
 module.exports = function createLicense(o) {
   const { cfgFile, dir, log, protect, unprotect, version } = o;
   let cfg = null;
-  try { cfg = JSON.parse(fs.readFileSync(process.env.FLEET_LICENSE_CFG || cfgFile, 'utf8')); } catch (e) {}
+  try { cfg = JSON.parse(fs.readFileSync(cfgFile, 'utf8')); } catch (e) {} // อ่านจากในตัวแอปเท่านั้น (ห้ามให้ตัวแปรระบบชี้ไปไฟล์อื่น = ข้ามคีย์ได้)
   const enabled = !!(cfg && /^https?:\/\/[^\s/]+$/.test(String(cfg.server || '').replace(/\/+$/, '')) && cfg.pub);
   if (!enabled) return { enabled: false, ok: () => true, state: () => ({ enabled: false }), start() {}, activate: async () => ({ ok: true }), deactivate: async () => ({ ok: true }) };
 

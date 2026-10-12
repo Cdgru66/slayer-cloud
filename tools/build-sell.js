@@ -40,9 +40,27 @@ if (r.status !== 0) die('แพ็กไม่สำเร็จ (ดูข้�
 fs.rmSync(STAGE, { recursive: true, force: true });
 
 const out = path.join(DIST, 'FleetLauncher-win32-x64');
+// ล็อกตัว exe (Electron fuses): ห้ามใช้ exe เป็น Node.js, ห้ามแนบดีบัก (--inspect), ห้าม NODE_OPTIONS, โหลดโค้ดจาก app.asar เท่านั้น
+// กันผู้ซื้อแก้/ข้ามระบบคีย์แบบง่าย ๆ (ทำให้ยากขึ้น ไม่ได้กันได้ 100%)
+const FUSE_DIR = path.join(DIST, '.fuses');
+console.log('กำลังล็อกตัว exe...');
+const fi = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['install', '--no-save', '--no-audit', '--no-fund', '--prefix', FUSE_DIR, '@electron/fuses@1.8.0'], { stdio: 'inherit', shell: process.platform === 'win32' });
+if (fi.status !== 0) die('ติดตั้ง @electron/fuses ไม่ได้ (ดูข้อความด้านบน)');
+(async () => {
+  const { flipFuses, FuseVersion, FuseV1Options } = require(path.join(FUSE_DIR, 'node_modules', '@electron', 'fuses'));
+  await flipFuses(path.join(out, 'FleetLauncher.exe'), {
+    version: FuseVersion.V1, resetAdHocDarwinSignature: false,
+    [FuseV1Options.RunAsNode]: false, [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+    [FuseV1Options.EnableNodeCliInspectArguments]: false, [FuseV1Options.OnlyLoadAppFromAsar]: true, [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
+  });
+  finish();
+})().catch((e) => die('ล็อกตัว exe ไม่สำเร็จ: ' + e.message));
+
+function finish() {
 if (process.platform === 'win32') {
   const zip = path.join(DIST, 'FleetLauncher-sell.zip');
   try { fs.rmSync(zip, { force: true }); } catch (e) {}
   spawnSync('powershell', ['-NoProfile', '-Command', `Compress-Archive -Path '${out}\\*' -DestinationPath '${zip}' -Force`], { stdio: 'inherit' });
   console.log('\nเสร็จแล้ว: ' + zip + '\nส่ง zip นี้ให้ผู้ซื้อ · แตกไฟล์แล้วเปิด FleetLauncher.exe → ใส่คีย์ที่ออกจากหน้าแอดมิน แท็บ "คีย์แอป"');
 } else console.log('\nเสร็จแล้ว: ' + out);
+}
