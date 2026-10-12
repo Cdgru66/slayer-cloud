@@ -137,8 +137,8 @@ function autoBackup() {
 setTimeout(autoBackup, Number(process.env.BACKUP_FIRST_MS) || 60000).unref();
 setInterval(autoBackup, 6 * 3600 * 1000).unref();
 
-// ---------- รีจอยอัตโนมัติผ่าน Roblox Account Manager (RAM) ----------
-// ตั้งค่าใน data/rejoin.json ผ่าน admin.bat เมนูรีจอย  ไม่มีการเก็บ cookie/รหัส Roblox ใด ๆ ที่นี่ ใช้ RAM เปิดไอดีให้
+// ---------- รีจอยอัตโนมัติผ่าน Fleet Launcher (launcher.bat) หรือ Roblox Account Manager (API เดียวกัน) ----------
+// ตั้งค่าใน data/rejoin.json (Fleet Launcher ตั้งให้เอง)  เซิร์ฟเวอร์ไม่เก็บ cookie/รหัส Roblox ใด ๆ ตัวเปิดเกมบนคอมเป็นคนเก็บ
 const REJOIN_FILE = path.join(DATA_DIR, 'rejoin.json');
 const REJOIN_LOG = path.join(DATA_DIR, 'rejoin.log');
 const DEFAULT_PLACE = 136406881576517; // Slayer 2
@@ -187,14 +187,14 @@ async function rejoinTick() {
     }
     if (t < s2.nextAt) continue;
     s2.n++; s2.at = t; s2.alerted = true;
-    s2.nextAt = t + Math.min(60, (Number(cfg.cooldownMin) || 5) * Math.pow(2, s2.n - 1)) * 60; // 5, 10, 20, 40, 60 นาที
+    s2.nextAt = t + Math.min(20, (Number(cfg.cooldownMin) || 5) * Math.pow(2, s2.n - 1)) * 60; // 5, 10, 20, 20, ... นาที (ลองเรื่อย ๆ จนกลับมา)
     rjState.set(name, s2);
     const port = Number(cfg.port) || 7963, place = Number(cfg.placeId) || DEFAULT_PLACE;
     const u = `http://127.0.0.1:${port}/LaunchAccount?Account=${encodeURIComponent(name)}&PlaceId=${place}` + (cfg.password ? `&Password=${encodeURIComponent(cfg.password)}` : '');
     let ok = false, msg = '';
     try { const r = await fetch(u, { signal: AbortSignal.timeout(15000) }); msg = (await r.text()).trim().slice(0, 120); ok = r.ok; }
-    catch (e) { msg = 'ต่อ Roblox Account Manager ไม่ได้ (เปิดโปรแกรมและ Web Server อยู่หรือเปล่า)'; }
-    rjLog(`${name} เงียบ ${Math.round(silent / 60)} นาที -> สั่ง RAM เปิดใหม่ (ครั้งที่ ${s2.n}): ${ok ? 'สำเร็จ' : 'ไม่สำเร็จ'} ${msg}`);
+    catch (e) { msg = 'ต่อตัวเปิดเกมไม่ได้ (เปิด launcher.bat เมนู 5 ค้างไว้หรือยัง)'; }
+    rjLog(`${name} เงียบ ${Math.round(silent / 60)} นาที -> สั่งเปิดเกมใหม่ (ครั้งที่ ${s2.n}): ${ok ? 'สำเร็จ' : 'ไม่สำเร็จ'} ${msg}`);
     discord(cfg, ok ? `🔄 **${name}** หลุดไป ${Math.round(silent / 60)} นาที กำลังเข้าเกมใหม่ (ครั้งที่ ${s2.n})`
                     : `❌ เปิด **${name}** ใหม่ไม่สำเร็จ: ${msg}`);
     await new Promise((r) => setTimeout(r, Math.max(5, Number(cfg.gapSec) || 20) * 1000)); // เว้นระยะ ไม่เปิดหลายไอดีพร้อมกัน
