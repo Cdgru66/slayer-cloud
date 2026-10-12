@@ -174,9 +174,31 @@ function regDefault(key) {
   return m ? m[1] : '';
 }
 function splitCmd(s) { const out = [], re = /"([^"]*)"|(\S+)/g; let m; while ((m = re.exec(s))) out.push(m[1] !== undefined ? m[1] : m[2]); return out; }
+// หา RobloxPlayerBeta.exe ตัวใหม่สุดในโฟลเดอร์ Versions (เครื่องที่มีหลายเวอร์ชันค้าง เลือกตัวที่อัปเดตล่าสุด)
+function newestRobloxExe() {
+  const roots = [path.join(process.env.LOCALAPPDATA || '', 'Roblox', 'Versions'), path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Roblox', 'Versions')];
+  let best = null;
+  for (const r of roots) {
+    let dirs = []; try { dirs = fs.readdirSync(r); } catch (e) { continue; }
+    for (const d of dirs) {
+      const f = path.join(r, d, 'RobloxPlayerBeta.exe');
+      try { const t = fs.statSync(f).mtimeMs; if (!best || t > best.t) best = { f, t }; } catch (e) {}
+    }
+  }
+  return best && best.f;
+}
 function openUri(uri) {
   if (TEST_PLAIN) { log('(โหมดทดสอบ: ไม่ได้เปิด Roblox จริง)'); return; }
   if (!IS_WIN) throw new Error('เปิด Roblox ได้บน Windows เท่านั้น');
+  // 1) เปิด Roblox ตัวจริงตรง ๆ (ไม่ผ่านตัวเลือกเวอร์ชันของโปรแกรมอื่นอย่าง Real/Bloxstrap ที่จะเด้งถาม)
+  const direct = newestRobloxExe();
+  if (direct) {
+    const ch = spawn(direct, [uri], { detached: true, stdio: 'ignore' });
+    ch.on('error', (e) => log('เปิด Roblox ไม่สำเร็จ: ' + e.message)); ch.unref();
+    log('เปิดด้วย Roblox ' + path.basename(path.dirname(direct)));
+    return;
+  }
+  // 2) ไม่เจอ: ใช้โปรแกรมที่ลงทะเบียนกับลิงก์ roblox-player: ไว้
   const tpl = regDefault('HKCU\\Software\\Classes\\roblox-player\\shell\\open\\command') || regDefault('HKCR\\roblox-player\\shell\\open\\command');
   const parts = splitCmd(tpl.replace(/%(\w+)%/g, (x, v) => process.env[v] || x)), exe = parts.shift();
   const onErr = (e) => log('เปิด Roblox ไม่สำเร็จ: ' + e.message);
@@ -188,7 +210,7 @@ function openUri(uri) {
     log('เปิดด้วย ' + path.basename(exe));
     return;
   }
-  log('ไม่เจอ Roblox ในเครื่อง (ลง Roblox แล้วเปิดเกมจากเว็บ roblox.com สักครั้ง) ลองเปิดผ่าน Windows แทน');
+  log('ไม่เจอ Roblox ในเครื่อง (ลง Roblox จาก roblox.com/download ก่อน) ลองเปิดผ่าน Windows แทน');
   const ch = spawn('rundll32', ['url.dll,FileProtocolHandler', uri], { detached: true, stdio: 'ignore', windowsHide: true }); ch.on('error', onErr); ch.unref();
 }
 
@@ -201,7 +223,7 @@ function holdMultiRoblox() {
   const ch = spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
   ch.stdout.once('data', (d) => {
     multiOk = String(d).includes('ok');
-    log(multiOk ? 'เปิด Roblox หลายจอพร้อมกันได้แล้ว' : 'เปิดหลายจอไม่ได้: มี Roblox เปิดค้างอยู่ก่อน · ปิด Roblox ทุกหน้าต่างแล้วเปิด launcher.bat ใหม่');
+    log(multiOk ? 'เปิด Roblox หลายจอพร้อมกันได้แล้ว' : 'เปิดหลายจอไม่ได้: มี Roblox หรือโปรแกรมเปิดหลายจออื่น (เช่น Real, Bloxstrap, RAM) ถือไว้อยู่ · ปิดให้หมด (ดูถาดไอคอนมุมขวาล่างด้วย) แล้วเปิด launcher.bat ใหม่ · ยังเปิดได้ทีละจอ');
   });
   ch.on('error', () => {});
 }
