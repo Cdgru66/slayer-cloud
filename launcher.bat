@@ -1,5 +1,10 @@
 @echo off
 cd /d "%~dp0"
+rem Desktop app installed (FleetLauncher\FleetLauncher.exe)? Use it.
+if /i not "%~1"=="console" if /i not "%~1"=="menu" if exist "FleetLauncher\FleetLauncher.exe" (
+  start "" "FleetLauncher\FleetLauncher.exe"
+  exit /b
+)
 where node >nul 2>nul
 if errorlevel 1 (
   echo Node.js is required. Install it from https://nodejs.org

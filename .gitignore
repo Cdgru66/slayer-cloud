@@ -2,3 +2,6 @@ data/
 backups/
 cloudflared.exe
 *.log
+FleetLauncher/
+desktop/node_modules/
+dist/

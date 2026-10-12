@@ -366,7 +366,7 @@ async function uiAction(p, j) {
   }
   if (p === '/ui/close') { const k = killOld(name); return { ok: k, msg: k ? 'ปิด Roblox ของ ' + name + ' แล้ว' : 'ไม่รู้ว่าหน้าต่างไหนเป็นของ ' + name + ' (เปิดก่อนโปรแกรมนี้)' }; }
   if (p === '/ui/add') return importCookies(String(j.cookie || ''));
-  if (p === '/ui/quit') { log('ปิดโปรแกรมจากหน้าจอควบคุม (หยุดรีจอย)'); setTimeout(() => process.exit(0), 400); return { ok: true, msg: 'ปิดโปรแกรมแล้ว' }; }
+  if (p === '/ui/quit') { log('ปิดโปรแกรมจากหน้าจอควบคุม (หยุดรีจอย)'); setTimeout(() => (EMBED && EMBED.onQuit ? EMBED.onQuit() : process.exit(0)), 400); return { ok: true, msg: 'ปิดโปรแกรมแล้ว' }; }
   if (p === '/ui/remove') { const acc = loadAccounts(), k = Object.keys(acc).find((x) => x.toLowerCase() === name.toLowerCase()); if (!k) throw new Error('ไม่มีไอดีนี้'); delete acc[k]; saveAccounts(acc); log('ลบไอดี ' + k); return { ok: true, msg: 'ลบ ' + k + ' แล้ว' }; }
   if (p === '/ui/check') { const acc = loadAccounts(), out = {}; for (const [n, a] of Object.entries(acc)) { try { await whoAmI(a.cookie); out[n] = 'ok'; } catch (e) { out[n] = e.message; } } return { ok: true, result: out }; }
   if (p === '/ui/settings') {
@@ -403,7 +403,10 @@ function openWindow(url) {
     '--hide-crash-restore-bubble', '--disable-features=Translate,msEdgeTranslate,msUndersideButton,msEdgeSidebarV2,EdgeShoppingAssistant,msShowSidebar', '--lang=th'], { detached: true, stdio: 'ignore' }).unref();
   else spawn('cmd', ['/c', 'start', '""', url], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 }
-function serve() {
+// opts.embedded = รันอยู่ในแอป FleetLauncher.exe (Electron): แอปเปิดหน้าต่างเอง ไม่ใช้ Edge และไม่ปิดโปรเซสเองตอนเริ่มไม่สำเร็จ
+let EMBED = null;
+function serve(opts) {
+  EMBED = opts && opts.embedded ? opts : null;
   const cfg = ensureRejoinCfg();
   holdMultiRoblox();
   const UI_FILE = path.join(__dirname, 'ui.html');
@@ -429,7 +432,7 @@ function serve() {
       // คำสั่งจากเซิร์ฟเวอร์ Fleet (แบบเดียวกับ RAM)
       const pw = rejoinPw();
       if (!pw || !safeEq(u.searchParams.get('Password') || '', pw)) return send(401, 'รหัสไม่ถูกต้อง');
-      if (u.pathname === '/OpenUI') { openWindow(`http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`); return send(200, 'ok'); } // กด launcher.bat ซ้ำ
+      if (u.pathname === '/OpenUI') { if (EMBED && EMBED.onOpenUI) EMBED.onOpenUI(); else openWindow(`http://127.0.0.1:${PORT}/?t=${UI_TOKEN}`); return send(200, 'ok'); } // กด launcher.bat ซ้ำ
       if (u.pathname === '/GetAccounts') return send(200, Object.keys(loadAccounts()).join(','));
       if (u.pathname === '/LaunchAccount') {
         const name = u.searchParams.get('Account') || '';
@@ -442,6 +445,7 @@ function serve() {
     } catch (e) { log('ผิดพลาด: ' + e.message); send(500, e.message); }
   });
   srv.on('error', async (e) => {
+    if (EMBED) { log(e.code === 'EADDRINUSE' ? `พอร์ต ${PORT} ถูกใช้อยู่ (ตัวเปิดเกมแบบเก่า หรือ Roblox Account Manager เปิดอยู่)` : 'เริ่มทำงานไม่ได้: ' + e.message); return EMBED.onError && EMBED.onError(e); }
     if (e.code === 'EADDRINUSE') {
       // มีตัวเปิดเกมทำงานอยู่แล้ว: บอกให้ตัวนั้นเปิดหน้าจอแทน แล้วตัวนี้ปิดไป
       try {
@@ -458,7 +462,8 @@ function serve() {
     console.log(`\n===== Fleet Launcher ทำงานแล้ว =====`);
     console.log(`ไอดีที่รีจอยได้ ${Object.keys(loadAccounts()).length} ตัว · รีจอยเมื่อเงียบเกิน ${cfg.afterMin || 5} นาที`);
     console.log('หน้าจอควบคุมเปิดให้แล้ว (ถ้าปิดไป ก๊อปลิงก์นี้ไปเปิดในเบราว์เซอร์): ' + url + '\n');
-    if (!process.env.FLEET_NO_WINDOW) openWindow(url);
+    if (EMBED) { if (EMBED.onReady) EMBED.onReady(url); }
+    else if (!process.env.FLEET_NO_WINDOW) openWindow(url);
   });
 }
 const rejoinPw = () => { try { return JSON.parse(fs.readFileSync(REJOIN_FILE, 'utf8')).password; } catch (e) { return ''; } };

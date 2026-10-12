@@ -54,6 +54,9 @@ button{cursor:pointer}
 .lang button{border:0;background:transparent;color:var(--mu);height:24px;padding:0 11px;border-radius:999px;font-size:12px;font-weight:500}
 .lang button[aria-pressed=true]{background:var(--s3);color:var(--gold-hi)}
 
+/* ในแอป: แถบบนลากย้ายหน้าต่างได้ เว้นที่ให้ปุ่มย่อ/ขยาย/ปิดของ Windows */
+html.app .topbar{-webkit-app-region:drag;padding-right:152px;background:#110a0c;backdrop-filter:none}
+html.app .topbar button,html.app .topbar .chip,html.app .topbar .lang{-webkit-app-region:no-drag}
 /* ---------- layout ---------- */
 .shell{display:flex;flex-wrap:wrap;min-height:calc(100vh - 52px)}
 nav.side{flex:1 1 220px;max-width:236px;padding:18px 12px 14px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(26,17,20,.6),rgba(17,10,12,.2))}
@@ -91,7 +94,7 @@ h1{font:600 20px var(--sans);letter-spacing:-.005em}
 .btn.gold{background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:#2a1a08;box-shadow:0 8px 20px -12px rgba(226,182,92,.8);font-weight:600}
 .btn.gold:hover{filter:brightness(1.05);color:#2a1a08}
 .btn.ghost{background:transparent;box-shadow:none;color:var(--mu2)}.btn.ghost:hover{background:var(--s2)}
-.btn.red{color:#ffb3a8}
+.btn.red{color:#ffd0c8;background:rgba(239,123,108,.16);box-shadow:inset 0 0 0 1px rgba(239,123,108,.45)}.btn.red:hover{background:rgba(239,123,108,.24);color:#fff}
 .btn.sm{height:30px;padding:0 11px;font-size:12.5px;border-radius:8px}
 .btn.ic{width:30px;padding:0}
 .rowacts .btn.gold{background:transparent;color:var(--gold-hi);box-shadow:inset 0 0 0 1px rgba(226,182,92,.4)}
@@ -318,7 +321,8 @@ textarea:focus{box-shadow:inset 0 0 0 1px rgba(226,182,92,.5)}
 
 <script>
 'use strict';
-const TOKEN=new URLSearchParams(location.search).get('t')||'';
+const QS=new URLSearchParams(location.search),TOKEN=QS.get('t')||'',APPMODE=QS.has('app');
+if(APPMODE)document.documentElement.classList.add('app'); // เปิดในแอป FleetLauncher.exe
 history.replaceState(null,'','/'); // ไม่ทิ้งโทเคนไว้ในแถบที่อยู่
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const h=(t,a={},...k)=>{const e=document.createElement(t);for(const[x,v]of Object.entries(a)){if(v==null||v===false)continue;if(x==='class')e.className=v;else if(x.startsWith('on'))e[x]=v;else e.setAttribute(x,v===true?'':v)}for(const c of k.flat()){if(c==null||c===false)continue;e.append(c.nodeType?c:document.createTextNode(c))}return e};
@@ -346,7 +350,7 @@ th:{connecting:'กำลังต่อ…',connOk:'เชื่อมเซิ
  pPc:'บนเครื่อง (ตัวเปิดเกม)',pPcSub:'จัดการหน้าต่าง Roblox จากนอกเกม',pTrim:'คืน RAM อัตโนมัติ',pTrimSub:'ย้ายหน่วยความจำที่ Roblox ไม่ได้ใช้ออก · ช่วยมากตอน RAM ใกล้เต็ม',trimOff:'ปิด',every:'ทุก {n} นาที',
  pMin:'ย่อหน้าต่างเกมทันทีที่เปิด',pMinSub:'หน้าต่างที่ย่อไว้วาดภาพน้อยลง',unknownWin:'ไม่รู้ไอดี (PID {p})',noWin:'ยังไม่มีหน้าต่าง Roblox เปิดอยู่',
  pHint:'"ประหยัดในเกม" ปิดได้รายไอดี เช่น ไอดีที่ใช้สแกนเกมใหม่ · การคืน RAM และย่อหน้าต่างใช้ได้บน Windows',
- hLog:'บันทึกการทำงาน',quit:'ปิดโปรแกรม',quitAsk:'ปิดตัวเปิดเกม? รีจอยอัตโนมัติจะหยุดจนกว่าจะเปิด launcher.bat ใหม่\n(ปิดแค่หน้าต่างนี้ = ยังทำงานเบื้องหลังต่อ)',quitDone:'ปิดโปรแกรมแล้ว · ดับเบิลคลิก launcher.bat เพื่อเปิดใหม่',bg:'ปิดหน้าต่างนี้ได้ ยังรีจอยเบื้องหลังต่อ',noLog:'ยังไม่มีบันทึก',
+ hLog:'บันทึกการทำงาน',quit:'ปิดโปรแกรม',quitAsk:'ปิด Fleet Launcher?\nรีจอยอัตโนมัติจะหยุดจนกว่าจะเปิดใหม่\n(กด X ที่มุมหน้าต่าง = ซ่อนไปที่ถาด ยังรีจอยต่อ)',quitDone:'ปิดโปรแกรมแล้ว · เปิดใหม่ได้จาก Fleet Launcher หรือ launcher.bat',bg:'ปิดหน้าต่างนี้ได้ ยังรีจอยเบื้องหลังต่อ',noLog:'ยังไม่มีบันทึก',
  addTitle:'เพิ่มไอดี',cancel:'ยกเลิก',saveAcc:'บันทึกไอดี',safe:'cookie คือกุญแจเข้าไอดี ห้ามส่งให้ใคร · เก็บเข้ารหัสไว้ในคอมเครื่องนี้เท่านั้น ไม่ส่งขึ้นเว็บร้าน',
  steps:['เปิดเบราว์เซอร์แบบ<b>ไม่ระบุตัวตน</b> แล้วล็อกอิน roblox.com ด้วยไอดีนั้น','กด <b>F12</b> → Application → Cookies → https://www.roblox.com','ก๊อปค่าของ <b>.ROBLOSECURITY</b> มาวางด้านล่าง · <b>หลายไอดีวางบรรทัดละอัน</b>','ปิดหน้าต่างเบราว์เซอร์ทิ้ง <b>ห้ามกด Log out</b> (cookie จะใช้ไม่ได้)'],
  qOn:'ออนไลน์',qOff:'หลุด',qBusy:'กำลังเปิด',qNo:'ไม่มี cookie',threads:'{n} เธรด',usedOf:'{a} / {b} GB',rbSub:'ใช้ RAM รวม {g} GB',onSub:'จาก {n} ไอดี',saved:'บันทึกแล้ว'},
@@ -370,7 +374,7 @@ en:{connecting:'Connecting…',connOk:'Connected to shop server',connBad:'Cannot
  pPc:'On this PC (launcher)',pPcSub:'Manages Roblox windows from outside the game',pTrim:'Free RAM automatically',pTrimSub:'Moves memory Roblox is not using out of RAM · helps most when RAM is nearly full',trimOff:'Off',every:'Every {n} min',
  pMin:'Minimise game windows on launch',pMinSub:'Minimised windows draw less',unknownWin:'Unknown account (PID {p})',noWin:'No Roblox windows open',
  pHint:'"In-game saving" can be turned off per account, e.g. one used to scan a new game · Freeing RAM and minimising work on Windows',
- hLog:'Logs',quit:'Quit launcher',quitAsk:'Quit the launcher? Auto rejoin stops until you run launcher.bat again.\n(Closing just this window keeps it running in the background.)',quitDone:'Launcher closed · double-click launcher.bat to start it again',bg:'You can close this window; rejoin keeps running in the background',noLog:'No log entries yet',
+ hLog:'Logs',quit:'Quit launcher',quitAsk:'Quit Fleet Launcher?\nAuto rejoin stops until you open it again.\n(The X button only hides it to the tray and keeps rejoining.)',quitDone:'Launcher closed · start it again from Fleet Launcher or launcher.bat',bg:'You can close this window; rejoin keeps running in the background',noLog:'No log entries yet',
  addTitle:'Add account',cancel:'Cancel',saveAcc:'Save account',safe:'The cookie is the key to the account — never share it · stored encrypted on this PC only, never sent to the shop site',
  steps:['Open a <b>private</b> browser window and log in to roblox.com with that account','Press <b>F12</b> → Application → Cookies → https://www.roblox.com','Copy the <b>.ROBLOSECURITY</b> value and paste it below · <b>one per line for several accounts</b>','Close the browser window — <b>do not log out</b> (the cookie would stop working)'],
  qOn:'Online',qOff:'Dropped',qBusy:'Launching',qNo:'No cookie',threads:'{n} threads',usedOf:'{a} / {b} GB',rbSub:'{g} GB RAM in total',onSub:'of {n} accounts',saved:'Saved'}};
@@ -394,6 +398,15 @@ const cm=n=>n==null?'–':Math.abs(n)>=1e6?(n/1e6).toFixed(2)+'M':Math.abs(n)>=1
 const ago=s=>s==null?'–':(s<60?Math.round(s)+t('s'):s<3600?Math.round(s/60)+t('m'):s<86400?Math.round(s/3600)+t('hr'):Math.round(s/86400)+t('d'))+(LANG==='th'?' '+t('ago'):t('ago'));
 const gb=b=>(b/1073741824).toFixed(1);
 let stopped=false,S=null,flt='all',q='',view=store.get('fl-view')||'acc';
+// กล่องยืนยันของแอปเอง (แทน confirm() ของเบราว์เซอร์ที่ขึ้นหัวว่า 127.0.0.1 says)
+function ask(msg,okLabel,danger){return new Promise(res=>{
+  const done=v=>{wrap.remove();document.removeEventListener('keydown',kd);res(v)};
+  const kd=e=>{if(e.key==='Escape')done(false);if(e.key==='Enter')done(true)};
+  const ok=h('button',{type:'button',class:'btn '+(danger?'red':'gold'),onclick:()=>done(true)},okLabel||'OK');
+  const wrap=h('div',{class:'modal',role:'dialog','aria-modal':'true',onclick:e=>{if(e.target===wrap)done(false)}},
+    h('div',{class:'sheet',style:'width:min(420px,100%)'},h('div',{class:'sb',style:'padding:22px 22px 18px;white-space:pre-line;color:var(--tx2);font-size:14px'},msg),
+      h('div',{class:'sf'},h('button',{type:'button',class:'btn ghost',onclick:()=>done(false)},t('cancel')),ok)));
+  document.body.append(wrap);document.addEventListener('keydown',kd);setTimeout(()=>ok.focus(),30)})}
 function toast(m,bad){const e=$('#toast');e.textContent=m;e.className='toast on'+(bad?' bad':'');clearTimeout(toast.t);toast.t=setTimeout(()=>e.className='toast',3200)}
 async function api(p,body){const r=await fetch(p,{method:body?'POST':'GET',headers:Object.assign({'X-Fleet-Token':TOKEN},body?{'Content-Type':'application/json'}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('error '+r.status));return j}
 async function act(btn,p,body){if(btn)btn.disabled=true;try{const r=await api(p,body);if(r.msg)toast(r.msg,r.ok===false);await load();return r}catch(e){toast(e.message,true)}finally{if(btn)btn.disabled=false}}
@@ -452,10 +465,10 @@ function row(r){const f=r.f||{},l=r.l,[sk,col]=ST[r.st];
   else if(f.holding)now=[h('b',{},f.holding)];
   else now=[r.st==='never'?h('span',{class:'dim'},t('noData')):f.goal?t('goal')+f.goal:h('span',{class:'dim'},'—')];
   const acts=[];
-  if(l)acts.push(h('button',{type:'button',class:'btn sm gold',onclick:e=>{if(r.st==='on'&&!confirm(t('confirmRj',{n:r.name})))return;act(e.currentTarget,'/ui/rejoin',{name:r.name})}},'⟳ '+t('rejoin')));
+  if(l)acts.push(h('button',{type:'button',class:'btn sm gold',onclick:async e=>{const b=e.currentTarget;if(r.st==='on'&&!await ask(t('confirmRj',{n:r.name}),t('rejoin')))return;act(b,'/ui/rejoin',{name:r.name})}},'⟳ '+t('rejoin')));
   else acts.push(h('button',{type:'button',class:'btn sm gold',onclick:openAdd},t('addCk')));
   if(l&&l.window)acts.push(h('button',{type:'button',class:'btn sm',onclick:e=>act(e.currentTarget,'/ui/close',{name:r.name})},t('closeG')));
-  if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:()=>{if(confirm(t('confirmDel',{n:r.name})))act(null,'/ui/remove',{name:r.name})}},'✕'));
+  if(l)acts.push(h('button',{type:'button',class:'btn sm ic','aria-label':t('del')+' '+r.name,title:t('del'),onclick:async()=>{if(await ask(t('confirmDel',{n:r.name}),t('del'),true))act(null,'/ui/remove',{name:r.name})}},'✕'));
   return h('tr',{},
     h('td',{},h('div',{class:'who'},avatar(r.name,col),h('div',{},h('b',{},f.display||r.name),h('span',{},'@'+r.name)))),
     h('td',{},h('span',{class:'pill',style:'--c:'+col},h('i',{class:'dot'+(r.st==='on'||r.st==='busy'?' pulse':''),style:'--c:'+col}),t(sk))),
@@ -525,7 +538,7 @@ $('#placeSave').onclick=e=>act(e.currentTarget,'/ui/settings',{placeId:Number($(
 $('#no3d').onchange=e=>setP({no3d:e.target.checked});$('#lowGfx').onchange=e=>setP({lowGfx:e.target.checked});$('#minimize').onchange=e=>setP({minimize:e.target.checked});
 $('#fps').onchange=e=>setP({fps:Number(e.target.value)});$('#trimMin').onchange=e=>setP({trimMin:Number(e.target.value)});
 $('#trim').onclick=e=>act(e.currentTarget,'/ui/trim',{});$('#minAll').onclick=e=>act(e.currentTarget,'/ui/minimize',{});
-$('#quit').onclick=async()=>{if(!confirm(t('quitAsk')))return;try{await api('/ui/quit',{})}catch(e){}stopped=true;document.body.innerHTML='';document.body.append(h('div',{class:'empty',style:'padding:80px 20px;font-size:15px'},t('quitDone')))};
+$('#quit').onclick=async()=>{if(!await ask(t('quitAsk'),t('quit'),true))return;try{await api('/ui/quit',{})}catch(e){}stopped=true;document.body.innerHTML='';document.body.append(h('div',{class:'empty',style:'padding:80px 20px;font-size:15px'},t('quitDone')))};
 $('#q').oninput=e=>{q=e.target.value.toLowerCase();render()};
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea,.logs'))e.preventDefault()});
 window.addEventListener('wheel',e=>{if(e.ctrlKey)e.preventDefault()},{passive:false});

@@ -1,0 +1,8 @@
+{
+  "name": "fleet-launcher",
+  "productName": "Fleet Launcher",
+  "version": "1.0.0",
+  "description": "Fleet Launcher desktop app",
+  "main": "main.js",
+  "private": true
+}
