@@ -141,7 +141,7 @@ setInterval(autoBackup, 6 * 3600 * 1000).unref();
 // ตั้งค่าใน data/rejoin.json (Fleet Launcher ตั้งให้เอง)  เซิร์ฟเวอร์ไม่เก็บ cookie/รหัส Roblox ใด ๆ ตัวเปิดเกมบนคอมเป็นคนเก็บ
 const REJOIN_FILE = path.join(DATA_DIR, 'rejoin.json');
 const REJOIN_LOG = path.join(DATA_DIR, 'rejoin.log');
-const DEFAULT_PLACE = 136406881576517; // Slayer 2
+const DEFAULT_PLACE = 16205713724; // Slayers 2 (หน้าแรกของเกม · แมพย่อยเข้าตรงไม่ได้)
 let rj = { cfg: {}, mtime: -1 };
 const rjState = new Map(); // ชื่อไอดี -> { n: ครั้งที่สั่งเปิด, at: เวลาสั่งล่าสุด, nextAt, alerted }
 function rejoinCfg() {

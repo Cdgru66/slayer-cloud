@@ -27,7 +27,7 @@ const STORE_DIR = process.env.FLEET_LAUNCHER_DIR || path.join(process.env.LOCALA
 const STORE = path.join(STORE_DIR, 'accounts.dat');
 const LOG = path.join(STORE_DIR, 'launcher.log');
 const PORT = 7963;
-const DEFAULT_PLACE = 136406881576517; // Slayer 2
+const DEFAULT_PLACE = 16205713724; // Slayers 2 (หน้าแรกของเกม · แมพย่อยเข้าตรงไม่ได้)
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) FleetLauncher/1.0';
 const IS_WIN = process.platform === 'win32';
 const TEST_PLAIN = process.env.FLEET_LAUNCHER_TEST === '1'; // ใช้ตอนทดสอบบนเครื่องที่ไม่ใช่ Windows เท่านั้น (ไม่เข้ารหัส)
