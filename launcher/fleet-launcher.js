@@ -88,7 +88,7 @@ async function authTicket(cookie) {
 }
 function launchUri(ticket, placeId) {
   const bt = String(crypto.randomInt(1e11, 1e12 - 1));
-  const pl = `https://assetgame.roblox.com/game/PlaceLauncher.ashx?request=RequestGame&browserTrackerId=${bt}&placeId=${placeId}&isPlayTogetherGame=false&joinAttemptId=${crypto.randomUUID()}&joinAttemptOrigin=PlayButton`;
+  const pl = `https://www.roblox.com/Game/PlaceLauncher.ashx?request=RequestGame&browserTrackerId=${bt}&placeId=${placeId}&isPlayTogetherGame=false&joinAttemptId=${crypto.randomUUID()}&joinAttemptOrigin=PlayButton`;
   return `roblox-player:1+launchmode:play+gameinfo:${ticket}+launchtime:${Date.now()}+placelauncherurl:${encodeURIComponent(pl)}+browsertrackerid:${bt}+robloxLocale:en_us+gameLocale:en_us`;
 }
 
@@ -185,6 +185,7 @@ function openUri(uri) {
     const args = parts.map((a) => (a.includes('%1') ? ((used = true), a.replace('%1', uri)) : a));
     if (!used) args.push(uri);
     const ch = spawn(exe, args, { detached: true, stdio: 'ignore' }); ch.on('error', onErr); ch.unref();
+    log('เปิดด้วย ' + path.basename(exe));
     return;
   }
   log('ไม่เจอ Roblox ในเครื่อง (ลง Roblox แล้วเปิดเกมจากเว็บ roblox.com สักครั้ง) ลองเปิดผ่าน Windows แทน');
