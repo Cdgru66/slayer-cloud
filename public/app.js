@@ -56,6 +56,7 @@ function tickCd(){document.querySelectorAll('[data-cd]').forEach(el=>{const a=A.
 setInterval(tickCd,1000);
 const amt=(a,n)=>(a.s.items.find(i=>i.name===n)||{}).amount||0;
 const iconOf=it=>it&&(it.iconUrl||ICONS[it.name]);
+const TOKEN='Ouwigahara Token';
 const itm=(a,n)=>a.s.items.find(i=>i.name===n);
 const full=n=>n==null?'–':Math.round(n).toLocaleString('en-US');
 function bar(r){return h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Math.min(1,r))*100}%`}))}
@@ -173,14 +174,14 @@ function render(){
  const tk=dkey(now()),tdy=L.reduce((t,x)=>{const d=x.a.days&&x.a.days[tk];return t+(d?(d.w1||0)-(d.w0||0):0)},0);$('#t-today').textContent=(tdy>=0?'+':'')+cm(tdy);
  {const orr=L.reduce((t,x)=>t+(x.st==='on'?oreRate(x.a)||0:0),0),el=$('#t-orate');if(el)el.textContent=orr>0?'+'+cm(orr)+' Ore ต่อชั่วโมง':'กำลังเก็บข้อมูลแร่ต่อชั่วโมง'}
  $('#t-ore').replaceChildren(...ORE.map(n=>resRow(n,n==='Ore'?'Ore':'Refinement Ore',sum(a=>amt(a,n)),firstIcon(n),40)));
- $('#t-coin').replaceChildren(...COINS.map(n=>resRow(n,COIN_TH[n],sum(a=>amt(a,n)),firstIcon(n),30,'sm')));
+ $('#t-coin').replaceChildren(resRow(TOKEN,'Token รวม',sum(a=>amt(a,TOKEN)),firstIcon(TOKEN),40));
  const o={on:0,stuck:1,off:2};L.sort((x,y)=>o[x.st]-o[y.st]||(y.a.s.wen||0)-(x.a.s.wen||0)||x.a.s.name.localeCompare(y.a.s.name));
  $('#strip').replaceChildren(h('span',{},'สถานะแต่ละไอดี'),...L.map(x=>h('i',{class:'tk '+x.st,title:x.a.s.name+' : '+ST[x.st][0]})));
  const F=L.filter(x=>(flt==='all'||x.st===flt)&&(x.a.s.name+(x.a.s.display||'')).toLowerCase().includes(q));
  if(!F.length){$('#tb').replaceChildren(h('p',{class:'empty'},L.length?'ไม่มีไอดีที่ตรงกับตัวกรองนี้':'ยังไม่มีไอดี ข้อมูลจะขึ้นที่นี่ทันทีที่สคริปต์ส่งเข้ามา'));drawer();return}
  $('#tb').replaceChildren(...F.map(({a,st})=>{const s=a.s,r=rate(a),e=s.expGoal?s.expCurrent/s.expGoal:0;
-  const coinEls=COINS.map(n=>{const it=itm(a,n);return it?h('span',{title:COIN_TH[n]+' '+full(it.amount)},ico(n,iconOf(it),20),cm(it.amount)):null}).filter(Boolean);
-  const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),coinT=COINS.reduce((t,n)=>t+amt(a,n),0);
+  const tokIt=itm(a,TOKEN),coinEls=tokIt?[h('span',{title:'Ouwigahara Token '+full(tokIt.amount)},ico(TOKEN,iconOf(tokIt),20),cm(tokIt.amount))]:[];
+  const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),tokT=amt(a,TOKEN);
   return h('div',{class:'row'+(st==='off'?' off':''),tabindex:'0',role:'button','aria-label':(s.display||s.name)+' เลเวล '+(s.level??'–'),onclick:()=>show(s.name),onkeydown:ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show(s.name)}}},
    lvSeal(s),
    h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),questChip(s),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp.toFixed(1)+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
@@ -190,7 +191,7 @@ function render(){
    h('div',{class:'c cn'},coinEls.length?coinEls:h('span',{class:'mu'},'–')),
    h('div',{class:'c rt '+(r>0?'up':'mu')},r==null?'–':(r>0?'+':'')+cm(r)),
    h('div',{class:'c ago','data-cd':s.name},cdText(a,st)),
-   h('div',{class:'mstats'},h('span',{class:'o'},'Ore ',h('b',{},cm(oreV))),h('span',{class:'o'},'Refinement ',h('b',{},cm(refV))),h('span',{class:'g'},'ถุงเงิน ',h('b',{},cm(coinT))),r>0?h('span',{},h('b',{class:'up'},'+'+cm(r)+'/ชม.')):null,h('span',{class:'cdm','data-cd':s.name},cdText(a,st))))}));
+   h('div',{class:'mstats'},h('span',{class:'o'},'Ore ',h('b',{},cm(oreV))),h('span',{class:'o'},'Refinement ',h('b',{},cm(refV))),h('span',{class:'g'},'Token ',h('b',{},cm(tokT))),r>0?h('span',{},h('b',{class:'up'},'+'+cm(r)+'/ชม.')):null,h('span',{class:'cdm','data-cd':s.name},cdText(a,st))))}));
  tickCd();
  drawer()}
 /* ---------- กระเป๋า (แยกหมวด) ---------- */
@@ -269,6 +270,11 @@ function show(n){open=n;drawer();$('#dr').classList.add('open');$('#scrim').clas
 function hide(){open=null;$('#dr').classList.remove('open');if(!$('#cl').classList.contains('open'))$('#scrim').classList.remove('on')}
 addEventListener('keydown',e=>{if(e.key==='Escape')hide()});
 // เควส: ที่รับอยู่ (แถบความคืบหน้าทีละงาน) + ที่ทำจบล่าสุด + ตัวนับรวม
+// Roguelike Ouwigahara: Token (ทั้งบัญชี) + สถิติการปีน
+function rogueSection(a){const s=a.s,p=s.progress||{},it=itm(a,TOKEN);if(!it&&!p.roguelike_runs&&!p.tokens_earned)return[];
+ const t=(l,v)=>h('div',{class:'st'},h('span',{},l),h('b',{},v==null?'–':cm(v)));
+ return[h('h3',{},'Roguelike Ouwigahara'),h('div',{class:'rogue'},
+  h('div',{class:'sts'},t('ปีนไปแล้ว (รอบ)',p.roguelike_runs),t('ชั้นไร้ที่ติ',p.roguelike_flawless_floor),t('ล้มบอส',p.roguelike_bosses),t('ฆ่ามอน',p.roguelike_kills),t('Token ที่ได้ทั้งหมด',p.tokens_earned),t('Series ที่สะสม',p.series_collected)))]}
 function questSection(s){const q=s.quests;if(!q||(!(q.active||[]).length&&!(q.done||[]).length&&q.total==null))return[];
  const act=(q.active||[]).map(x=>h('div',{class:'qc'},h('div',{class:'qh'},h('b',{},x.name),x.lv?h('span',{class:'mu'},'Lv '+x.lv):null),
   (x.tasks||[]).map(t=>{const r=t.max>0?Math.max(0,Math.min(1,t.v/t.max)):0;return h('div',{class:'qt'},h('span',{class:'qn'},t.name),h('span',{class:'qv'+(r>=1?' ok':'')},t.v+' / '+t.max),h('div',{class:'bar sm'},h('i',{style:'width:'+r*100+'%'})))})));
@@ -284,14 +290,15 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
   h('div',{class:'dh'},lvSeal(s),h('div',{},h('h2',{},s.display||s.name),h('p',{class:'us'},s.name+(s.userId?'  ·  ID '+s.userId:'')))),
   h('p',{style:'margin-top:14px'},h('span',{class:'pill',style:'--c:'+ST[st][1]},h('i',{class:'dot',style:'--c:'+ST[st][1]}),ST[st][0]+' · อัปเดตเมื่อ '+ago(now()-s.time)+'ที่แล้ว'),' ',h('span',{class:'pill cdp','data-cd':s.name,style:'--c:var(--mu)'},cdText(a,st))),
   a.goal&&goalParts(a)?h('div',{class:'dgoal'},h('div',{class:'gc-top'},ring(goalPct(a),80,'d:'+s.name),h('div',{},h('small',{class:'mu'},a.goal.title||'เป้าหมาย'),h('b',{},'ความคืบหน้า '+goalPct(a).toFixed(1)+'%'))),usingNow(s),goalMeta(a),spark(a,320,64),goalList(a,false)):'',
-  fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):null,
+  fight(s,st,true)?h('div',{class:'dfight'},fight(s,st,true),(()=>{const b=bossRate(a),q=oreRate(a);return h('span',{class:'mu'},[b!=null?'ล้มบอส '+b+' ตัว/ชม.':null,q!=null?'แร่ +'+cm(q)+'/ชม.':null].filter(Boolean).join(' · '))})()):'',
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),
    h('div',{class:'dpair'},
     h('div',{class:'ore'},h('p',{class:'lbl'},'Ore'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(ORE,n=>n==='Ore'?'Ore':'Refinement',30,'sm'))),
-    h('div',{class:'coins'},h('p',{class:'lbl'},'ถุงเงิน'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(COINS,n=>COIN_TH[n],26,'sm'))))),
+    h('div',{class:'coins'},h('p',{class:'lbl'},'Ouwigahara Token'),h('div',{class:'res',style:'grid-template-columns:1fr'},res([TOKEN],()=>'Token',30,'sm'))))),
   ...statsSection(a),
   ...questSection(s),
+  ...rogueSection(a),
   h('h3',{},'เลเวล '+(s.level??'–')+' · EXP '+full(s.expCurrent)+' / '+full(s.expGoal)),h('div',{class:'bar'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`})),
   h('h3',{},'ตัวละคร'),h('div',{class:'kv'},kv('Race',s.race||'–'),kv('Clan',s.clan||'–'),kv('Demon Art',s.demonArt||'–'),kv('Breathing',s.breathing||'–'),kv('Fighting Style',s.fightingStyle||'–'),kv('Slayer / Demon',(s.slayerRank||'–')+' / '+(s.demonRank||'–')),kv('Skill Points',s.skillPoints??'–'),kv('Kills',cm(p.kills)),kv('Boss kills',cm(p.boss_kills)),kv('Deaths',cm(p.deaths)),kv('Tower',p.tower_floor!=null?'ชั้น '+p.tower_floor:'–')),
   ...(Object.keys(s.mastery||{}).length?[h('h3',{},'Mastery'),h('div',{class:'mg'},Object.entries(s.mastery).sort((x,y)=>mPrec(y[1])-mPrec(x[1])).map(([k,m])=>{const lv=mLv(m),mx=lv>=400,r=mx?1:(m.goal>0?Math.max(0,Math.min(1,m.current/m.goal)):0);return h('div',{class:'mc'+(mx?' max':''),title:'EXP '+full(m.current)+' / '+full(m.goal)},h('div',{class:'mh'},h('span',{class:'mn'},k),mx?h('span',{class:'mx'},'MAX'):h('span',{class:'mp'},Math.round(lv/4)+'% ของ 400')),h('div',{class:'mv'},h('b',{},'Lv '+lv),h('span',{},' / 400')),h('div',{class:'mb'},h('i',{style:`width:${(mx?100:r*100).toFixed(1)}%`})),mx?null:h('small',{class:'mu'},'EXP '+full(m.current)+' / '+full(m.goal)+' → Lv '+(lv+1)))}))]:[]),

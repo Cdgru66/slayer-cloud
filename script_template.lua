@@ -161,6 +161,19 @@ local function itemsFromData(slot)
     return res
 end
 
+-- ของทั้งบัญชี (ใช้ร่วมทุกตัวละคร) อยู่นอก slots
+local function accountItems(data)
+    local res = {}
+    local ai = data and data:FindFirstChild("AccountItems")
+    local inv = ai and ai:FindFirstChild("Inventory")
+    for _, it in ipairs(inv and inv:GetChildren() or {}) do
+        local a = it:GetAttribute("Amount")
+        if type(a) ~= "number" then local c = it:FindFirstChild("Amount"); a = c and c:IsA("ValueBase") and tonumber(c.Value) or 1 end
+        res[it.Name] = (res[it.Name] or 0) + a
+    end
+    return res
+end
+
 local function getItems(slot)
     local ui, uiFound = itemsFromUI()
     local data = itemsFromData(slot)
@@ -474,7 +487,8 @@ local function collect()
     end
 
     s.progress = {}
-    for _, k in ipairs({ "kills", "boss_kills", "deaths", "chests", "quests", "tower_floor" }) do
+    for _, k in ipairs({ "kills", "boss_kills", "deaths", "chests", "quests", "tower_floor",
+        "roguelike_runs", "roguelike_bosses", "roguelike_kills", "roguelike_flawless_floor", "tokens_earned", "series_collected", "series_tier", "series_crafted" }) do
         s.progress[k] = val(prog, k, 0)
     end
 
@@ -512,6 +526,15 @@ local function collect()
         table.sort(extra, function(a, b) return a.name < b.name end)
         for i = 1, math.min(#extra, 150) do table.insert(entries, extra[i]) end
     end
+
+    -- ของทั้งบัญชี (Account Wide) เช่น Ouwigahara Token: Data.<ชื่อ>.AccountItems.Inventory.<ชื่อของ>.Amount
+    pcall(function()
+        for name, n in pairs(accountItems(data)) do
+            local hit = nil
+            for _, e in ipairs(entries) do if e.name == name then hit = e break end end
+            if hit then hit.amount, hit.acct = n, true else table.insert(entries, { name = name, amount = n, acct = true }) end
+        end
+    end)
 
     -- หมวดของไอเทมจาก ReplicatedStorage.Items.<หมวด>.<ชื่อ> (อ่านครั้งเดียวแล้วจำไว้)
     if not itemCat then
@@ -1037,6 +1060,7 @@ task.spawn(function()
                 boss = (okB and boss) and { name = boss.name, hp = boss.hp } or nil,
             }
             p.holding, p.activeMastery = nowUsing()
+            pcall(function() local ai = accountItems(data); if next(ai) then p.acct = ai end end)
             pcall(function()
                 local qq = questsOf(slot, pt and pt:FindFirstChild("Progress"))
                 if qq then p.quests = { active = qq.active, total = qq.total } end
