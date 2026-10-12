@@ -173,7 +173,7 @@ function render(){
  const tr=L.reduce((t,x)=>t+(x.st==='on'?rate(x.a)||0:0),0);$('#t-rate').textContent=(tr>0?'+':'')+cm(tr);
  const tk=dkey(now()),tdy=L.reduce((t,x)=>{const d=x.a.days&&x.a.days[tk];return t+(d?(d.w1||0)-(d.w0||0):0)},0);$('#t-today').textContent=(tdy>=0?'+':'')+cm(tdy);
  {const orr=L.reduce((t,x)=>t+(x.st==='on'?oreRate(x.a)||0:0),0),el=$('#t-orate');if(el)el.textContent=orr>0?'+'+cm(orr)+' Ore ต่อชั่วโมง':'กำลังเก็บข้อมูลแร่ต่อชั่วโมง'}
- $('#t-ore').replaceChildren(...ORE.map(n=>resRow(n,n==='Ore'?'Ore':'Refinement Ore',sum(a=>amt(a,n)),firstIcon(n),40)));
+ $('#t-ore').replaceChildren(resRow('Ore','Ore รวม',sum(a=>amt(a,'Ore')),firstIcon('Ore'),40));
  $('#t-coin').replaceChildren(resRow(TOKEN,'Token รวม',sum(a=>amt(a,TOKEN)),firstIcon(TOKEN),40));
  const o={on:0,stuck:1,off:2};L.sort((x,y)=>o[x.st]-o[y.st]||(y.a.s.wen||0)-(x.a.s.wen||0)||x.a.s.name.localeCompare(y.a.s.name));
  $('#strip').replaceChildren(h('span',{},'สถานะแต่ละไอดี'),...L.map(x=>h('i',{class:'tk '+x.st,title:x.a.s.name+' : '+ST[x.st][0]})));
@@ -181,17 +181,16 @@ function render(){
  if(!F.length){$('#tb').replaceChildren(h('p',{class:'empty'},L.length?'ไม่มีไอดีที่ตรงกับตัวกรองนี้':'ยังไม่มีไอดี ข้อมูลจะขึ้นที่นี่ทันทีที่สคริปต์ส่งเข้ามา'));drawer();return}
  $('#tb').replaceChildren(...F.map(({a,st})=>{const s=a.s,r=rate(a),e=s.expGoal?s.expCurrent/s.expGoal:0;
   const tokIt=itm(a,TOKEN),coinEls=tokIt?[h('span',{title:'Ouwigahara Token '+full(tokIt.amount)},ico(TOKEN,iconOf(tokIt),20),cm(tokIt.amount))]:[];
-  const oreV=amt(a,'Ore'),refV=amt(a,'Refinement Ore'),tokT=amt(a,TOKEN);
+  const oreV=amt(a,'Ore'),tokT=amt(a,TOKEN);
   return h('div',{class:'row'+(st==='off'?' off':''),tabindex:'0',role:'button','aria-label':(s.display||s.name)+' เลเวล '+(s.level??'–'),onclick:()=>show(s.name),onkeydown:ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();show(s.name)}}},
    lvSeal(s),
    h('div',{class:'who'},h('div',{class:'nm'},h('i',{class:'dot',style:'--c:'+ST[st][1],title:ST[st][0]}),s.display||s.name),h('div',{class:'us'},s.name,power(s),fight(s,st),questChip(s),(()=>{const gp=goalPct(a);return gp==null?null:h('span',{class:'gpill',title:'ความคืบหน้าตามออเดอร์'},'เป้าหมาย '+gp.toFixed(1)+'%')})()),h('div',{class:'exp',title:'EXP '+Math.round(e*100)+'%'},h('i',{style:`width:${Math.max(0,Math.min(1,e))*100}%`}))),
    h('div',{class:'c wen-c',title:full(s.wen)+' Wen'},cm(s.wen)),
    h('div',{class:'c ore-c',title:full(oreV)},cm(oreV),(()=>{const q=oreRate(a);return q>0?h('small',{class:'orr'},'+'+cm(q)+'/ชม.'):null})()),
-   h('div',{class:'c ore-c ref-c',title:full(refV)},cm(refV)),
    h('div',{class:'c cn'},coinEls.length?coinEls:h('span',{class:'mu'},'–')),
    h('div',{class:'c rt '+(r>0?'up':'mu')},r==null?'–':(r>0?'+':'')+cm(r)),
    h('div',{class:'c ago','data-cd':s.name},cdText(a,st)),
-   h('div',{class:'mstats'},h('span',{class:'o'},'Ore ',h('b',{},cm(oreV))),h('span',{class:'o'},'Refinement ',h('b',{},cm(refV))),h('span',{class:'g'},'Token ',h('b',{},cm(tokT))),r>0?h('span',{},h('b',{class:'up'},'+'+cm(r)+'/ชม.')):null,h('span',{class:'cdm','data-cd':s.name},cdText(a,st))))}));
+   h('div',{class:'mstats'},h('span',{class:'o'},'Ore ',h('b',{},cm(oreV))),h('span',{class:'g'},'Token ',h('b',{},cm(tokT))),r>0?h('span',{},h('b',{class:'up'},'+'+cm(r)+'/ชม.')):null,h('span',{class:'cdm','data-cd':s.name},cdText(a,st))))}));
  tickCd();
  drawer()}
 /* ---------- กระเป๋า (แยกหมวด) ---------- */
@@ -294,7 +293,7 @@ function drawer(){const a=A.get(open),d=$('#dr');if(!a){if(open)hide();return}
   h('div',{class:'dvault'},
    h('div',{class:'dwen'},h('p',{class:'lbl',style:'color:#c9a96b'},'Wen'),h('p',{class:'big',title:full(s.wen)},full(s.wen)),h('p',{class:'lbl',style:'color:#c9a96b'},r==null?'กำลังเก็บข้อมูลอัตรา':h('span',{class:r>0?'up':'mu'},(r>0?'+':'')+cm(r)+' ต่อชั่วโมง'))),
    h('div',{class:'dpair'},
-    h('div',{class:'ore'},h('p',{class:'lbl'},'Ore'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(ORE,n=>n==='Ore'?'Ore':'Refinement',30,'sm'))),
+    h('div',{class:'ore'},h('p',{class:'lbl'},'Ore'),h('div',{class:'res',style:'grid-template-columns:1fr'},res(['Ore'],()=>'Ore',30,'sm'))),
     h('div',{class:'coins'},h('p',{class:'lbl'},'Ouwigahara Token'),h('div',{class:'res',style:'grid-template-columns:1fr'},res([TOKEN],()=>'Token',30,'sm'))))),
   ...statsSection(a),
   ...questSection(s),
