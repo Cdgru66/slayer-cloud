@@ -389,7 +389,7 @@ async function uiState() {
     if (r.err) fleetErr = r.err;
   } else try {
     const r = await fetch(FLEET + '/api/v1/launcher/status', { headers: { Authorization: 'Bearer ' + (cfg.password || '') }, signal: AbortSignal.timeout(5000) });
-    if (r.ok) fleet = await r.json(); else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' · รหัสไม่ตรงกัน: แอปนี้ใช้โฟลเดอร์ ' + APP + ' ต้องเปิด start-cloud.bat จากโฟลเดอร์เดียวกัน (ถ้าเพิ่งเปิดแอป ปิดหน้าต่างเซิร์ฟเวอร์แล้วเปิด start-cloud.bat ใหม่)' : '');
+    if (r.ok) { fleet = await r.json(); const pl = fleet.publicLink; if (pl && pl.ok === false) fleetErr = 'ลิงก์สาธารณะ ' + pl.url + ' ใช้ไม่ได้ · สคริปต์ในเกมส่งข้อมูลไม่ได้ จึงหยุดรีจอยไว้ · วิธีแก้: เปิดโปรแกรม Tailscale (ถาดไอคอนมุมขวาล่าง) ให้ล็อกอินอยู่ แล้วดับเบิลคลิก start-funnel.bat'; } else fleetErr = 'เซิร์ฟเวอร์ Fleet ตอบ ' + r.status + (r.status === 401 ? ' · รหัสไม่ตรงกัน: แอปนี้ใช้โฟลเดอร์ ' + APP + ' ต้องเปิด start-cloud.bat จากโฟลเดอร์เดียวกัน (ถ้าเพิ่งเปิดแอป ปิดหน้าต่างเซิร์ฟเวอร์แล้วเปิด start-cloud.bat ใหม่)' : '');
   } catch (e) { fleetErr = 'ต่อเซิร์ฟเวอร์ Fleet ไม่ได้ (เปิด start-cloud.bat อยู่หรือเปล่า)'; }
   const procs = robloxProcs(), pids = procs.map((p) => p.pid), owner = new Map([...pidOf].map(([n, p]) => [p, n]));
   const known = Object.fromEntries(Object.entries(acc).map(([n, a]) => [n, a.id]));

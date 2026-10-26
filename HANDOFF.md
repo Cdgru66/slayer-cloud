@@ -65,3 +65,7 @@
   - กระเป๋า: Tool ใน Backpack ชื่อ = Mutation + ชื่อสัตว์ (เช่น "Silver + Scrambled Mutation Centaur"), ไข่ = "Volcano Egg (9,872Kg)"
   - บูสต์/อีเวนต์: `PlayerGui.BottomUI.BottomFrame.Holder.List.<ชื่อ>.Timer/Value` · ป้ายชี้ไข่: `PlayerGui.AssetEggData...RemainingHatchTime`
   - ยังไม่เจอ Speed / เงิน → ใช้ `tools/scan_egg.lua` (สแกนเจาะจง + เทียบค่าระหว่างรอบ)
+
+## เช็คลิงก์สาธารณะ (เพิ่ม 26 ต.ค.)
+- เคสจริง: Tailscale/Funnel ดับ → สคริปต์ในเกมส่งข้อมูลไม่ได้ (โหลด /script.lua และ ingest ผ่าน ts.net) → ทุกไอดีเงียบ → เดิมรีจอยเลิกถาวรหลังเงียบ 12 ชม. (giveUp)
+- ตอนนี้ server.js เช็ค `public_url.txt`/healthz ทุก 5 นาที (`pubLink`) แจ้ง rejoin.log + Discord เมื่อเปลี่ยนสถานะ · ลิงก์ล่ม = พักรีจอย · เงียบเกิน giveUp = ลองชั่วโมงละครั้ง (ไม่เลิกถาวร) · `/api/v1/launcher/status` ส่ง `publicLink` → แอปขึ้นแถบแดงบอกวิธีแก้

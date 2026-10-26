@@ -164,6 +164,23 @@ async function discord(cfg, text) {
       body: JSON.stringify({ username: 'Fleet', content: text }), signal: AbortSignal.timeout(8000) });
   } catch (e) {}
 }
+// ---------- เช็คลิงก์สาธารณะ (Tailscale Funnel) ทุก 5 นาที: สคริปต์ในเกมส่งข้อมูลผ่านลิงก์นี้ ถ้าลิงก์ล่ม = ทุกไอดีเงียบ ----------
+const pubLink = { url: '', ok: null, at: 0, since: 0, err: '' };
+async function checkPublicLink() {
+  let u = ''; try { u = fs.readFileSync(path.join(DATA_DIR, 'public_url.txt'), 'utf8').trim().replace(/\/+$/, ''); } catch (e) {}
+  if (!/^https:\/\/[^\s/]+$/.test(u)) { Object.assign(pubLink, { url: '', ok: null, at: Date.now(), err: '' }); return; }
+  let ok = false, err = '';
+  try { const r = await fetch(u + '/healthz', { signal: AbortSignal.timeout(15000) }); ok = r.ok; if (!ok) err = 'ตอบ ' + r.status; }
+  catch (e) { err = String((e.cause && e.cause.code) || e.message || e).slice(0, 80); }
+  const was = pubLink.ok;
+  Object.assign(pubLink, { url: u, ok, at: Date.now(), err, since: was === ok ? pubLink.since : Date.now() });
+  if (was !== ok && !(was === null && ok)) { // แจ้งตอนเปลี่ยนสถานะ และตอนเปิดเซิร์ฟเวอร์แล้วลิงก์ใช้ไม่ได้
+    rjLog(ok ? 'ลิงก์สาธารณะกลับมาใช้ได้แล้ว: ' + u : 'ลิงก์สาธารณะใช้ไม่ได้ (' + err + '): สคริปต์ในเกมส่งข้อมูลไม่ได้ · เปิด Tailscale แล้วรัน start-funnel.bat');
+    discord(rejoinCfg(), ok ? '✅ ลิงก์ร้านกลับมาใช้ได้แล้ว' : '⚠️ ลิงก์ร้าน (' + u + ') ใช้ไม่ได้ สคริปต์ในเกมส่งข้อมูลไม่ได้ · เปิด Tailscale แล้วรัน start-funnel.bat');
+  }
+}
+setTimeout(checkPublicLink, 5000).unref(); setInterval(checkPublicLink, 5 * 60e3).unref();
+
 async function rejoinTick() {
   loadCustomers();
   const cfg = rejoinCfg();
@@ -181,7 +198,10 @@ async function rejoinTick() {
       rjState.delete(name);
       continue;
     }
-    if (silent > giveUp || skip.has(name.toLowerCase())) continue; // เลิกใช้ไอดีนี้แล้ว หรือถูกยกเว้น
+    if (skip.has(name.toLowerCase())) continue; // ปิด "รีจอยเอง" ไว้
+    if (pubLink.ok === false) continue; // ลิงก์สาธารณะล่ม: เปิดเกมไปสคริปต์ก็ส่งข้อมูลไม่ได้ (แจ้งใน log/Discord แล้ว)
+    // เงียบนานเกิน (เดิมเลิกรีจอยถาวร): ยังลองต่อแต่ห่างลง ชั่วโมงละครั้ง
+    if (silent > giveUp) { const s0 = rjState.get(name); if (s0 && t < Math.max(s0.nextAt, s0.at + 3600)) continue; }
     const s2 = st || { n: 0, at: 0, nextAt: 0, alerted: false };
     if (!cfg.enabled) { // โหมดแจ้งเตือนอย่างเดียว
       if (!s2.alerted) { s2.alerted = true; rjState.set(name, s2); rjLog(`${name} ออฟไลน์ ${Math.round(silent / 60)} นาที`); discord(cfg, `⚠️ **${name}** ออฟไลน์ ${Math.round(silent / 60)} นาทีแล้ว`); }
@@ -540,7 +560,7 @@ function handleReq(req, res) {
     if (!ok) { recordFail(ip); return send(res, 401, { error: 'unauthorized' }); }
     if (!rate('launcher:' + ip, 120)) return send(res, 429, { error: 'rate limited' });
     const t = now(), cfg = rejoinCfg();
-    return send(res, 200, { serverTime: t, version: VERSION, afterMin: cfg.afterMin || 5, enabled: !!cfg.enabled, exclude: cfg.exclude || [],
+    return send(res, 200, { serverTime: t, version: VERSION, publicLink: { url: pubLink.url, ok: pubLink.ok, err: pubLink.err, since: pubLink.since ? Math.round((Date.now() - pubLink.since) / 1000) : null }, afterMin: cfg.afterMin || 5, enabled: !!cfg.enabled, exclude: cfg.exclude || [],
       accounts: statusRows(accounts[OWNER], (n) => rjState.get(n), (n) => orders && orders.goalOf(n)) });
   }
 
